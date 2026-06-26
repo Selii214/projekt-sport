@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projekt Sport & Gicht</title>
+<style>
+:root {
+  --bg:#0f1117;--surface:#181c26;--surface2:#1f2435;--border:#2a2f42;
+  --a:#3d9be9;--b:#7c5cbf;--good:#3abf7e;--warn:#e9a03d;--bad:#e95c5c;
+  --text:#e8eaf2;--muted:#7a859e;--dim:#4a5268;--r:10px;
+  --font:'Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+
+nav{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;padding:0 12px;}
+.nav-brand{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:10px 0 4px;}
+.nav-brand span{color:var(--a);}
+.nav-tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--border);}
+.nav-tab{padding:9px 2px;font-size:10px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;text-align:center;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--font);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{color:var(--a);border-bottom-color:var(--a);}
+
+main{max-width:780px;margin:0 auto;padding:24px 14px 60px;}
+.section{display:none;}.section.active{display:block;}
+.page-header{margin-bottom:20px;}
+.page-header h1{font-size:20px;font-weight:700;margin-bottom:4px;}
+.page-header p{font-size:13px;color:var(--muted);}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px;}
+
+/* TRAININGSPLAN */
+.einheit-switch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.einheit-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;text-align:left;cursor:pointer;transition:all .15s;color:var(--muted);font-family:var(--font);}
+.einheit-btn.ea{background:rgba(61,155,233,.12);border-color:var(--a);color:var(--text);}
+.einheit-btn.eb{background:rgba(124,92,191,.12);border-color:var(--b);color:var(--text);}
+.etag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;}
+.einheit-btn.ea .etag{color:var(--a);}.einheit-btn.eb .etag{color:var(--b);}
+.ename{font-size:13px;font-weight:700;}.emeta{font-size:11px;margin-top:3px;color:var(--dim);}
+
+.info-strip{display:flex;gap:18px;flex-wrap:wrap;padding:12px 16px;border-radius:var(--r);margin-bottom:12px;}
+.info-strip.ca{background:rgba(61,155,233,.1);border:1px solid rgba(61,155,233,.25);}
+.info-strip.cb{background:rgba(124,92,191,.1);border:1px solid rgba(124,92,191,.25);}
+.ilabel{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.ivalue{font-size:14px;font-weight:700;}
+
+.tp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.tp-count{font-size:17px;font-weight:800;}
+.tc-a{color:var(--a);}.tc-b{color:var(--b);}
+.bar-bg{background:var(--surface2);border-radius:4px;height:5px;overflow:hidden;margin-bottom:12px;}
+.bar-fill{height:100%;border-radius:4px;transition:width .3s ease;}
+.fa{background:var(--a);}.fb{background:var(--b);}
+
+/* ÜBUNGSKARTEN */
+.uebung-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+.uebung-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);display:flex;align-items:center;gap:0;transition:all .15s;position:relative;}
+.uebung-card.done{opacity:.45;}
+.uebung-card.done .un{text-decoration:line-through;}
+.uebung-card.dragging{opacity:.4;border-style:dashed;}
+.uebung-card.drag-over{border-color:var(--a);background:rgba(61,155,233,.08);}
+
+/* GROSSE CHECKBOX */
+.big-chk{width:52px;min-width:52px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-right:1px solid var(--border);flex-shrink:0;transition:background .15s;}
+.big-chk:hover{background:rgba(255,255,255,.04);}
+.big-chk-inner{width:28px;height:28px;border-radius:7px;border:2px solid var(--dim);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;transition:all .15s;color:transparent;}
+.uebung-card.done .big-chk-inner{border-color:var(--good);background:var(--good);color:#fff;}
+
+/* DRAG HANDLE */
+.drag-handle{width:28px;min-width:28px;height:60px;display:flex;align-items:center;justify-content:center;cursor:grab;color:var(--dim);font-size:14px;flex-shrink:0;border-right:1px solid var(--border);}
+.drag-handle:active{cursor:grabbing;}
+
+/* KARTEN-INHALT */
+.ucard-body{flex:1;padding:10px 12px;min-width:0;}
+.ucard-top{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.uidx{font-size:10px;font-weight:700;color:var(--dim);min-width:16px;}
+.un{font-size:13px;font-weight:700;color:var(--text);}
+.ucard-bottom{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+/* EDITIERBARES GEWICHT */
+.gew-display{font-size:12px;font-weight:700;padding:3px 9px;border-radius:5px;cursor:pointer;transition:all .15s;border:1px solid transparent;}
+.gew-display.ga{color:var(--a);background:rgba(61,155,233,.1);}
+.gew-display.gb{color:var(--b);background:rgba(124,92,191,.1);}
+.gew-display:hover{border-color:currentColor;}
+.gew-input{font-size:12px;font-weight:700;padding:3px 8px;border-radius:5px;border:1px solid var(--a);background:var(--surface);color:var(--a);width:90px;font-family:var(--font);outline:none;}
+
+.pb{font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;}
+.p90{background:rgba(61,155,233,.15);color:var(--a);}
+.p120{background:rgba(233,160,61,.15);color:var(--warn);}
+.gerat-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.07);color:var(--muted);border:1px solid var(--border);white-space:nowrap;cursor:pointer;transition:all .15s;}
+.gerat-badge:hover{border-color:var(--muted);color:var(--text);}
+.gerat-input{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid var(--muted);background:var(--surface);color:var(--text);width:80px;font-family:var(--font);outline:none;}
+.hint{font-size:11px;color:var(--muted);font-style:italic;}
+
+.complete{background:rgba(58,191,126,.1);border:1px solid rgba(58,191,126,.3);border-radius:var(--r);padding:12px;text-align:center;margin-top:10px;display:none;}
+.complete .ci{font-size:22px;margin-bottom:3px;}
+.complete .cm{font-size:13px;font-weight:700;color:var(--good);}
+.complete .cs{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.btn-reset{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.btn-reset:hover{border-color:var(--warn);color:var(--warn);}
+
+/* CHECKLISTE */
+.zt-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:5px 0 7px;display:flex;align-items:center;gap:7px;}
+.zt-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ci-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 12px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:all .15s;user-select:none;}
+.ci-item:hover{border-color:var(--good);}
+.ci-item.chkd{background:rgba(58,191,126,.07);border-color:rgba(58,191,126,.35);}
+.ci-box{width:19px;height:19px;border-radius:5px;border:2px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .15s;font-size:11px;font-weight:800;}
+.ci-item.chkd .ci-box{background:var(--good);border-color:var(--good);color:#fff;}
+.ci-txt{font-size:13px;color:var(--text);line-height:1.5;}
+.ci-item.chkd .ci-txt{color:var(--muted);text-decoration:line-through;}
+.ph{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;}
+.pt{font-size:14px;font-weight:600;}.pc{font-size:21px;font-weight:800;color:var(--good);}
+.pbar-bg{background:var(--surface2);border-radius:4px;height:6px;overflow:hidden;margin-bottom:16px;}
+.pbar-fill{height:100%;border-radius:4px;background:var(--good);transition:width .35s ease;}
+.done-banner{background:rgba(58,191,126,.12);border:1px solid rgba(58,191,126,.35);border-radius:var(--r);padding:16px;text-align:center;margin-top:14px;}
+.db-icon{font-size:26px;margin-bottom:5px;}
+.db-msg{font-size:14px;font-weight:700;color:var(--good);}
+.db-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* PROTOKOLL */
+.pform{display:grid;gap:11px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.fg input,.fg select,.fg textarea{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;font-size:13px;color:var(--text);font-family:var(--font);transition:border-color .15s;width:100%;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--a);}
+.fg textarea{resize:vertical;min-height:65px;}
+.fg select option{background:var(--surface2);}
+.btn-save{background:var(--a);color:#fff;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);width:100%;margin-top:3px;}
+.btn-save:hover{opacity:.85;}
+.vh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.wc{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;}
+.wg{background:rgba(58,191,126,.15);color:var(--good);}
+.wo{background:rgba(233,160,61,.15);color:var(--warn);}
+.wh{background:rgba(233,92,92,.15);color:var(--bad);}
+.srow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.sbox{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;}
+.sv{font-size:20px;font-weight:800;}.sl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:3px;}
+.btn-del{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:var(--font);}
+.btn-del:hover{border-color:var(--bad);color:var(--bad);}
+.empty{text-align:center;padding:36px;color:var(--dim);font-size:13px;}
+
+/* AUSWERTUNG */
+.aw-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.aw-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;}
+.as-v{font-size:19px;font-weight:800;}.as-l{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:3px;}
+.chart-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 10px 8px;margin-bottom:12px;overflow-x:auto;}
+.filter-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.fchip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;font-size:11px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;font-family:var(--font);}
+.fchip.active{background:rgba(61,155,233,.15);border-color:var(--a);color:var(--a);}
+.muster-list{display:grid;gap:8px;}
+.mi{background:var(--surface2);border-left:3px solid var(--border);border-radius:0 8px 8px 0;padding:11px 13px;font-size:12px;line-height:1.5;}
+.mi.gut{border-left-color:var(--good);}.mi.warn{border-left-color:var(--warn);}
+.mi.neg{border-left-color:var(--bad);}.mi.info{border-left-color:var(--a);}
+.mi strong{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;}
+.mi.gut strong{color:var(--good);}.mi.warn strong{color:var(--warn);}
+.mi.neg strong{color:var(--bad);}.mi.info strong{color:var(--a);}
+.fak-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.fak-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;}
+.fak-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:9px;}
+.fak-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;}
+.fak-label{color:var(--muted);}.fak-val{font-weight:700;}
+
+/* BACKUP */
+.bk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.bk-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px 14px;text-align:left;cursor:pointer;transition:all .15s;font-family:var(--font);color:var(--text);width:100%;}
+.bk-btn:hover{border-color:var(--a);background:rgba(61,155,233,.07);}
+.bk-icon{font-size:20px;margin-bottom:7px;}
+.bk-title{font-size:12px;font-weight:700;margin-bottom:3px;}
+.bk-desc{font-size:11px;color:var(--muted);line-height:1.5;}
+.bk-log{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;font-size:12px;font-family:monospace;margin-top:10px;display:none;}
+.info-box{background:rgba(61,155,233,.07);border:1px solid rgba(61,155,233,.25);border-radius:var(--r);padding:13px 15px;font-size:12px;color:#7ab8e8;line-height:1.7;margin-top:12px;}
+.info-box strong{color:var(--a);}
+
+.warn-box{background:rgba(233,160,61,.08);border:1px solid rgba(233,160,61,.3);border-radius:var(--r);padding:11px 14px;font-size:12px;color:#c8882a;line-height:1.6;margin-top:12px;}
+.src-box{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;font-size:11px;color:var(--muted);line-height:1.7;margin-top:12px;}
+
+@media(max-width:520px){
+  .frow{grid-template-columns:1fr;}
+  .srow{grid-template-columns:1fr 1fr;}
+  .fak-grid{grid-template-columns:1fr;}
+  th:last-child,td:last-child{display:none;}
+}
+</style>
+<script type="text/javascript" nonce="581387cb04fe451c8cbcfd667e0" src="//injections.adguard.org?ts=1782494072178&amp;type=content-script&amp;dmn=mail.infomaniak.com&amp;url=https%3A%2F%2Fmail.infomaniak.com%2Fapi%2Fmail%2F450efbfb-30f7-36fd-bc59-e67ba9e6d4d0%2Ffolder%2FeJxzKUpMKykGAAfpAmU-%2Fmessage%2F2752%2Fattachment%2F2&amp;app=comet.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=0"></script><script type="text/javascript" nonce="581387cb04fe451c8cbcfd667e0" src="//injections.adguard.org?ts=1782494072178&amp;name=AdGuard%20Extra&amp;name=AdGuard%20Popup%20Blocker&amp;type=user-script"></script></head>
+<body>
+
+<nav>
+  <div class="nav-brand">Projekt <span>Sport</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('plan',this)">📋 Plan</button>
+    <button class="nav-tab" onclick="showTab('check',this)">✅ Check</button>
+    <button class="nav-tab" onclick="showTab('proto',this)">📊 Protokoll</button>
+    <button class="nav-tab" onclick="showTab('auswert',this);renderAuswertung()">📈 Auswertung</button>
+    <button class="nav-tab" onclick="showTab('backup',this)">💾 Sicherung</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- TRAININGSPLAN -->
+<section id="plan" class="section active">
+  <div class="page-header"><h1>Trainingsplan</h1><p>2× wöchentlich · Split Ober-/Unterkörper · Muskelerhalt</p></div>
+
+  <div class="einheit-switch">
+    <button class="einheit-btn ea" id="btn-a" onclick="showEinheit('A')">
+      <div class="etag">Mittwoch</div><div class="ename">Einheit A — Oberkörper</div><div class="emeta">8 Übungen · 2×12 · ~80 Min.</div>
+    </button>
+    <button class="einheit-btn" id="btn-b" onclick="showEinheit('B')">
+      <div class="etag">Samstag</div><div class="ename">Einheit B — Unterkörper</div><div class="emeta">6 Übungen · 2×12 · ~75 Min.</div>
+    </button>
+  </div>
+
+  <div id="ea">
+    <div class="info-strip ca">
+      <div><div class="ilabel">Tag</div><div class="ivalue">Mittwoch</div></div>
+      <div><div class="ilabel">Sätze</div><div class="ivalue">2/Übung</div></div>
+      <div><div class="ilabel">Wdh.</div><div class="ivalue">12/Satz</div></div>
+      <div><div class="ilabel">Pause</div><div class="ivalue">90 Sek.</div></div>
+    </div>
+    <div class="tp-header">
+      <div style="font-size:13px;font-weight:600">Fortschritt Einheit A</div>
+      <div style="display:flex;align-items:center;gap:9px">
+        <span class="tp-count tc-a" id="pca">0/9</span>
+        <button class="btn-reset" onclick="resetTrain('a')">Zurücksetzen</button>
+      </div>
+    </div>
+    <div class="bar-bg"><div class="bar-fill fa" id="pba" style="width:0%"></div></div>
+    <div class="uebung-list" id="tba"></div>
+    <div class="complete" id="ca"><div class="ci">🏋️</div><div class="cm">Einheit A abgeschlossen!</div><div class="cs">500 ml Wasser · Harnsäure morgen früh messen.</div></div>
+  </div>
+
+  <div id="eb" style="display:none">
+    <div class="info-strip cb">
+      <div><div class="ilabel">Tag</div><div class="ivalue">Samstag</div></div>
+      <div><div class="ilabel">Sätze</div><div class="ivalue">2/Übung</div></div>
+      <div><div class="ilabel">Wdh.</div><div class="ivalue">12/Satz</div></div>
+      <div><div class="ilabel">Pause</div><div class="ivalue">90 Sek.</div></div>
+    </div>
+    <div class="tp-header">
+      <div style="font-size:13px;font-weight:600">Fortschritt Einheit B</div>
+      <div style="display:flex;align-items:center;gap:9px">
+        <span class="tp-count tc-b" id="pcb">0/7</span>
+        <button class="btn-reset" onclick="resetTrain('b')">Zurücksetzen</button>
+      </div>
+    </div>
+    <div class="bar-bg"><div class="bar-fill fb" id="pbb" style="width:0%"></div></div>
+    <div class="uebung-list" id="tbb"></div>
+    <div class="complete" id="cb"><div class="ci">🏋️</div><div class="cm">Einheit B abgeschlossen!</div><div class="cs">500 ml Wasser · Harnsäure morgen früh messen.</div></div>
+  </div>
+
+  <div class="src-box"><strong>Quelle:</strong> Ralston et al., <em>Sports Medicine</em> (2017) — 2 Sätze ausreichend für Muskelerhalt. Gewichte stabil, Kontrolle alle 3–6 Monate.</div>
+  <div class="warn-box">⚠️ <strong>Trainingstag:</strong> Min. 3,5–4 L Wasser · kein Zucker/Fructose · Harnsäure morgen früh nüchtern messen.</div>
+</section>
+
+<!-- CHECKLISTE -->
+<section id="check" class="section">
+  <div class="page-header"><h1>Gicht-Checkliste</h1><p>Für jeden Trainingstag — Mittwoch und Samstag</p></div>
+  <div class="card">
+    <div class="ph"><div class="pt">Fortschritt</div><div class="pc" id="ck-cnt">0/8</div></div>
+    <div class="pbar-bg"><div class="pbar-fill" id="ck-bar" style="width:0%"></div></div>
+    <div class="zt-label"><div class="zt-dot" style="background:#3d9be9"></div><span style="color:#3d9be9">Vor dem Training</span></div>
+    <div class="ci-item" onclick="toggleCI(this)"><div class="ci-box"></div><div class="ci-txt">500 ml Wasser vor dem Training getrunken</div></div>
+    <div class="ci-item" onclick="toggleCI(this)"><div class="ci-box"></div><div class="ci-txt">Kein Zucker / keine Fructose (kein Saft, Honig, Süßigkeiten, Eis)</div></div>
+    <div class="zt-label" style="margin-top:10px"><div class="zt-dot" style="background:#e9a03d"></div><span style="color:#e9a03d">Während des Trainings</span></div>
+    <div class="ci-item" onclick="toggleCI(this)"><div class="ci-box"></div><div class="ci-txt">Trinkflasche min. 1,5 L dabei — 300 ml alle 20–30 Min.</div></div>
+    <div class="ci-item" onclick="toggleCI(this)"><div class="ci-box"></div><div class="ci-txt">Pausen einhalten: 90 Sek. standard · 2 Min. bei Beinpresse/Rücken</div></div>
+    <div class="ci-item" onclick="toggleCI(this)"><div class="ci-box"></div><div class="ci-txt">Training max. 75–85 Minuten</div></div>
+    <div class="zt-label" style="margin-top:10px"><div class="zt-dot" style="background:#3abf7e"></div><span style="color:#3abf7e">Nach dem Training</span></div>
+    <div class="ci-item" onclick="toggleCI(this)"><div class="ci-box"></div><div class="ci-txt">500 ml Wasser direkt nach dem Training</div></div>
+    <div class="ci-item" onclick="toggleCI(this)"><div class="ci-box"></div><div class="ci-txt">Ernährung und Aktivität für Protokoll notiert</div></div>
+    <div class="zt-label" style="margin-top:10px"><div class="zt-dot" style="background:#7c5cbf"></div><span style="color:#7c5cbf">Abends / Folgetag</span></div>
+    <div class="ci-item" onclick="toggleCI(this)"><div class="ci-box"></div><div class="ci-txt">Gesamttrinkmenge ≥3,5–4 L? Harnsäure morgen früh nüchtern messen.</div></div>
+    <div id="ck-done" class="done-banner" style="display:none">
+      <div class="db-icon">✅</div><div class="db-msg">Alle Punkte erledigt!</div>
+      <div class="db-sub">Morgen früh Harnsäure messen und ins Protokoll eintragen.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PROTOKOLL -->
+<section id="proto" class="section">
+  <div class="page-header"><h1>Harnsäure-Protokoll</h1><p>Tägliche Erfassung · Zielwert ≤ 6,0 mg/dl</p></div>
+  <div class="card">
+    <div class="card-title">Neuer Eintrag</div>
+    <div class="pform">
+      <div class="frow">
+        <div class="fg"><label>Datum</label><input type="date" id="pd"></div>
+        <div class="fg"><label>Harnsäure (mg/dl)</label><input type="number" id="ph" step="0.1" min="3" max="12" placeholder="z.B. 5.8"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>RR systolisch</label><input type="number" id="ps" placeholder="125"></div>
+        <div class="fg"><label>RR diastolisch</label><input type="number" id="pdi" placeholder="75"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Puls (bpm)</label><input type="number" id="pp" placeholder="62"></div>
+        <div class="fg"><label>Aktivität Vortag</label>
+          <select id="pak">
+            <option value="">— wählen —</option>
+            <option>Ruhetag</option><option>Spaziergang</option><option>Gartenarbeit</option>
+            <option>Training Einheit A</option><option>Training Einheit B</option>
+            <option>Trainingsnachwirkung</option><option>Sonstiges</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Trinkmenge Vortag</label>
+          <select id="ptr">
+            <option value="">— wählen —</option>
+            <option>unter 1,5 L</option><option>1,5–2 L</option><option>2–3 L</option>
+            <option>3–3,5 L</option><option>über 3,5 L</option>
+          </select>
+        </div>
+        <div class="fg"><label>Schlaf Vortag</label>
+          <select id="psl">
+            <option value="">— wählen —</option>
+            <option>Gut</option><option>Mäßig</option><option>Schlecht</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label>Ernährung Vortag</label><textarea id="pe" placeholder="z.B. Quark, Apfel, Pizza..."></textarea></div>
+      <div class="fg"><label>Einflussfaktoren / Besonderheiten</label><textarea id="pn" placeholder="z.B. Stress, schlechter Schlaf..."></textarea></div>
+      <button class="btn-save" onclick="saveEintrag()">Eintrag speichern</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="vh"><div class="card-title" style="margin:0">Verlauf</div><button class="btn-del" onclick="clearAll()">Alle löschen</button></div>
+    <div class="srow" id="srow" style="display:none">
+      <div class="sbox"><div class="sv" id="s-avg">—</div><div class="sl">Ø mg/dl</div></div>
+      <div class="sbox"><div class="sv" id="s-best">—</div><div class="sl">Bestwert</div></div>
+      <div class="sbox"><div class="sv" id="s-ziel">—</div><div class="sl">Im Zielbereich</div></div>
+    </div>
+    <div id="v-empty" class="empty">Noch keine Einträge.</div>
+    <div class="table-wrap" id="v-table" style="display:none">
+      <table>
+        <thead><tr><th>Datum</th><th>Harnsäure</th><th>RR</th><th>Puls</th><th>Aktivität</th><th>Trinkmenge</th><th>Schlaf</th></tr></thead>
+        <tbody id="v-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="warn-box">⚠️ <strong>Eingaberegel:</strong> Aktivität, Ernährung, Trinkmenge, Schlaf = Vortag. Blutdruck + Puls = Messtag.</div>
+</section>
+
+<!-- AUSWERTUNG -->
+<section id="auswert" class="section">
+  <div class="page-header"><h1>Auswertung</h1><p>Verlauf, Statistiken und automatische Musteranalyse</p></div>
+  <div class="aw-stats" id="aw-stats"></div>
+  <div class="card">
+    <div class="card-title">Harnsäure-Verlauf</div>
+    <div class="filter-row" id="aw-filter">
+      <button class="fchip active" onclick="setFilter('alle',this)">Alle</button>
+      <button class="fchip" onclick="setFilter('Training Einheit A',this)">Einheit A</button>
+      <button class="fchip" onclick="setFilter('Training Einheit B',this)">Einheit B</button>
+      <button class="fchip" onclick="setFilter('Ruhetag',this)">Ruhetag</button>
+      <button class="fchip" onclick="setFilter('Gartenarbeit',this)">Gartenarbeit</button>
+    </div>
+    <div class="chart-wrap" id="aw-chart"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Ø Harnsäure nach Einflussfaktor</div>
+    <div class="fak-grid" id="aw-fak"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Automatische Musteranalyse</div>
+    <div class="muster-list" id="aw-muster"></div>
+  </div>
+</section>
+
+<!-- DATENSICHERUNG -->
+<section id="backup" class="section">
+  <div class="page-header"><h1>Datensicherung</h1><p>Export, Import und Auswertungsexport</p></div>
+  <div class="card">
+    <div class="card-title">Sicherung &amp; Wiederherstellung</div>
+    <div class="bk-grid">
+      <button class="bk-btn" onclick="exportJSON()">
+        <div class="bk-icon">📦</div><div class="bk-title">Vollsicherung (JSON)</div>
+        <div class="bk-desc">Chrome/Edge: Speicherort wählbar. Andere Browser: Download-Ordner.</div>
+      </button>
+      <button class="bk-btn" onclick="document.getElementById('imp-file').click()">
+        <div class="bk-icon">📂</div><div class="bk-title">Sicherung laden (JSON)</div>
+        <div class="bk-desc">Gespeicherte JSON-Datei einlesen und zusammenführen.</div>
+      </button>
+    </div>
+    <input type="file" id="imp-file" accept=".json" style="display:none" onchange="importJSON(this)">
+    <div class="bk-log" id="bk-log"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Export für Auswertung</div>
+    <div class="bk-grid">
+      <button class="bk-btn" onclick="exportCSV()">
+        <div class="bk-icon">📊</div><div class="bk-title">CSV-Export</div>
+        <div class="bk-desc">Chrome/Edge: Speicherort wählbar. Andere: Download-Ordner.</div>
+      </button>
+      <button class="bk-btn" onclick="exportClaudeText()">
+        <div class="bk-icon">🤖</div><div class="bk-title">Claude-Auswertung</div>
+        <div class="bk-desc">Strukturierten Text generieren — in Claude (Büro) einfügen.</div>
+      </button>
+    </div>
+    <div id="ct-box" style="display:none;margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Text für Claude</span>
+        <button class="btn-reset" onclick="copyClaudeText()" id="cp-btn">Kopieren</button>
+      </div>
+      <textarea id="ct-area" readonly style="width:100%;height:260px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px;font-size:11px;color:var(--muted);font-family:monospace;resize:vertical;line-height:1.6;"></textarea>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Datenlage</div>
+    <div id="bk-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;"></div>
+  </div>
+  <div class="info-box">
+    <strong>Speicherort:</strong> Chrome/Edge öffnet "Speichern unter"-Dialog (File System Access API). Firefox/Safari/Mobile: Download-Ordner automatisch.<br><br>
+    <strong>Empfehlung:</strong> Wöchentliche JSON-Vollsicherung in festen Ordner, z.B. <em>Dokumente/Sport-Gicht/</em>.<br><br>
+    <strong>Claude-Auswertung:</strong> Text kopieren → neues Gespräch mit Claude öffnen → einfügen und analysieren lassen.
+  </div>
+</section>
+
+</main>
+
+<script>
+// ══ NAV ══
+function showTab(id, tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  tab.classList.add('active');
+}
+
+// ══ TRAININGSPLAN ══
+const EINHEITEN = {
+  a: [
+    {name:'Cardio Aufwärmen', gerat:'', gew:'—', saetze:'—', wdh:"10'", pause:'—', hint:'Fahrrad/Laufband', done:false},
+    {name:'Rotator', gerat:'2', gew:'45 kg', saetze:2, wdh:12, pause:'90', hint:'Schulter-Vorbereitung — immer zuerst', done:false},
+    {name:'Arme/Brust gerade', gerat:'17', gew:'45 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
+    {name:'Arme/Brust nach hinten', gerat:'17', gew:'50–55 kg', saetze:2, wdh:12, pause:'90', hint:'S1:50 / S2:55 kg', done:false},
+    {name:'Brustpresse Sitz', gerat:'11', gew:'65 kg', saetze:2, wdh:12, pause:'90', hint:'Am Limit — Form vor Gewicht', done:false},
+    {name:'Butterfly Arme/Sitz', gerat:'49', gew:'40 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
+    {name:'Pulldown Sitz unten', gerat:'', gew:'55–65 kg', saetze:2, wdh:12, pause:'90', hint:'S1:55 / S2:65 kg', done:false},
+    {name:'Rücken Arm/Rolle', gerat:'1 · Rolle 3', gew:'85–95 kg', saetze:2, wdh:12, pause:'120', hint:'S1:85 / S2:95 kg', done:false},
+    {name:'Seitenhebemaschine', gerat:'49', gew:'40 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
+  ],
+  b: [
+    {name:'Cardio Aufwärmen', gerat:'', gew:'—', saetze:'—', wdh:"10'", pause:'—', hint:'Fahrrad/Laufband', done:false},
+    {name:'Beinpresse', gerat:'25', gew:'82,5 kg', saetze:2, wdh:12, pause:'120', hint:'Größte Gruppe — längere Pause', done:false},
+    {name:'Beinbeuger liegend/Rolle', gerat:'5 · Rolle 5 · Arm 3', gew:'45 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
+    {name:'Bauch-Beine', gerat:'18', gew:'70–80 kg', saetze:2, wdh:12, pause:'90', hint:'S1:70 / S2:80 kg', done:false},
+    {name:'Beine heben gerade', gerat:'19', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
+    {name:'Beine heben seitlich', gerat:'19', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
+    {name:'Hinten und überkreuzen', gerat:'29', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
+  ]
+};
+
+function saveWeights() {
+  const w = {};
+  ['a','b'].forEach(unit => EINHEITEN[unit].forEach((u,i) => {
+    w[unit+'-'+i] = { gew: u.gew, gerat: u.gerat };
+  }));
+  localStorage.setItem('sg-weights', JSON.stringify(w));
+}
+
+// Gespeicherte Werte laden — Format prüfen und ggf. ignorieren
+const rawWeights = localStorage.getItem('sg-weights');
+const savedWeights = rawWeights ? JSON.parse(rawWeights) : {};
+// Altes Format (Wert war direkt ein String statt Objekt) erkennen und verwerfen
+const weightsValid = !rawWeights || typeof Object.values(savedWeights)[0] === 'object';
+['a','b'].forEach(unit => {
+  EINHEITEN[unit].forEach((u,i) => {
+    if (!weightsValid) return; // altes Format — Standardwerte behalten
+    const key = unit+'-'+i;
+    const saved = savedWeights[key];
+    if (saved) {
+      if (saved.gew && saved.gew !== '') u.gew = saved.gew;
+      if (typeof saved.gerat === 'string') u.gerat = saved.gerat;
+    }
+  });
+});
+if (!weightsValid) localStorage.removeItem('sg-weights');
+
+let dragSrc = null;
+
+function renderEinheit(unit) {
+  const list = document.getElementById('tb'+unit);
+  const col = unit === 'a' ? 'ga' : 'gb';
+  list.innerHTML = '';
+  EINHEITEN[unit].forEach((u, i) => {
+    const pauseBadge = u.pause === '90' ? '<span class="pb p90">90 Sek.</span>'
+                     : u.pause === '120' ? '<span class="pb p120">2 Min.</span>' : '—';
+    const card = document.createElement('div');
+    card.className = 'uebung-card' + (u.done ? ' done' : '');
+    card.draggable = true;
+    card.dataset.idx = i;
+    card.dataset.unit = unit;
+    card.innerHTML = `
+      <div class="big-chk" onclick="toggleDone('${unit}',${i})">
+        <div class="big-chk-inner">✓</div>
+      </div>
+      <div class="drag-handle" title="Verschieben">⠿</div>
+      <div class="ucard-body">
+        <div class="ucard-top">
+          <span class="uidx">${i === 0 ? '↑' : i}</span>
+          <span class="un">${u.name}</span>
+        </div>
+        <div class="ucard-bottom">
+          ${u.gerat !== undefined ? `<span class="gerat-badge" onclick="editGerat(this,'${unit}',${i})" title="Tippen zum Ändern">📍 ${u.gerat || '+ Gerät'}</span>` : ''}
+          <span class="gew-display ${col}" onclick="editGewicht(this,'${unit}',${i})" title="Tippen zum Ändern">${u.gew}</span>
+          ${u.saetze !== '—' ? `<span style="font-size:11px;color:var(--muted)">${u.saetze}×${u.wdh}</span>` : `<span style="font-size:11px;color:var(--muted)">${u.wdh}</span>`}
+          ${pauseBadge}
+          ${u.hint && u.hint !== '—' ? `<span class="hint">${u.hint}</span>` : ''}
+        </div>
+      </div>`;
+    // Drag events
+    card.addEventListener('dragstart', e => {
+      dragSrc = card;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.uebung-card').forEach(c => c.classList.remove('drag-over'));
+    });
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (dragSrc && dragSrc !== card && dragSrc.dataset.unit === unit) {
+        document.querySelectorAll('.uebung-card').forEach(c => c.classList.remove('drag-over'));
+        card.classList.add('drag-over');
+      }
+    });
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      if (!dragSrc || dragSrc === card || dragSrc.dataset.unit !== unit) return;
+      const from = parseInt(dragSrc.dataset.idx);
+      const to = parseInt(card.dataset.idx);
+      const arr = EINHEITEN[unit];
+      const [moved] = arr.splice(from, 1);
+      arr.splice(to, 0, moved);
+      renderEinheit(unit);
+      updateTP(unit);
+    });
+    list.appendChild(card);
+  });
+  updateTP(unit);
+}
+
+function toggleDone(unit, idx) {
+  EINHEITEN[unit][idx].done = !EINHEITEN[unit][idx].done;
+  renderEinheit(unit);
+}
+
+function editGewicht(el, unit, idx) {
+  const current = EINHEITEN[unit][idx].gew;
+  const col = unit === 'a' ? 'ga' : 'gb';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = current;
+  input.className = 'gew-input';
+  el.replaceWith(input);
+  input.focus();
+  input.select();
+  function save() {
+    const val = input.value.trim() || current;
+    EINHEITEN[unit][idx].gew = val;
+    saveWeights();
+    renderEinheit(unit);
+  }
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } if (e.key === 'Escape') { input.value = current; save(); } });
+}
+
+function editGerat(el, unit, idx) {
+  const current = EINHEITEN[unit][idx].gerat || '';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = current;
+  input.className = 'gerat-input';
+  input.placeholder = 'Geräte-Nr.';
+  el.replaceWith(input);
+  input.focus();
+  input.select();
+  function save() {
+    EINHEITEN[unit][idx].gerat = input.value.trim();
+    saveWeights();
+    renderEinheit(unit);
+  }
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); save(); }
+    if (e.key === 'Escape') { input.value = current; save(); }
+  });
+}
+
+function updateTP(unit) {
+  const arr = EINHEITEN[unit];
+  const total = arr.length;
+  const done = arr.filter(u => u.done).length;
+  document.getElementById('pc'+unit).textContent = done+'/'+total;
+  document.getElementById('pb'+unit).style.width = (done/total*100)+'%';
+  document.getElementById('c'+unit).style.display = done === total ? 'block' : 'none';
+}
+
+function tc() {} // legacy stub — not used anymore
+
+function resetTrain(unit) {
+  EINHEITEN[unit].forEach(u => u.done = false);
+  renderEinheit(unit);
+}
+
+function showEinheit(e) {
+  document.getElementById('ea').style.display = e === 'A' ? 'block' : 'none';
+  document.getElementById('eb').style.display = e === 'B' ? 'block' : 'none';
+  document.getElementById('btn-a').className = 'einheit-btn' + (e === 'A' ? ' ea' : '');
+  document.getElementById('btn-b').className = 'einheit-btn' + (e === 'B' ? ' eb' : '');
+}
+function toggleCI(el) {
+  el.classList.toggle('chkd');
+  el.querySelector('.ci-box').textContent = el.classList.contains('chkd') ? '✓' : '';
+  const items = document.querySelectorAll('#check .ci-item');
+  const done = document.querySelectorAll('#check .ci-item.chkd').length;
+  document.getElementById('ck-cnt').textContent = done + '/' + items.length;
+  document.getElementById('ck-bar').style.width = (done / items.length * 100) + '%';
+  document.getElementById('ck-done').style.display = done === items.length ? 'block' : 'none';
+}
+
+// ══ PROTOKOLL ══
+let DATA = JSON.parse(localStorage.getItem('sg-proto') || '[]');
+
+if (!DATA.length) {
+  DATA = [
+    {d:'2026-06-14',h:5.8,s:'114',di:'74',p:'56',a:'Unbekannt',t:'',sl:'',e:'',n:''},
+    {d:'2026-06-15',h:6.0,s:'119',di:'84',p:'65',a:'Spaziergang',t:'2–3 L',sl:'Schlecht',e:'',n:'Schlechter Schlaf'},
+    {d:'2026-06-16',h:6.3,s:'133',di:'74',p:'61',a:'Ruhetag',t:'1,5–2 L',sl:'',e:'Brötchen, Salat, Joghurt',n:''},
+    {d:'2026-06-17',h:6.0,s:'125',di:'74',p:'61',a:'Gartenarbeit',t:'2–3 L',sl:'',e:'Quark, Apfel, Pizza',n:''},
+    {d:'2026-06-18',h:5.9,s:'125',di:'75',p:'54',a:'Gartenarbeit',t:'2–3 L',sl:'Schlecht',e:'',n:'Stress, schlechter Schlaf'},
+    {d:'2026-06-19',h:5.8,s:'130',di:'74',p:'62',a:'Gartenarbeit',t:'über 3,5 L',sl:'',e:'Nudeln, Salat, Knopers, Pommes',n:''},
+    {d:'2026-06-20',h:5.7,s:'135',di:'76',p:'56',a:'Ruhetag',t:'1,5–2 L',sl:'Schlecht',e:'Kartoffeln, Spinat, Buttermilch, Eis',n:''},
+    {d:'2026-06-21',h:7.6,s:'121',di:'71',p:'56',a:'Training Einheit A',t:'1,5–2 L',sl:'Schlecht',e:'Brötchen, Salat, Rührei',n:'3h Training — Harnsäureanstieg'},
+    {d:'2026-06-22',h:6.7,s:'121',di:'71',p:'56',a:'Trainingsnachwirkung',t:'2–3 L',sl:'',e:'Obstsalat, Hering 30g, Milchreis',n:''},
+    {d:'2026-06-24',h:6.7,s:'',di:'',p:'',a:'',t:'',sl:'',e:'',n:'RR nicht gemessen'},
+    {d:'2026-06-25',h:6.3,s:'',di:'',p:'',a:'',t:'',sl:'',e:'',n:'RR nicht gemessen'},
+    {d:'2026-06-26',h:5.5,s:'',di:'',p:'',a:'',t:'',sl:'',e:'',n:'RR nicht gemessen — neuer Bestwert'},
+  ];
+  localStorage.setItem('sg-proto', JSON.stringify(DATA));
+}
+
+document.getElementById('pd').value = new Date().toISOString().slice(0,10);
+
+function saveEintrag() {
+  const datum = document.getElementById('pd').value;
+  const harn = parseFloat(document.getElementById('ph').value);
+  if (!datum || isNaN(harn)) { alert('Datum und Harnsäure sind Pflicht.'); return; }
+  const e = {d:datum,h:harn,s:document.getElementById('ps').value,di:document.getElementById('pdi').value,
+    p:document.getElementById('pp').value,a:document.getElementById('pak').value,
+    t:document.getElementById('ptr').value,sl:document.getElementById('psl').value,
+    e:document.getElementById('pe').value,n:document.getElementById('pn').value};
+  const idx = DATA.findIndex(x => x.d === datum);
+  if (idx >= 0) DATA[idx] = e; else DATA.push(e);
+  DATA.sort((a,b) => a.d.localeCompare(b.d));
+  localStorage.setItem('sg-proto', JSON.stringify(DATA));
+  ['ph','ps','pdi','pp','pe','pn'].forEach(id => document.getElementById(id).value='');
+  ['pak','ptr','psl'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('pd').value = new Date().toISOString().slice(0,10);
+  renderVerlauf(); renderBkStats();
+}
+
+function wc(v) { return v<=6?'wg':v<=7?'wo':'wh'; }
+function fd(d) { return new Date(d+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'}); }
+function calcAvg(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null; }
+
+function renderVerlauf() {
+  const empty = document.getElementById('v-empty');
+  const table = document.getElementById('v-table');
+  const sr = document.getElementById('srow');
+  if (!DATA.length) { empty.style.display='block'; table.style.display='none'; sr.style.display='none'; return; }
+  empty.style.display='none'; table.style.display='block'; sr.style.display='grid';
+  const vals = DATA.map(e=>e.h);
+  document.getElementById('s-avg').textContent = calcAvg(vals).toFixed(2);
+  document.getElementById('s-best').textContent = Math.min(...vals).toFixed(1);
+  const iz = vals.filter(v=>v<=6).length;
+  document.getElementById('s-ziel').textContent = iz+'/'+vals.length;
+  document.getElementById('v-body').innerHTML = [...DATA].reverse().map(e=>`
+    <tr>
+      <td>${fd(e.d)}</td>
+      <td><span class="wc ${wc(e.h)}">${e.h} mg/dl</span></td>
+      <td style="color:var(--muted)">${e.s&&e.di?e.s+'/'+e.di:'—'}</td>
+      <td style="color:var(--muted)">${e.p||'—'}</td>
+      <td style="color:var(--muted);font-size:11px">${e.a||'—'}</td>
+      <td style="color:var(--muted);font-size:11px">${e.t||'—'}</td>
+      <td style="color:var(--muted);font-size:11px">${e.sl||'—'}</td>
+    </tr>`).join('');
+}
+
+function clearAll() {
+  if (!confirm('Alle Einträge löschen?')) return;
+  DATA=[]; localStorage.removeItem('sg-proto'); renderVerlauf(); renderBkStats();
+}
+
+// ══ AUSWERTUNG ══
+let aktFilter = 'alle';
+
+function setFilter(f, el) {
+  aktFilter = f;
+  document.querySelectorAll('.fchip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderAuswertung();
+}
+
+function renderAuswertung() {
+  if (!DATA.length) {
+    ['aw-stats','aw-chart','aw-fak','aw-muster'].forEach(id => {
+      document.getElementById(id).innerHTML = '<div class="empty">Noch keine Daten im Protokoll.</div>';
+    });
+    return;
+  }
+
+  const gefiltert = aktFilter === 'alle' ? DATA : DATA.filter(e => (e.a||'').includes(aktFilter));
+  const vals = DATA.map(e => e.h);
+  const avgAll = calcAvg(vals);
+  const best = Math.min(...vals);
+  const worst = Math.max(...vals);
+  const imZiel = vals.filter(v => v <= 6.0).length;
+
+  // STATISTIK
+  document.getElementById('aw-stats').innerHTML = `
+    <div class="aw-stat"><div class="as-v" style="color:var(--a)">${avgAll.toFixed(2)}</div><div class="as-l">Ø mg/dl</div></div>
+    <div class="aw-stat"><div class="as-v" style="color:var(--good)">${best.toFixed(1)}</div><div class="as-l">Bestwert</div></div>
+    <div class="aw-stat"><div class="as-v" style="color:${worst>7?'var(--bad)':'var(--warn)'}">${worst.toFixed(1)}</div><div class="as-l">Höchstwert</div></div>
+    <div class="aw-stat"><div class="as-v" style="color:var(--good)">${imZiel}</div><div class="as-l">Tage im Ziel</div></div>
+    <div class="aw-stat"><div class="as-v" style="color:var(--warn)">${vals.length-imZiel}</div><div class="as-l">Tage über Ziel</div></div>
+    <div class="aw-stat"><div class="as-v">${Math.round(imZiel/vals.length*100)}%</div><div class="as-l">Ziel-Quote</div></div>
+  `;
+
+  // DIAGRAMM
+  const anzeige = gefiltert.slice(-30);
+  if (anzeige.length < 2) { document.getElementById('aw-chart').innerHTML='<div class="empty">Zu wenige Daten für diesen Filter.</div>'; }
+  else {
+    const W = Math.max(380, anzeige.length * 36);
+    const H = 175, pl=42, pr=28, pt=14, pb=38;
+    const cw = W-pl-pr, ch = H-pt-pb;
+    const minY = Math.min(4.5, ...anzeige.map(e=>e.h));
+    const maxY = Math.max(8.0, ...anzeige.map(e=>e.h));
+    const sx = i => pl + (i/(anzeige.length-1))*cw;
+    const sy = v => pt + ch - ((v-minY)/(maxY-minY))*ch;
+
+    const linie = anzeige.map((e,i) => sx(i).toFixed(1)+','+sy(e.h).toFixed(1)).join(' ');
+    const flaeche = sx(0).toFixed(1)+','+(pt+ch).toFixed(1)+' '+linie+' '+sx(anzeige.length-1).toFixed(1)+','+(pt+ch).toFixed(1);
+
+    let gitter='';
+    for (let v=Math.ceil(minY*2)/2; v<=maxY+0.5; v+=0.5) {
+      const y = sy(v).toFixed(1);
+      const isZiel = Math.abs(v-6.0)<0.01;
+      gitter += `<line x1="${pl}" y1="${y}" x2="${W-pr}" y2="${y}" stroke="${isZiel?'#3abf7e':'#2a2f42'}" stroke-width="${isZiel?1.5:.5}" stroke-dasharray="${isZiel?'':'3,3'}"/>`;
+      if (Number.isInteger(v)||isZiel) gitter += `<text x="${pl-5}" y="${y}" text-anchor="end" dominant-baseline="middle" fill="#7a859e" font-size="10">${v.toFixed(1)}</text>`;
+    }
+    gitter += `<text x="${W-pr+3}" y="${sy(6.0).toFixed(1)}" dominant-baseline="middle" fill="#3abf7e" font-size="9" font-weight="700">Ziel</text>`;
+
+    let punkte='', xlabels='';
+    anzeige.forEach((e,i) => {
+      const x=sx(i).toFixed(1), y=sy(e.h).toFixed(1);
+      const col = e.h<=6?'#3abf7e':e.h<=7?'#e9a03d':'#e95c5c';
+      const isTrain = (e.a||'').includes('Training');
+      punkte += `<circle cx="${x}" cy="${y}" r="${isTrain?6:4}" fill="${col}" stroke="var(--surface)" stroke-width="1.5"><title>${e.d}: ${e.h} mg/dl${e.a?' | '+e.a:''}</title></circle>`;
+      if (i===0||i===anzeige.length-1||i%Math.max(1,Math.floor(anzeige.length/7))===0) {
+        const dt=new Date(e.d+'T00:00:00');
+        xlabels += `<text x="${x}" y="${H-6}" text-anchor="middle" fill="#7a859e" font-size="9">${dt.getDate()}.${dt.getMonth()+1}.</text>`;
+      }
+    });
+
+    document.getElementById('aw-chart').innerHTML = `
+      <svg width="100%" viewBox="0 0 ${W} ${H}" style="min-width:${Math.min(W,340)}px">
+        ${gitter}
+        <polyline points="${flaeche}" fill="rgba(61,155,233,.08)" stroke="none"/>
+        <polyline points="${linie}" fill="none" stroke="var(--a)" stroke-width="2" stroke-linejoin="round"/>
+        ${punkte}${xlabels}
+      </svg>
+      <div style="font-size:10px;color:var(--dim);margin-top:5px;text-align:center">
+        <span style="color:var(--good)">●</span> ≤6,0 &nbsp;
+        <span style="color:var(--warn)">●</span> 6,0–7,0 &nbsp;
+        <span style="color:var(--bad)">●</span> >7,0 &nbsp;
+        ⬤ Trainingstag (größer)
+      </div>`;
+  }
+
+  // FAKTOREN
+  function gruppeAuswerten(key, titel) {
+    const g = {};
+    DATA.forEach(e => {
+      const k = e[key] || 'Unbekannt';
+      if (!g[k]) g[k] = [];
+      g[k].push(e.h);
+    });
+    const zeilen = Object.entries(g).filter(([,v])=>v.length>0)
+      .sort((a,b) => calcAvg(b[1])-calcAvg(a[1]))
+      .map(([label,werte]) => {
+        const a = calcAvg(werte).toFixed(2);
+        const col = a<=6?'var(--good)':a<=7?'var(--warn)':'var(--bad)';
+        return `<div class="fak-row"><span class="fak-label">${label} <span style="color:var(--dim);font-size:10px">(n=${werte.length})</span></span><span class="fak-val" style="color:${col}">${a}</span></div>`;
+      }).join('');
+    return `<div class="fak-box"><div class="fak-title">${titel}</div>${zeilen}</div>`;
+  }
+  document.getElementById('aw-fak').innerHTML =
+    gruppeAuswerten('a','Aktivität Vortag') +
+    gruppeAuswerten('t','Trinkmenge Vortag') +
+    gruppeAuswerten('sl','Schlaf Vortag');
+
+  // MUSTERANALYSE
+  const muster = [];
+  const trainD = DATA.filter(e=>(e.a||'').includes('Training Einheit'));
+  const restD = DATA.filter(e=>!(e.a||'').includes('Training'));
+  if (trainD.length && restD.length) {
+    const at = calcAvg(trainD.map(e=>e.h)).toFixed(2);
+    const ar = calcAvg(restD.map(e=>e.h)).toFixed(2);
+    const diff = (at-ar).toFixed(2);
+    muster.push({t:'neg',ti:'Trainingseffekt',tx:`Ø nach Training: ${at} mg/dl · Ø ohne Training: ${ar} mg/dl · Differenz: +${diff} mg/dl. ${diff>1?'Deutlicher Anstieg — Trinkmenge und Trainingsdauer kontrollieren.':'Moderater Anstieg.'}`});
+  }
+  const gutSl = DATA.filter(e=>e.sl==='Gut').map(e=>e.h);
+  const schSl = DATA.filter(e=>e.sl==='Schlecht').map(e=>e.h);
+  if (gutSl.length && schSl.length) {
+    const dsl = (calcAvg(schSl)-calcAvg(gutSl)).toFixed(2);
+    muster.push({t:dsl>0.3?'warn':'gut',ti:'Schlafqualität',tx:`Ø guter Schlaf: ${calcAvg(gutSl).toFixed(2)} · Ø schlechter Schlaf: ${calcAvg(schSl).toFixed(2)} · Differenz: ${dsl>0?'+':''}${dsl} mg/dl. ${dsl>0.3?'Schlechter Schlaf erhöht den Wert messbar.':'Kein eindeutiger Schlafeffekt erkennbar.'}`});
+  }
+  const vielT = DATA.filter(e=>e.t&&(e.t.includes('3')||e.t.includes('über'))).map(e=>e.h);
+  const wenT = DATA.filter(e=>e.t&&e.t.includes('1,5')).map(e=>e.h);
+  if (vielT.length && wenT.length) {
+    const dt = (calcAvg(wenT)-calcAvg(vielT)).toFixed(2);
+    muster.push({t:dt>0.2?'info':'gut',ti:'Trinkmenge',tx:`Ø bei >3 L: ${calcAvg(vielT).toFixed(2)} · Ø bei 1,5–2 L: ${calcAvg(wenT).toFixed(2)} · Differenz: ${dt>0?'+':''}${dt} mg/dl. ${dt>0.2?'Mehr Trinken zeigt niedrigere Werte.':'Kein eindeutiger Trinkmengeneffekt erkennbar.'}`});
+  }
+  if (vals.length >= 4) {
+    const halb = Math.floor(vals.length/2);
+    const e1 = calcAvg(vals.slice(0,halb)).toFixed(2);
+    const e2 = calcAvg(vals.slice(halb)).toFixed(2);
+    const tr = (e2-e1).toFixed(2);
+    muster.push({t:tr<-0.1?'gut':tr>0.1?'neg':'info',ti:'Gesamttrend',tx:`Erste Hälfte: Ø ${e1} mg/dl · Zweite Hälfte: Ø ${e2} mg/dl. ${tr<-0.1?'📉 Positiver Trend — Werte sinken.':tr>0.1?'📈 Negativer Trend — Werte steigen.':'→ Kein klarer Trend, Werte stabil.'}`});
+  }
+  const quote = Math.round(imZiel/vals.length*100);
+  muster.push({t:quote>=70?'gut':quote>=50?'warn':'neg',ti:'Zielbereich-Quote',tx:`${imZiel} von ${vals.length} Messungen (${quote}%) ≤6,0 mg/dl. ${quote>=70?'Gute Kontrolle.':quote>=50?'Verbesserungspotenzial vorhanden.':'Mehr als die Hälfte über Ziel — ärztliche Rücksprache.'}`});
+
+  document.getElementById('aw-muster').innerHTML = muster.map(m=>
+    `<div class="mi ${m.t}"><strong>${m.ti}</strong>${m.tx}</div>`).join('');
+}
+
+// ══ DATENSICHERUNG ══
+function showLog(msg, ok=true) {
+  const el = document.getElementById('bk-log');
+  el.style.display='block';
+  el.style.color = ok ? 'var(--good)' : 'var(--bad)';
+  el.textContent = (ok?'✓ ':'✗ ') + msg;
+  setTimeout(() => el.style.display='none', 4000);
+}
+
+async function exportJSON() {
+  if (!DATA.length) { showLog('Keine Daten vorhanden.', false); return; }
+  const inhalt = JSON.stringify({version:1, exportDatum:new Date().toISOString(), eintraege:DATA}, null, 2);
+  const dateiname = 'sport-gicht-' + new Date().toISOString().slice(0,10) + '.json';
+  if (window.showSaveFilePicker) {
+    try {
+      const h = await window.showSaveFilePicker({suggestedName:dateiname,types:[{description:'JSON',accept:{'application/json':['.json']}}]});
+      const w = await h.createWritable(); await w.write(inhalt); await w.close();
+      showLog('Gespeichert: ' + h.name); return;
+    } catch(e) { if (e.name==='AbortError') return; }
+  }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([inhalt],{type:'application/json'}));
+  a.download=dateiname; a.click();
+  showLog('Gespeichert im Download-Ordner ('+DATA.length+' Einträge).');
+}
+
+function importJSON(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const raw = JSON.parse(ev.target.result);
+      const imp = raw.eintraege || raw;
+      if (!Array.isArray(imp)) throw new Error('Ungültiges Format');
+      if (!confirm('Sicherung einlesen? '+imp.length+' Einträge werden zusammengeführt.')) return;
+      imp.forEach(neu => {
+        const idx = DATA.findIndex(x => x.d === neu.d);
+        if (idx>=0) DATA[idx]=neu; else DATA.push(neu);
+      });
+      DATA.sort((a,b)=>a.d.localeCompare(b.d));
+      localStorage.setItem('sg-proto', JSON.stringify(DATA));
+      renderVerlauf(); renderBkStats();
+      showLog('Eingelesen: '+imp.length+' Einträge.');
+    } catch(e) { showLog('Fehler: '+e.message, false); }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+async function exportCSV() {
+  if (!DATA.length) { showLog('Keine Daten vorhanden.', false); return; }
+  const header = ['Datum','Harnsa_mgdl','RR_sys','RR_dia','Puls','Aktivitaet','Trinkmenge','Schlaf','Ernaehrung','Notiz'];
+  const rows = DATA.map(e=>[e.d,e.h,e.s||'',e.di||'',e.p||'',e.a||'',e.t||'',e.sl||'',e.e||'',e.n||'']
+    .map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';'));
+  const csv = '\uFEFF' + [header.join(';'),...rows].join('\r\n');
+  const dateiname = 'sport-gicht-' + new Date().toISOString().slice(0,10) + '.csv';
+  if (window.showSaveFilePicker) {
+    try {
+      const h = await window.showSaveFilePicker({suggestedName:dateiname,types:[{description:'CSV',accept:{'text/csv':['.csv']}}]});
+      const w = await h.createWritable(); await w.write(csv); await w.close();
+      showLog('CSV gespeichert: '+h.name); return;
+    } catch(e) { if (e.name==='AbortError') return; }
+  }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=dateiname; a.click();
+  showLog('CSV im Download-Ordner gespeichert.');
+}
+
+function exportClaudeText() {
+  if (!DATA.length) { showLog('Keine Daten vorhanden.', false); return; }
+  const vals = DATA.map(e=>e.h);
+  const avgV = calcAvg(vals).toFixed(2);
+  const iz = vals.filter(v=>v<=6).length;
+  let txt = `# PROJEKT SPORT & GICHT — AUSWERTUNGSDATEN\nExportiert: ${new Date().toLocaleDateString('de-DE')}\n\n`;
+  txt += `## Zusammenfassung\n- Einträge: ${DATA.length}\n- Zeitraum: ${DATA[0].d} bis ${DATA[DATA.length-1].d}\n`;
+  txt += `- Ø Harnsäure: ${avgV} mg/dl\n- Bestwert: ${Math.min(...vals)} mg/dl\n- Im Ziel (≤6,0): ${iz}/${DATA.length} (${Math.round(iz/DATA.length*100)}%)\n`;
+  txt += `- Medikament: Allopurinol 150 mg täglich\n\n`;
+  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität | Trinkmenge | Schlaf | Ernährung | Notiz\n`;
+  txt += `------|-----------|-----|------|-----------|------------|--------|-----------|------\n`;
+  DATA.forEach(e => { txt += `${e.d} | ${e.h} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.a||'—'} | ${e.t||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
+  txt += `\n## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?\n`;
+  document.getElementById('ct-area').value = txt;
+  document.getElementById('ct-box').style.display = 'block';
+  document.getElementById('cp-btn').textContent = 'Kopieren';
+}
+
+function copyClaudeText() {
+  navigator.clipboard.writeText(document.getElementById('ct-area').value).then(() => {
+    document.getElementById('cp-btn').textContent = '✓ Kopiert!';
+    setTimeout(() => document.getElementById('cp-btn').textContent = 'Kopieren', 2500);
+  });
+}
+
+function renderBkStats() {
+  const el = document.getElementById('bk-stats'); if (!el) return;
+  const vals = DATA.map(e=>e.h);
+  const letzter = DATA.length ? DATA[DATA.length-1] : null;
+  el.innerHTML = `
+    <div class="sbox"><div class="sv">${DATA.length}</div><div class="sl">Einträge gesamt</div></div>
+    <div class="sbox"><div class="sv">${letzter?fd(letzter.d):'—'}</div><div class="sl">Letzter Eintrag</div></div>
+    <div class="sbox"><div class="sv">${vals.length?calcAvg(vals).toFixed(1):'—'}</div><div class="sl">Ø Harnsäure</div></div>`;
+}
+
+// INIT
+renderVerlauf();
+renderBkStats();
+renderEinheit('a');
+renderEinheit('b');
+</script>
+</body>
+</html>
