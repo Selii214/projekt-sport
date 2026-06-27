@@ -17,7 +17,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 nav{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;padding:0 12px;}
 .nav-brand{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:10px 0 4px;}
 .nav-brand span{color:var(--a);}
-.nav-tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--border);}
+.nav-tabs{display:grid;grid-template-columns:repeat(6,1fr);border-top:1px solid var(--border);}
 .nav-tab{padding:9px 2px;font-size:10px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;text-align:center;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--font);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .nav-tab:hover{color:var(--text);}
 .nav-tab.active{color:var(--a);border-bottom-color:var(--a);}
@@ -67,9 +67,15 @@ main{max-width:780px;margin:0 auto;padding:24px 14px 60px;}
 .big-chk-inner{width:28px;height:28px;border-radius:7px;border:2px solid var(--dim);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;transition:all .15s;color:transparent;}
 .uebung-card.done .big-chk-inner{border-color:var(--good);background:var(--good);color:#fff;}
 
-/* DRAG HANDLE */
-.drag-handle{width:28px;min-width:28px;height:60px;display:flex;align-items:center;justify-content:center;cursor:grab;color:var(--dim);font-size:14px;flex-shrink:0;border-right:1px solid var(--border);}
-.drag-handle:active{cursor:grabbing;}
+/* VERSCHIEBEN */
+.move-btns{display:flex;flex-direction:column;width:28px;min-width:28px;border-right:1px solid var(--border);flex-shrink:0;}
+.move-btn{flex:1;background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;font-family:var(--font);transition:all .15s;padding:0;}
+.move-btn:hover:not(:disabled){color:var(--a);background:rgba(61,155,233,.08);}
+.move-btn:disabled{opacity:.2;cursor:default;}
+.hs-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;}
+.hs-g{background:rgba(58,191,126,.15);color:var(--good);}
+.hs-w{background:rgba(233,160,61,.15);color:var(--warn);}
+.hs-b{background:rgba(233,92,92,.15);color:var(--bad);}
 
 /* KARTEN-INHALT */
 .ucard-body{flex:1;padding:10px 12px;min-width:0;}
@@ -164,6 +170,46 @@ main{max-width:780px;margin:0 auto;padding:24px 14px 60px;}
 .fak-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;}
 .fak-label{color:var(--muted);}.fak-val{font-weight:700;}
 
+/* VERLAUF */
+.vlauf-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.vlauf-tab{padding:9px 16px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--font);transition:all .15s;}
+.vlauf-tab.active{color:var(--a);border-bottom-color:var(--a);}
+.vlauf-pane{display:none;}.vlauf-pane.active{display:block;}
+.train-log-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.train-log-date{font-size:12px;font-weight:700;color:var(--text);}
+.train-log-unit{font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;}
+.tlu-a{background:rgba(61,155,233,.15);color:var(--a);}
+.tlu-b{background:rgba(124,92,191,.15);color:var(--b);}
+.train-log-dauer{font-size:11px;color:var(--muted);}
+.btn-log-del{background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:2px 6px;}
+.btn-log-del:hover{color:var(--bad);}
+.gew-log-uebung{font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.gew-log-row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px;}
+.gew-log-val{font-weight:700;color:var(--a);}
+.gew-log-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:8px;}
+.log-empty{text-align:center;padding:30px;color:var(--dim);font-size:13px;}
+.btn-train-done{background:var(--good);color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);width:100%;margin-top:8px;}
+.btn-train-done:hover{opacity:.85;}
+
+/* VERLAUF PROTOKOLL-KARTEN */
+.vp-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+.vp-card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.vp-date{font-size:15px;font-weight:800;color:var(--text);}
+.vp-hs{font-size:22px;font-weight:900;line-height:1;}
+.vp-hs-unit{font-size:11px;font-weight:600;color:var(--muted);margin-left:2px;}
+.vp-hs.gut{color:var(--good);}.vp-hs.warn{color:var(--warn);}.vp-hs.bad{color:var(--bad);}
+.vp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-bottom:10px;}
+.vp-field{display:flex;flex-direction:column;gap:2px;}
+.vp-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--dim);}
+.vp-value{font-size:13px;font-weight:600;color:var(--text);}
+.vp-value.muted{color:var(--muted);}
+.vp-full{margin-bottom:6px;}
+.vp-actions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.vp-btn-edit{flex:1;background:rgba(61,155,233,.12);border:1px solid rgba(61,155,233,.3);color:var(--a);border-radius:7px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.vp-btn-edit:hover{background:rgba(61,155,233,.22);}
+.vp-btn-del{background:rgba(233,92,92,.1);border:1px solid rgba(233,92,92,.25);color:var(--bad);border-radius:7px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.vp-btn-del:hover{background:rgba(233,92,92,.22);}
+
 /* BACKUP */
 .bk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .bk-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px 14px;text-align:left;cursor:pointer;transition:all .15s;font-family:var(--font);color:var(--text);width:100%;}
@@ -185,16 +231,17 @@ main{max-width:780px;margin:0 auto;padding:24px 14px 60px;}
   th:last-child,td:last-child{display:none;}
 }
 </style>
-<script type="text/javascript" nonce="581387cb04fe451c8cbcfd667e0" src="//injections.adguard.org?ts=1782494072178&amp;type=content-script&amp;dmn=mail.infomaniak.com&amp;url=https%3A%2F%2Fmail.infomaniak.com%2Fapi%2Fmail%2F450efbfb-30f7-36fd-bc59-e67ba9e6d4d0%2Ffolder%2FeJxzKUpMKykGAAfpAmU-%2Fmessage%2F2752%2Fattachment%2F2&amp;app=comet.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=0"></script><script type="text/javascript" nonce="581387cb04fe451c8cbcfd667e0" src="//injections.adguard.org?ts=1782494072178&amp;name=AdGuard%20Extra&amp;name=AdGuard%20Popup%20Blocker&amp;type=user-script"></script></head>
+</head>
 <body>
 
 <nav>
   <div class="nav-brand">Projekt <span>Sport</span></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showTab('plan',this)">📋 Plan</button>
+    <button class="nav-tab" onclick="showTab('verlauf',this);renderVPList()">📅 Verlauf</button>
     <button class="nav-tab" onclick="showTab('check',this)">✅ Check</button>
     <button class="nav-tab" onclick="showTab('proto',this)">📊 Protokoll</button>
-    <button class="nav-tab" onclick="showTab('auswert',this);renderAuswertung()">📈 Auswertung</button>
+    <button class="nav-tab" onclick="showTab('auswert',this);renderAuswertung()">📈 Analyse</button>
     <button class="nav-tab" onclick="showTab('backup',this)">💾 Sicherung</button>
   </div>
 </nav>
@@ -230,7 +277,11 @@ main{max-width:780px;margin:0 auto;padding:24px 14px 60px;}
     </div>
     <div class="bar-bg"><div class="bar-fill fa" id="pba" style="width:0%"></div></div>
     <div class="uebung-list" id="tba"></div>
-    <div class="complete" id="ca"><div class="ci">🏋️</div><div class="cm">Einheit A abgeschlossen!</div><div class="cs">500 ml Wasser · Harnsäure morgen früh messen.</div></div>
+    <div class="complete" id="ca">
+      <div class="ci">🏋️</div><div class="cm">Einheit A abgeschlossen!</div>
+      <div class="cs">500 ml Wasser · Harnsäure morgen früh messen.</div>
+      <button class="btn-train-done" onclick="logTraining('a')">✅ Training im Verlauf speichern</button>
+    </div>
   </div>
 
   <div id="eb" style="display:none">
@@ -249,11 +300,39 @@ main{max-width:780px;margin:0 auto;padding:24px 14px 60px;}
     </div>
     <div class="bar-bg"><div class="bar-fill fb" id="pbb" style="width:0%"></div></div>
     <div class="uebung-list" id="tbb"></div>
-    <div class="complete" id="cb"><div class="ci">🏋️</div><div class="cm">Einheit B abgeschlossen!</div><div class="cs">500 ml Wasser · Harnsäure morgen früh messen.</div></div>
+    <div class="complete" id="cb">
+      <div class="ci">🏋️</div><div class="cm">Einheit B abgeschlossen!</div>
+      <div class="cs">500 ml Wasser · Harnsäure morgen früh messen.</div>
+      <button class="btn-train-done" onclick="logTraining('b')">✅ Training im Verlauf speichern</button>
+    </div>
   </div>
 
   <div class="src-box"><strong>Quelle:</strong> Ralston et al., <em>Sports Medicine</em> (2017) — 2 Sätze ausreichend für Muskelerhalt. Gewichte stabil, Kontrolle alle 3–6 Monate.</div>
   <div class="warn-box">⚠️ <strong>Trainingstag:</strong> Min. 3,5–4 L Wasser · kein Zucker/Fructose · Harnsäure morgen früh nüchtern messen.</div>
+</section>
+
+<!-- VERLAUF -->
+<section id="verlauf" class="section">
+  <div class="page-header"><h1>Verlauf</h1><p>Einträge kontrollieren und korrigieren</p></div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="vlauf-tabs" style="margin:0;padding:0 16px">
+      <button class="vlauf-tab active" onclick="showVlaufTab('protokoll',this)">📋 Protokoll-Einträge</button>
+      <button class="vlauf-tab" onclick="showVlaufTab('training',this)">🏋️ Training-Einträge</button>
+    </div>
+
+    <!-- PROTOKOLL-EINTRÄGE -->
+    <div class="vlauf-pane active" id="vp-protokoll" style="padding:14px">
+      <div id="vp-empty" class="log-empty">Noch keine Protokoll-Einträge vorhanden.</div>
+      <div id="vp-list"></div>
+    </div>
+
+    <!-- TRAINING-EINTRÄGE -->
+    <div class="vlauf-pane" id="vp-training" style="padding:14px">
+      <div id="tlog-empty" class="log-empty">Noch keine Trainings gespeichert.</div>
+      <div id="tlog-list"></div>
+    </div>
+  </div>
 </section>
 
 <!-- CHECKLISTE -->
@@ -379,12 +458,12 @@ main{max-width:780px;margin:0 auto;padding:24px 14px 60px;}
         <div class="bk-icon">📦</div><div class="bk-title">Vollsicherung (JSON)</div>
         <div class="bk-desc">Chrome/Edge: Speicherort wählbar. Andere Browser: Download-Ordner.</div>
       </button>
-      <button class="bk-btn" onclick="document.getElementById('imp-file').click()">
+      <label class="bk-btn" style="cursor:pointer;display:block;text-align:center;position:relative;overflow:hidden">
         <div class="bk-icon">📂</div><div class="bk-title">Sicherung laden (JSON)</div>
         <div class="bk-desc">Gespeicherte JSON-Datei einlesen und zusammenführen.</div>
-      </button>
-    </div>
-    <input type="file" id="imp-file" accept=".json" style="display:none" onchange="importJSON(this)">
+        <input type="file" id="imp-file" accept=".json,.JSON" onchange="importJSON(this)"
+          style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:0">
+      </label>
     <div class="bk-log" id="bk-log"></div>
   </div>
   <div class="card">
@@ -497,7 +576,10 @@ function renderEinheit(unit) {
       <div class="big-chk" onclick="toggleDone('${unit}',${i})">
         <div class="big-chk-inner">✓</div>
       </div>
-      <div class="drag-handle" title="Verschieben">⠿</div>
+      <div class="move-btns">
+        <button class="move-btn" onclick="moveUebung('${unit}',${i},-1)" ${i===0?'disabled':''}>▲</button>
+        <button class="move-btn" onclick="moveUebung('${unit}',${i},1)" ${i===EINHEITEN[unit].length-1?'disabled':''}>▼</button>
+      </div>
       <div class="ucard-body">
         <div class="ucard-top">
           <span class="uidx">${i === 0 ? '↑' : i}</span>
@@ -511,38 +593,18 @@ function renderEinheit(unit) {
           ${u.hint && u.hint !== '—' ? `<span class="hint">${u.hint}</span>` : ''}
         </div>
       </div>`;
-    // Drag events
-    card.addEventListener('dragstart', e => {
-      dragSrc = card;
-      card.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    card.addEventListener('dragend', () => {
-      card.classList.remove('dragging');
-      document.querySelectorAll('.uebung-card').forEach(c => c.classList.remove('drag-over'));
-    });
-    card.addEventListener('dragover', e => {
-      e.preventDefault();
-      if (dragSrc && dragSrc !== card && dragSrc.dataset.unit === unit) {
-        document.querySelectorAll('.uebung-card').forEach(c => c.classList.remove('drag-over'));
-        card.classList.add('drag-over');
-      }
-    });
-    card.addEventListener('drop', e => {
-      e.preventDefault();
-      card.classList.remove('drag-over');
-      if (!dragSrc || dragSrc === card || dragSrc.dataset.unit !== unit) return;
-      const from = parseInt(dragSrc.dataset.idx);
-      const to = parseInt(card.dataset.idx);
-      const arr = EINHEITEN[unit];
-      const [moved] = arr.splice(from, 1);
-      arr.splice(to, 0, moved);
-      renderEinheit(unit);
-      updateTP(unit);
-    });
+    card.draggable = false;
     list.appendChild(card);
   });
   updateTP(unit);
+}
+
+function moveUebung(unit, idx, dir) {
+  const arr = EINHEITEN[unit];
+  const neu = idx + dir;
+  if (neu < 0 || neu >= arr.length) return;
+  [arr[idx], arr[neu]] = [arr[neu], arr[idx]];
+  renderEinheit(unit);
 }
 
 function toggleDone(unit, idx) {
@@ -852,7 +914,15 @@ function showLog(msg, ok=true) {
 
 async function exportJSON() {
   if (!DATA.length) { showLog('Keine Daten vorhanden.', false); return; }
-  const inhalt = JSON.stringify({version:1, exportDatum:new Date().toISOString(), eintraege:DATA}, null, 2);
+  const weights = JSON.parse(localStorage.getItem('sg-weights') || '{}');
+  const inhalt = JSON.stringify({
+    version: 2,
+    exportDatum: new Date().toISOString(),
+    eintraege: DATA,
+    tlog: TLOG,
+    gwlog: GWLOG,
+    weights: weights
+  }, null, 2);
   const dateiname = 'sport-gicht-' + new Date().toISOString().slice(0,10) + '.json';
   if (window.showSaveFilePicker) {
     try {
@@ -867,27 +937,70 @@ async function exportJSON() {
   showLog('Gespeichert im Download-Ordner ('+DATA.length+' Einträge).');
 }
 
+function triggerImport() {
+  const el = document.getElementById('imp-file');
+  el.style.pointerEvents = 'auto';
+  el.value = '';
+  el.click();
+  setTimeout(() => { el.style.pointerEvents = 'none'; }, 2000);
+}
+
 function importJSON(input) {
   const file = input.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
     try {
       const raw = JSON.parse(ev.target.result);
-      const imp = raw.eintraege || raw;
-      if (!Array.isArray(imp)) throw new Error('Ungültiges Format');
-      if (!confirm('Sicherung einlesen? '+imp.length+' Einträge werden zusammengeführt.')) return;
-      imp.forEach(neu => {
-        const idx = DATA.findIndex(x => x.d === neu.d);
-        if (idx>=0) DATA[idx]=neu; else DATA.push(neu);
+
+      // Format erkennen: neue Vollsicherung oder altes reines Array
+      const proto  = raw.eintraege || (Array.isArray(raw) ? raw : null);
+      const tlog   = raw.tlog   || [];
+      const gwlog  = raw.gwlog  || [];
+      const weights= raw.weights|| null;
+
+      if (!proto || !Array.isArray(proto)) throw new Error('Kein gültiges Sicherungsformat erkannt.');
+
+      const info = `Protokoll: ${proto.length} Einträge` +
+        (tlog.length  ? ` · Training: ${tlog.length}`  : '') +
+        (gwlog.length ? ` · Gewichte: ${gwlog.length}` : '');
+
+      if (!confirm('Sicherung einlesen?\n' + info + '\n\nVorhandene Daten werden zusammengeführt.')) return;
+
+      // Harnsäure-Protokoll zusammenführen
+      proto.forEach(neu => {
+        const key = neu.d || neu.datum;
+        if (!key) return;
+        const eintrag = neu.d ? neu : {...neu, d:neu.datum, h:neu.harn||neu.h,
+          s:neu.sys||neu.s, di:neu.dia||neu.di, p:neu.puls||neu.p,
+          a:neu.aktiv||neu.a, t:neu.trink||neu.t, sl:neu.schlaf||neu.sl,
+          e:neu.ern||neu.e, n:neu.notiz||neu.n};
+        const idx = DATA.findIndex(x => x.d === key);
+        if (idx>=0) DATA[idx]=eintrag; else DATA.push(eintrag);
       });
       DATA.sort((a,b)=>a.d.localeCompare(b.d));
       localStorage.setItem('sg-proto', JSON.stringify(DATA));
+
+      // Trainingsverlauf zusammenführen
+      if (tlog.length) {
+        tlog.forEach(e => { if (!TLOG.find(x=>x.datum===e.datum&&x.unit===e.unit)) TLOG.push(e); });
+        localStorage.setItem('sg-tlog', JSON.stringify(TLOG));
+      }
+
+      // Gewichtsverlauf zusammenführen
+      if (gwlog.length) {
+        gwlog.forEach(e => GWLOG.push(e));
+        localStorage.setItem('sg-gwlog', JSON.stringify(GWLOG));
+      }
+
+      // Gewichte & Geräte wiederherstellen
+      if (weights) localStorage.setItem('sg-weights', JSON.stringify(weights));
+
       renderVerlauf(); renderBkStats();
-      showLog('Eingelesen: '+imp.length+' Einträge.');
-    } catch(e) { showLog('Fehler: '+e.message, false); }
+      showLog('Sicherung geladen: ' + info);
+    } catch(e) { showLog('Fehler: ' + e.message, false); }
     input.value='';
   };
-  reader.readAsText(file);
+  reader.readAsText(file, 'UTF-8');
 }
 
 async function exportCSV() {
@@ -943,6 +1056,152 @@ function renderBkStats() {
     <div class="sbox"><div class="sv">${DATA.length}</div><div class="sl">Einträge gesamt</div></div>
     <div class="sbox"><div class="sv">${letzter?fd(letzter.d):'—'}</div><div class="sl">Letzter Eintrag</div></div>
     <div class="sbox"><div class="sv">${vals.length?calcAvg(vals).toFixed(1):'—'}</div><div class="sl">Ø Harnsäure</div></div>`;
+}
+
+// ══ TRAININGSVERLAUF ══
+let TLOG = JSON.parse(localStorage.getItem('sg-tlog') || '[]');
+let GWLOG = JSON.parse(localStorage.getItem('sg-gwlog') || '[]');
+
+function logTraining(unit) {
+  const datum = new Date().toISOString().slice(0,10);
+  const zeit = new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  const uebungen = EINHEITEN[unit].map(u => ({name:u.name, gew:u.gew}));
+
+  // Harnsäure abfragen
+  const hsInput = prompt('Harnsäure-Wert von heute morgen (mg/dl)?\nLeer lassen wenn noch nicht gemessen.');
+  const hs = hsInput ? parseFloat(hsInput.replace(',','.')) : null;
+
+  // Trainingseintrag
+  TLOG.unshift({datum, zeit, unit, uebungen, hs: isNaN(hs) ? null : hs});
+  localStorage.setItem('sg-tlog', JSON.stringify(TLOG));
+
+  // Gewichtsverlauf
+  uebungen.forEach(u => {
+    if (u.gew === '—' || u.gew === 'KG') return;
+    GWLOG.push({datum, unit, name:u.name, gew:u.gew});
+  });
+  localStorage.setItem('sg-gwlog', JSON.stringify(GWLOG));
+
+  const btn = document.querySelector(`#c${unit} .btn-train-done`);
+  if (btn) { btn.textContent = '✓ Gespeichert!'; btn.disabled = true; btn.style.background = 'var(--muted)'; }
+  alert(`Einheit ${unit.toUpperCase()} vom ${datum} gespeichert!`);
+}
+
+function showVlaufTab(pane, el) {
+  document.querySelectorAll('.vlauf-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.vlauf-pane').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('vp-'+pane).classList.add('active');
+  if (pane === 'protokoll') renderVPList();
+  if (pane === 'training') renderTLogList();
+}
+
+function renderVPList() {
+  const empty = document.getElementById('vp-empty');
+  const list = document.getElementById('vp-list');
+  if (!DATA.length) { empty.style.display='block'; list.innerHTML=''; return; }
+  empty.style.display='none';
+  const sorted = [...DATA].reverse();
+  list.innerHTML = sorted.map((e, ri) => {
+    const i = DATA.length - 1 - ri; // original index
+    const hsCls = e.h <= 6 ? 'gut' : e.h <= 7 ? 'warn' : 'bad';
+    const rr = e.s && e.di ? `${e.s}/${e.di} mmHg` : '—';
+    const puls = e.p ? `${e.p} bpm` : '—';
+    const dt = new Date(e.d+'T00:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'2-digit'});
+    return `
+    <div class="vp-card">
+      <div class="vp-card-head">
+        <div>
+          <div class="vp-date">${dt}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="vp-hs ${hsCls}">${e.h}<span class="vp-hs-unit">mg/dl</span></span>
+        </div>
+      </div>
+      <div class="vp-grid">
+        <div class="vp-field"><span class="vp-label">Blutdruck</span><span class="vp-value ${rr==='—'?'muted':''}">${rr}</span></div>
+        <div class="vp-field"><span class="vp-label">Puls</span><span class="vp-value ${puls==='—'?'muted':''}">${puls}</span></div>
+        <div class="vp-field"><span class="vp-label">Aktivität (Vortag)</span><span class="vp-value ${!e.a?'muted':''}">${e.a||'—'}</span></div>
+        <div class="vp-field"><span class="vp-label">Trinkmenge (Vortag)</span><span class="vp-value ${!e.t?'muted':''}">${e.t||'—'}</span></div>
+        <div class="vp-field"><span class="vp-label">Schlaf (Vortag)</span><span class="vp-value ${!e.sl?'muted':''}">${e.sl||'—'}</span></div>
+      </div>
+      ${e.e ? `<div class="vp-full"><div class="vp-label">Ernährung</div><div class="vp-value" style="margin-top:3px">${e.e}</div></div>` : ''}
+      ${e.n ? `<div class="vp-full"><div class="vp-label">Notiz</div><div class="vp-value" style="margin-top:3px;color:var(--muted)">${e.n}</div></div>` : ''}
+      <div class="vp-actions">
+        <button class="vp-btn-edit" onclick="editEintrag(${i})">✏️ Bearbeiten</button>
+        <button class="vp-btn-del" onclick="delEintrag(${i})">🗑️ Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editEintrag(i) {
+  const e = DATA[i];
+  // Tab wechseln
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('proto').classList.add('active');
+  document.querySelectorAll('.nav-tab')[3].classList.add('active');
+  // Felder befüllen
+  document.getElementById('pd').value = e.d;
+  document.getElementById('ph').value = e.h;
+  document.getElementById('ps').value = e.s || '';
+  document.getElementById('pdi').value = e.di || '';
+  document.getElementById('pp').value = e.p || '';
+  document.getElementById('pak').value = e.a || '';
+  document.getElementById('ptr').value = e.t || '';
+  document.getElementById('psl').value = e.sl || '';
+  document.getElementById('pe').value = e.e || '';
+  document.getElementById('pn').value = e.n || '';
+  document.getElementById('proto').scrollIntoView({behavior:'smooth'});
+}
+
+function delEintrag(i) {
+  const e = DATA[i];
+  const dt = new Date(e.d+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'});
+  if (!confirm(`Eintrag vom ${dt} (${e.h} mg/dl) löschen?`)) return;
+  DATA.splice(i, 1);
+  localStorage.setItem('sg-proto', JSON.stringify(DATA));
+  renderVPList();
+  renderVerlauf();
+  renderBkStats();
+}
+
+function renderTLogList() {
+  const empty = document.getElementById('tlog-empty');
+  const list = document.getElementById('tlog-list');
+  if (!TLOG.length) { empty.style.display='block'; list.innerHTML=''; return; }
+  empty.style.display='none';
+  list.innerHTML = TLOG.map((e,i) => {
+    const hsCls = !e.hs ? '' : e.hs<=6?'gut':e.hs<=7?'warn':'bad';
+    const hsBadge = e.hs
+      ? `<span class="vp-hs ${hsCls}" style="font-size:17px">${e.hs}<span class="vp-hs-unit">mg/dl</span></span>`
+      : `<span style="font-size:12px;color:var(--muted)">Harnsäure nicht eingetragen</span>`;
+    const dt = new Date(e.datum+'T00:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'2-digit'});
+    const uLabel = e.unit === 'a' ? 'Einheit A — Oberkörper' : 'Einheit B — Unterkörper';
+    const uColor = e.unit === 'a' ? 'var(--a)' : 'var(--b)';
+    return `
+    <div class="vp-card">
+      <div class="vp-card-head">
+        <div>
+          <div class="vp-date">${dt} · ${e.zeit} Uhr</div>
+          <div style="font-size:12px;font-weight:700;color:${uColor};margin-top:3px">${uLabel}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${e.uebungen.length} Übungen</div>
+        </div>
+        <div style="text-align:right">${hsBadge}</div>
+      </div>
+      <div style="padding-top:10px;border-top:1px solid var(--border);text-align:right">
+        <button class="vp-btn-del" onclick="delTLog(${i})">🗑️ Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function delTLog(i) {
+  if (!confirm('Eintrag löschen?')) return;
+  TLOG.splice(i,1);
+  localStorage.setItem('sg-tlog', JSON.stringify(TLOG));
+  renderTLogList();
 }
 
 // INIT
