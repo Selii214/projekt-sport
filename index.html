@@ -85,13 +85,13 @@ main{max-width:780px;margin:0 auto;padding:24px 14px 60px;}
 .ucard-bottom{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 
 /* EDITIERBARES GEWICHT */
-.gew-display{font-size:12px;font-weight:700;padding:3px 9px;border-radius:5px;cursor:pointer;transition:all .15s;border:1px solid transparent;}
+.gew-display{font-size:14px;font-weight:700;padding:3px 9px;border-radius:5px;cursor:pointer;transition:all .15s;border:1px solid transparent;}
 .gew-display.ga{color:var(--a);background:rgba(61,155,233,.1);}
 .gew-display.gb{color:var(--b);background:rgba(124,92,191,.1);}
 .gew-display:hover{border-color:currentColor;}
 .gew-input{font-size:12px;font-weight:700;padding:3px 8px;border-radius:5px;border:1px solid var(--a);background:var(--surface);color:var(--a);width:90px;font-family:var(--font);outline:none;}
 
-.pb{font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;}
+.pb{font-size:13px;font-weight:700;padding:3px 8px;border-radius:5px;}
 .p90{background:rgba(61,155,233,.15);color:var(--a);}
 .p120{background:rgba(233,160,61,.15);color:var(--warn);}
 .gerat-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.07);color:var(--muted);border:1px solid var(--border);white-space:nowrap;cursor:pointer;transition:all .15s;}
@@ -526,7 +526,7 @@ const EINHEITEN = {
     {name:'Beinpresse', gerat:'25', gew:'82,5 kg', saetze:2, wdh:12, pause:'120', hint:'Größte Gruppe — längere Pause', done:false},
     {name:'Beinbeuger liegend/Rolle', gerat:'5 · Rolle 5 · Arm 3', gew:'45 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
     {name:'Bauch-Beine', gerat:'18', gew:'70–80 kg', saetze:2, wdh:12, pause:'90', hint:'S1:70 / S2:80 kg', done:false},
-    {name:'Beine heben gerade', gerat:'19', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
+    {name:'Beine', gerat:'6', gew:'82,5 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
     {name:'Beine heben seitlich', gerat:'19', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
     {name:'Hinten und überkreuzen', gerat:'29', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
   ]
@@ -588,7 +588,7 @@ function renderEinheit(unit) {
         <div class="ucard-bottom">
           ${u.gerat !== undefined ? `<span class="gerat-badge" onclick="editGerat(this,'${unit}',${i})" title="Tippen zum Ändern">📍 ${u.gerat || '+ Gerät'}</span>` : ''}
           <span class="gew-display ${col}" onclick="editGewicht(this,'${unit}',${i})" title="Tippen zum Ändern">${u.gew}</span>
-          ${u.saetze !== '—' ? `<span style="font-size:11px;color:var(--muted)">${u.saetze}×${u.wdh}</span>` : `<span style="font-size:11px;color:var(--muted)">${u.wdh}</span>`}
+          ${u.saetze !== '—' ? `<span style="font-size:13px;color:var(--muted)">${u.saetze}×${u.wdh}</span>` : `<span style="font-size:13px;color:var(--muted)">${u.wdh}</span>`}
           ${pauseBadge}
           ${u.hint && u.hint !== '—' ? `<span class="hint">${u.hint}</span>` : ''}
         </div>
