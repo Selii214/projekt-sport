@@ -875,7 +875,13 @@ function showLog(msg, ok=true) {
 
 async function exportJSON() {
   if (!DATA.length) { showLog('Keine Daten vorhanden.', false); return; }
-  const inhalt = JSON.stringify({version:1, exportDatum:new Date().toISOString(), eintraege:DATA}, null, 2);
+  const inhalt = JSON.stringify({
+    version: 2,
+    exportDatum: new Date().toISOString(),
+    eintraege: DATA,
+    tlog: TLOG,
+    gwlog: GWLOG
+  }, null, 2);
   const dateiname = 'sport-gicht-' + new Date().toISOString().slice(0,10) + '.json';
   if (window.showSaveFilePicker) {
     try {
@@ -905,6 +911,17 @@ function importJSON(input) {
       });
       DATA.sort((a,b)=>a.d.localeCompare(b.d));
       localStorage.setItem('sg-proto', JSON.stringify(DATA));
+      // tlog und gwlog wiederherstellen falls vorhanden
+      if (Array.isArray(raw.tlog) && raw.tlog.length) {
+        raw.tlog.forEach(neu => {
+          if (!TLOG.find(x => x.datum===neu.datum && x.unit===neu.unit)) TLOG.unshift(neu);
+        });
+        localStorage.setItem('sg-tlog', JSON.stringify(TLOG));
+      }
+      if (Array.isArray(raw.gwlog) && raw.gwlog.length) {
+        raw.gwlog.forEach(neu => GWLOG.push(neu));
+        localStorage.setItem('sg-gwlog', JSON.stringify(GWLOG));
+      }
       renderVerlauf(); renderBkStats();
       showLog('Eingelesen: '+imp.length+' Einträge.');
     } catch(e) { showLog('Fehler: '+e.message, false); }
