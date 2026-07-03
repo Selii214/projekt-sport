@@ -192,6 +192,7 @@ main{max-width:780px;margin:0 auto;padding:24px 14px 60px;}
   <div class="nav-brand">Projekt <span>Sport</span></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showTab('plan',this)">📋 Plan</button>
+    <button class="nav-tab" onclick="showTab('verlauf',this)">📅 Verlauf</button>
     <button class="nav-tab" onclick="showTab('check',this)">✅ Check</button>
     <button class="nav-tab" onclick="showTab('proto',this)">📊 Protokoll</button>
     <button class="nav-tab" onclick="showTab('auswert',this);renderAuswertung()">📈 Auswertung</button>
@@ -366,6 +367,36 @@ main{max-width:780px;margin:0 auto;padding:24px 14px 60px;}
   <div class="card">
     <div class="card-title">Automatische Musteranalyse</div>
     <div class="muster-list" id="aw-muster"></div>
+  </div>
+</section>
+
+<!-- VERLAUF -->
+<section id="verlauf" class="section">
+  <div class="page-header"><h1>Verlauf</h1><p>Alle Protokolleinträge im Überblick</p></div>
+  <div id="srow" class="srow" style="display:none">
+    <div class="sbox"><div class="sv" id="s-avg">—</div><div class="sl">Ø Harnsäure</div></div>
+    <div class="sbox"><div class="sv" id="s-best">—</div><div class="sl">Bestwert</div></div>
+    <div class="sbox"><div class="sv" id="s-ziel">—</div><div class="sl">Im Ziel (≤6,0)</div></div>
+  </div>
+  <div class="card">
+    <div id="v-empty" style="text-align:center;color:var(--muted);padding:2rem">Noch keine Einträge vorhanden.</div>
+    <div id="v-table" style="display:none;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="color:var(--muted);border-bottom:1px solid var(--border)">
+          <th style="padding:8px 4px;text-align:left">Datum</th>
+          <th style="padding:8px 4px;text-align:left">Harnsäure</th>
+          <th style="padding:8px 4px;text-align:left">RR</th>
+          <th style="padding:8px 4px;text-align:left">Puls</th>
+          <th style="padding:8px 4px;text-align:left">Aktivität</th>
+          <th style="padding:8px 4px;text-align:left">Trinkmenge</th>
+          <th style="padding:8px 4px;text-align:left">Schlaf</th>
+        </tr></thead>
+        <tbody id="v-body"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:1rem;text-align:right">
+      <button onclick="clearAll()" style="background:rgba(220,50,50,.15);color:#e05;border:1px solid rgba(220,50,50,.3);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">🗑 Alle löschen</button>
+    </div>
   </div>
 </section>
 
