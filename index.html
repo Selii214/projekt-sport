@@ -680,6 +680,8 @@ function toggleCI(el) {
 
 // ══ PROTOKOLL ══
 let DATA = JSON.parse(localStorage.getItem('sg-proto') || '[]');
+let TLOG = JSON.parse(localStorage.getItem('sg-tlog') || '[]');
+let GWLOG = JSON.parse(localStorage.getItem('sg-gwlog') || '[]');
 
 if (!DATA.length) {
   DATA = [
