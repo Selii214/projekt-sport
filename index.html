@@ -185,7 +185,7 @@ main{max-width:780px;margin:0 auto;padding:24px 14px 60px;}
   th:last-child,td:last-child{display:none;}
 }
 </style>
-<script type="text/javascript" nonce="581387cb04fe451c8cbcfd667e0" src="//injections.adguard.org?ts=1782494072178&amp;type=content-script&amp;dmn=mail.infomaniak.com&amp;url=https%3A%2F%2Fmail.infomaniak.com%2Fapi%2Fmail%2F450efbfb-30f7-36fd-bc59-e67ba9e6d4d0%2Ffolder%2FeJxzKUpMKykGAAfpAmU-%2Fmessage%2F2752%2Fattachment%2F2&amp;app=comet.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=0"></script><script type="text/javascript" nonce="581387cb04fe451c8cbcfd667e0" src="//injections.adguard.org?ts=1782494072178&amp;name=AdGuard%20Extra&amp;name=AdGuard%20Popup%20Blocker&amp;type=user-script"></script></head>
+</head>
 <body>
 
 <nav>
@@ -906,27 +906,29 @@ function showLog(msg, ok=true) {
   setTimeout(() => el.style.display='none', 4000);
 }
 
-async function exportJSON() {
+function exportJSON() {
   if (!DATA.length) { showLog('Keine Daten vorhanden.', false); return; }
-  const inhalt = JSON.stringify({
-    version: 2,
-    exportDatum: new Date().toISOString(),
-    eintraege: DATA,
-    tlog: TLOG,
-    gwlog: GWLOG
-  }, null, 2);
-  const dateiname = 'sport-gicht-' + new Date().toISOString().slice(0,10) + '.json';
-  if (window.showSaveFilePicker) {
-    try {
-      const h = await window.showSaveFilePicker({suggestedName:dateiname,types:[{description:'JSON',accept:{'application/json':['.json']}}]});
-      const w = await h.createWritable(); await w.write(inhalt); await w.close();
-      showLog('Gespeichert: ' + h.name); return;
-    } catch(e) { if (e.name==='AbortError') return; }
+  try {
+    const inhalt = JSON.stringify({
+      version: 2,
+      exportDatum: new Date().toISOString(),
+      eintraege: DATA,
+      tlog: TLOG,
+      gwlog: GWLOG
+    }, null, 2);
+    const dateiname = 'sport-gicht-' + new Date().toISOString().slice(0,10) + '.json';
+    const blob = new Blob([inhalt], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = dateiname;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+    showLog('Gespeichert im Download-Ordner (' + DATA.length + ' Einträge).');
+  } catch(e) {
+    showLog('Fehler beim Export: ' + e.message, false);
   }
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([inhalt],{type:'application/json'}));
-  a.download=dateiname; a.click();
-  showLog('Gespeichert im Download-Ordner ('+DATA.length+' Einträge).');
 }
 
 function importJSON(input) {
@@ -955,6 +957,8 @@ function importJSON(input) {
         raw.gwlog.forEach(neu => GWLOG.push(neu));
         localStorage.setItem('sg-gwlog', JSON.stringify(GWLOG));
       }
+      // Globale DATA aus localStorage neu laden damit renderVerlauf aktuell ist
+      DATA = JSON.parse(localStorage.getItem('sg-proto') || '[]');
       renderVerlauf(); renderBkStats();
       showLog('Eingelesen: '+imp.length+' Einträge.');
     } catch(e) { showLog('Fehler: '+e.message, false); }
@@ -963,24 +967,26 @@ function importJSON(input) {
   reader.readAsText(file);
 }
 
-async function exportCSV() {
+function exportCSV() {
   if (!DATA.length) { showLog('Keine Daten vorhanden.', false); return; }
-  const header = ['Datum','Harnsa_mgdl','RR_sys','RR_dia','Puls','Aktivitaet','Trinkmenge','Schlaf','Ernaehrung','Notiz'];
-  const rows = DATA.map(e=>[e.d,e.h,e.s||'',e.di||'',e.p||'',e.a||'',e.t||'',e.sl||'',e.e||'',e.n||'']
-    .map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';'));
-  const csv = '\uFEFF' + [header.join(';'),...rows].join('\r\n');
-  const dateiname = 'sport-gicht-' + new Date().toISOString().slice(0,10) + '.csv';
-  if (window.showSaveFilePicker) {
-    try {
-      const h = await window.showSaveFilePicker({suggestedName:dateiname,types:[{description:'CSV',accept:{'text/csv':['.csv']}}]});
-      const w = await h.createWritable(); await w.write(csv); await w.close();
-      showLog('CSV gespeichert: '+h.name); return;
-    } catch(e) { if (e.name==='AbortError') return; }
+  try {
+    const header = ['Datum','Harnsa_mgdl','RR_sys','RR_dia','Puls','Aktivitaet','Trinkmenge','Schlaf','Ernaehrung','Notiz'];
+    const rows = DATA.map(e=>[e.d,e.h,e.s||'',e.di||'',e.p||'',e.a||'',e.t||'',e.sl||'',e.e||'',e.n||'']
+      .map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';'));
+    const csv = '\uFEFF' + [header.join(';'),...rows].join('\r\n');
+    const dateiname = 'sport-gicht-' + new Date().toISOString().slice(0,10) + '.csv';
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = dateiname;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+    showLog('CSV im Download-Ordner gespeichert.');
+  } catch(e) {
+    showLog('Fehler beim CSV-Export: ' + e.message, false);
   }
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-  a.download=dateiname; a.click();
-  showLog('CSV im Download-Ordner gespeichert.');
 }
 
 function exportClaudeText() {
