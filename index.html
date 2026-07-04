@@ -761,7 +761,7 @@ function importJSON(input) {
       if (Array.isArray(raw.gwlog)&&raw.gwlog.length) { raw.gwlog.forEach(n=>GWLOG.push(n)); saveGWLOG(); }
       renderProto(); renderBkStats();
       showLog('Eingelesen: '+imp.length+' Einträge.');
-    } catch(e) { showLog('Fehler: '+e.message, false); }
+    } catch(e) { showLog('Fehler: '+e.message, false); alert('Import-Fehler: '+e.message); }
     input.value='';
   };
   reader.readAsText(file);
