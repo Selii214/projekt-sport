@@ -635,7 +635,8 @@ function renderProto() {
 function renderTraining() {
   const list = document.getElementById('training-list');
   if (!TLOG.length) { list.innerHTML='<div class="empty-state">Noch keine Trainingseinträge.</div>'; return; }
-  list.innerHTML = TLOG.map((t,i)=>`
+  const sorted = [...TLOG].sort((a,b)=>b.datum.localeCompare(a.datum));
+  list.innerHTML = sorted.map((t,i)=>`
     <div class="trow">
       <div class="trow-top">
         <div>
@@ -645,7 +646,7 @@ function renderTraining() {
         ${t.hs!==null&&t.hs!==undefined?`<span class="vha ${haColor(t.hs)}">${t.hs} mg/dl</span>`:''}
       </div>
       <div class="tueb">${t.uebungen.map(u=>u.name+(u.gew&&u.gew!=='—'?' ('+u.gew+')':'')).join(' · ')}</div>
-      <div class="vrow-del"><button class="btn-del" onclick="deleteTLog(${i})">🗑 Löschen</button></div>
+      <div class="vrow-del"><button class="btn-del" onclick="deleteTLog(${TLOG.indexOf(t)})">🗑 Löschen</button></div>
     </div>`).join('');
 }
 
