@@ -150,7 +150,12 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
 
 /* ── CHECK ── */
 .check-list{display:flex;flex-direction:column;gap:8px;}
-.check-item{display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--surf2);border-radius:var(--r);border:1px solid var(--border);}
+.check-item{display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--surf2);border-radius:var(--r);border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.check-item.checked{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.4);}
+.check-item.checked .check-title{color:var(--good);}
+.check-item.checked .check-icon{opacity:.6;}
+.check-chk{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px;transition:all .15s;}
+.check-item.checked .check-chk{background:var(--good);border-color:var(--good);color:#0d1117;}
 .check-icon{font-size:20px;flex-shrink:0;}
 .check-text{font-size:13px;line-height:1.5;}
 .check-title{font-weight:700;margin-bottom:2px;}
@@ -297,25 +302,25 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
   <div class="card">
     <div class="card-title">Vor dem Training</div>
     <div class="check-list">
-      <div class="check-item"><div class="check-icon">💧</div><div class="check-text"><div class="check-title">500 ml trinken</div><div class="check-desc">Vor dem Training, zusätzlich zum Tagesbedarf.</div></div></div>
-      <div class="check-item"><div class="check-icon">🍬</div><div class="check-text"><div class="check-title">Kein Zucker/Fructose</div><div class="check-desc">Heute kein Eis, Honig, Knopers, Sirupfrüchte.</div></div></div>
-      <div class="check-item"><div class="check-icon">⏱️</div><div class="check-text"><div class="check-title">Dauer max. 80 Min.</div><div class="check-desc">Längeres Training erhöht Harnsäure massiv.</div></div></div>
+      <div class="check-item" id="ci0" onclick="toggleCheck(0)"><div class="check-chk" id="cc0"></div><div class="check-icon">💧</div><div class="check-text"><div class="check-title">500 ml trinken</div><div class="check-desc">Vor dem Training, zusätzlich zum Tagesbedarf.</div></div></div>
+      <div class="check-item" id="ci1" onclick="toggleCheck(1)"><div class="check-chk" id="cc1"></div><div class="check-icon">🍬</div><div class="check-text"><div class="check-title">Kein Zucker/Fructose</div><div class="check-desc">Heute kein Eis, Honig, Knopers, Sirupfrüchte.</div></div></div>
+      <div class="check-item" id="ci2" onclick="toggleCheck(2)"><div class="check-chk" id="cc2"></div><div class="check-icon">⏱️</div><div class="check-text"><div class="check-title">Dauer max. 80 Min.</div><div class="check-desc">Längeres Training erhöht Harnsäure massiv.</div></div></div>
     </div>
   </div>
 
   <div class="card">
     <div class="card-title">Während des Trainings</div>
     <div class="check-list">
-      <div class="check-item"><div class="check-icon">💧</div><div class="check-text"><div class="check-title">300 ml alle 20–30 Min.</div><div class="check-desc">Dehydration hemmt Harnsäureausscheidung.</div></div></div>
-      <div class="check-item"><div class="check-icon">⏸️</div><div class="check-text"><div class="check-title">Pausen einhalten</div><div class="check-desc">Min. 90 Sek., schwere Übungen 2 Min.</div></div></div>
+      <div class="check-item" id="ci3" onclick="toggleCheck(3)"><div class="check-chk" id="cc3"></div><div class="check-icon">💧</div><div class="check-text"><div class="check-title">300 ml alle 20–30 Min.</div><div class="check-desc">Dehydration hemmt Harnsäureausscheidung.</div></div></div>
+      <div class="check-item" id="ci4" onclick="toggleCheck(4)"><div class="check-chk" id="cc4"></div><div class="check-icon">⏸️</div><div class="check-text"><div class="check-title">Pausen einhalten</div><div class="check-desc">Min. 90 Sek., schwere Übungen 2 Min.</div></div></div>
     </div>
   </div>
 
   <div class="card">
     <div class="card-title">Nach dem Training</div>
     <div class="check-list">
-      <div class="check-item"><div class="check-icon">💧</div><div class="check-text"><div class="check-title">500 ml + Tagesziel ≥ 3,5 L</div><div class="check-desc">Gesamttrinkmenge Trainingstag mind. 3,5–4 L.</div></div></div>
-      <div class="check-item"><div class="check-icon">📏</div><div class="check-text"><div class="check-title">Morgen nüchtern messen</div><div class="check-desc">Harnsäure am Folgetag morgens messen und eintragen.</div></div></div>
+      <div class="check-item" id="ci5" onclick="toggleCheck(5)"><div class="check-chk" id="cc5"></div><div class="check-icon">💧</div><div class="check-text"><div class="check-title">500 ml + Tagesziel ≥ 3,5 L</div><div class="check-desc">Gesamttrinkmenge Trainingstag mind. 3,5–4 L.</div></div></div>
+      <div class="check-item" id="ci6" onclick="toggleCheck(6)"><div class="check-chk" id="cc6"></div><div class="check-icon">📏</div><div class="check-text"><div class="check-title">Morgen nüchtern messen</div><div class="check-desc">Harnsäure am Folgetag morgens messen und eintragen.</div></div></div>
     </div>
   </div>
 
@@ -511,6 +516,10 @@ function renderEinheit(u) {
     const xb = ex.saetze!=='—' ? `<span class="xbadge">${ex.saetze}×${ex.wdh}</span>` : `<span class="xbadge">${ex.wdh}</span>`;
     const gb = ex.gerat!==undefined ? `<span class="gbadge" onclick="editGerat('${u}',${i})">📍 ${ex.gerat||'+ Gerät'}</span>` : '';
     const wb2 = ex.gew!=='—' ? `<span class="wbadge ${col}" onclick="editGew('${u}',${i})">${ex.gew}</span>` : '';
+    const arrows = `<div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
+      <button onclick="moveUebung('${u}',${i},-1)" style="background:var(--surf);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 6px;line-height:1" ${i===0?'disabled':''}>↑</button>
+      <button onclick="moveUebung('${u}',${i},1)" style="background:var(--surf);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 6px;line-height:1" ${i===EINHEITEN[u].length-1?'disabled':''}>↓</button>
+    </div>`;
     return `<div class="ucard${ex.done?' done-card':''}">
       <button class="uchk${ex.done?' checked-'+u:''}" onclick="toggleDone('${u}',${i})">${ex.done?'✓':''}</button>
       <div class="uinfo">
@@ -518,10 +527,18 @@ function renderEinheit(u) {
         <div class="ubadges">${gb}${wb2}${xb}${pb}</div>
         ${ex.hint&&ex.hint!=='—'?`<div class="hint">${ex.hint}</div>`:''}
       </div>
+      ${arrows}
     </div>`;
   }).join('');
 }
 
+function moveUebung(u, i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= EINHEITEN[u].length) return;
+  [EINHEITEN[u][i], EINHEITEN[u][j]] = [EINHEITEN[u][j], EINHEITEN[u][i]];
+  saveWeights();
+  renderEinheit(u);
+}
 function toggleDone(u,i) { EINHEITEN[u][i].done=!EINHEITEN[u][i].done; saveDone(); renderEinheit(u); }
 function resetEinheit(u) { EINHEITEN[u].forEach(e=>e.done=false); saveDone(); renderEinheit(u); }
 
@@ -547,6 +564,23 @@ function logTraining(u) {
   uebungen.forEach(e => { if(e.gew==='—'||e.gew==='KG') return; GWLOG.push({datum,unit:u,name:e.name,gew:e.gew}); });
   saveGWLOG();
   alert('Einheit '+u.toUpperCase()+' vom '+datum+' gespeichert!');
+}
+
+// ══ CHECK ══
+let checkState = JSON.parse(localStorage.getItem('sg-check') || '{}');
+function toggleCheck(i) {
+  checkState[i] = !checkState[i];
+  localStorage.setItem('sg-check', JSON.stringify(checkState));
+  renderCheck();
+}
+function renderCheck() {
+  for (let i=0; i<=6; i++) {
+    const ci = document.getElementById('ci'+i);
+    const cc = document.getElementById('cc'+i);
+    if (!ci) continue;
+    if (checkState[i]) { ci.classList.add('checked'); cc.textContent='✓'; }
+    else { ci.classList.remove('checked'); cc.textContent=''; }
+  }
 }
 
 // ══ VERLAUF-UNTER-TABS ══
@@ -593,6 +627,22 @@ function saveEintrag() {
   alert('Gespeichert ✓');
 }
 
+function editEintrag(d) {
+  const e = DATA.find(x=>x.d===d); if (!e) return;
+  document.getElementById('pd').value = e.d;
+  document.getElementById('ph').value = e.h;
+  document.getElementById('ps').value = e.s||'';
+  document.getElementById('pdi').value = e.di||'';
+  document.getElementById('pp').value = e.p||'';
+  document.getElementById('pak').value = e.a||'';
+  document.getElementById('ptm').value = e.tm||'';
+  document.getElementById('psl').value = e.sl||'';
+  document.getElementById('pe').value = e.e||'';
+  document.getElementById('pn').value = e.n||'';
+  switchVtab('proto');
+  document.getElementById('vt-proto').scrollIntoView({behavior:'smooth'});
+}
+
 function deleteEintrag(d) {
   if (!confirm('Eintrag vom '+fd(d)+' löschen?')) return;
   DATA = DATA.filter(e=>e.d!==d); saveData(); renderProto();
@@ -628,7 +678,10 @@ function renderProto() {
         ${e.e?`<span class="vmeta">🍽 ${e.e}</span>`:''}
         ${e.n?`<span class="vmeta">📝 ${e.n}</span>`:''}
       </div>
-      <div class="vrow-del"><button class="btn-del" onclick="deleteEintrag('${e.d}')">🗑 Löschen</button></div>
+      <div class="vrow-del">
+        <button class="btn-del" style="background:rgba(88,166,255,.1);border-color:rgba(88,166,255,.3);color:var(--a);margin-right:6px" onclick="editEintrag('${e.d}')">✏️ Bearbeiten</button>
+        <button class="btn-del" onclick="deleteEintrag('${e.d}')">🗑 Löschen</button>
+      </div>
     </div>`).join('');
 }
 
@@ -807,6 +860,7 @@ renderEinheit('a');
 renderEinheit('b');
 renderProto();
 renderBkStats();
+renderCheck();
 </script>
 </body>
 </html>
