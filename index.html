@@ -439,7 +439,7 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-08 — v6 (UID-Persistenz, Bearbeiten-Funktion, Folgetag-Verknüpfung)';
+const BUILD_VERSION = '2026-07-09 — v7 (Übungen in Trainingseintrag nachträglich hinzufügen/entfernen)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 // ══ NAV ══
 function showTab(id, btnId) {
@@ -814,6 +814,27 @@ function editTLog(id) {
   const neuHs = neuHsInput.trim() ? parseFloat(neuHsInput.replace(',','.')) : null;
   t.datum = neuDatum.trim() || t.datum;
   t.hs = (neuHs!==null && isNaN(neuHs)) ? t.hs : neuHs;
+
+  // Übung aus der jeweils anderen Einheit zu diesem bereits gespeicherten Eintrag hinzufügen
+  const other = t.unit==='a' ? 'b' : 'a';
+  const auswahl = EINHEITEN[other].filter(e=>e.saetze!=='—');
+  const liste = auswahl.map((e,idx)=>(idx+1)+': '+e.name+' ('+e.gew+')').join('\n');
+  const eingabe = prompt('Übung aus Einheit '+other.toUpperCase()+' zu diesem Eintrag hinzufügen?\nNummer eingeben, oder leer lassen zum Überspringen:\n\n'+liste);
+  if (eingabe && eingabe.trim()) {
+    const idx = parseInt(eingabe.trim(),10)-1;
+    if (auswahl[idx]) t.uebungen.push({name: auswahl[idx].name, gew: auswahl[idx].gew});
+  }
+
+  // Optional: eine bereits gelistete Übung aus diesem Eintrag wieder entfernen
+  if (t.uebungen.length) {
+    const ueListe = t.uebungen.map((u,idx)=>(idx+1)+': '+u.name+(u.gew&&u.gew!=='—'?' ('+u.gew+')':'')).join('\n');
+    const entf = prompt('Übung aus diesem Eintrag entfernen?\nNummer eingeben, oder leer lassen zum Überspringen:\n\n'+ueListe);
+    if (entf && entf.trim()) {
+      const idx = parseInt(entf.trim(),10)-1;
+      if (t.uebungen[idx]) t.uebungen.splice(idx,1);
+    }
+  }
+
   saveTLOG(); renderTraining();
 }
 
