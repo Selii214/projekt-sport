@@ -176,12 +176,12 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
 
   <div class="einheit-grid">
     <div class="ecard active-a" id="ecard-a" onclick="switchEinheit('a')">
-      <div class="etag">Freitag</div>
+      <div class="etag">Trainingstag A</div>
       <div class="ename">Einheit A</div>
       <div class="emeta">Oberkörper · ~80 Min.</div>
     </div>
     <div class="ecard" id="ecard-b" onclick="switchEinheit('b')">
-      <div class="etag">Samstag</div>
+      <div class="etag">Trainingstag B</div>
       <div class="ename">Einheit B</div>
       <div class="emeta">Unterkörper · ~75 Min.</div>
     </div>
@@ -204,6 +204,10 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
       </div>
       <div class="prog-bar"><div class="prog-fill fill-a" id="fill-a" style="width:0%"></div></div>
       <div id="list-a"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <select id="add-sel-a" style="flex:1;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:var(--font)"></select>
+        <button onclick="addFromOther('a')" style="background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;cursor:pointer">+ Hinzufügen</button>
+      </div>
       <button class="btn-log btn-log-a" id="btn-log-a" onclick="logTraining('a')" style="margin-top:12px">✅ Training speichern</button>
     </div>
   </div>
@@ -225,6 +229,10 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
       </div>
       <div class="prog-bar"><div class="prog-fill fill-b" id="fill-b" style="width:0%"></div></div>
       <div id="list-b"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <select id="add-sel-b" style="flex:1;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:var(--font)"></select>
+        <button onclick="addFromOther('b')" style="background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;cursor:pointer">+ Hinzufügen</button>
+      </div>
       <button class="btn-log btn-log-b" id="btn-log-b" onclick="logTraining('b')" style="margin-top:12px">✅ Training speichern</button>
     </div>
   </div>
@@ -304,7 +312,7 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
     <div class="check-list">
       <div class="check-item" id="ci0" onclick="toggleCheck(0)"><div class="check-chk" id="cc0"></div><div class="check-icon">💧</div><div class="check-text"><div class="check-title">500 ml trinken</div><div class="check-desc">Vor dem Training, zusätzlich zum Tagesbedarf.</div></div></div>
       <div class="check-item" id="ci1" onclick="toggleCheck(1)"><div class="check-chk" id="cc1"></div><div class="check-icon">🍬</div><div class="check-text"><div class="check-title">Kein Zucker/Fructose</div><div class="check-desc">Heute kein Eis, Honig, Knopers, Sirupfrüchte.</div></div></div>
-      <div class="check-item" id="ci2" onclick="toggleCheck(2)"><div class="check-chk" id="cc2"></div><div class="check-icon">⏱️</div><div class="check-text"><div class="check-title">Dauer max. 80 Min.</div><div class="check-desc">Längeres Training erhöht Harnsäure massiv.</div></div></div>
+      <div class="check-item" id="ci2" onclick="toggleCheck(2)"><div class="check-chk" id="cc2"></div><div class="check-icon">⏱️</div><div class="check-text"><div class="check-title">Dauer max. 80 Min.</div><div class="check-desc">Lange oder sehr intensive Belastungen können die Harnsäure erhöhen, insbesondere bei Flüssigkeitsmangel.</div></div></div>
     </div>
   </div>
 
@@ -442,6 +450,11 @@ function showTab(id, btnId) {
 // ══ DATEN ══
 let DATA = JSON.parse(localStorage.getItem('sg-proto') || '[]');
 let TLOG = JSON.parse(localStorage.getItem('sg-tlog') || '[]');
+function genId() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)+'-'+Math.random().toString(36).slice(2,10); }
+// Migration: bestehende Trainingseinträge ohne ID erhalten eine
+let tlogMigriert = false;
+TLOG.forEach(t => { if (!t.id) { t.id = genId(); tlogMigriert = true; } });
+if (tlogMigriert) localStorage.setItem('sg-tlog', JSON.stringify(TLOG));
 let GWLOG = JSON.parse(localStorage.getItem('sg-gwlog') || '[]');
 
 function saveData() { localStorage.setItem('sg-proto', JSON.stringify(DATA)); }
@@ -463,19 +476,58 @@ const EINHEITEN = {
   ],
   b: [
     {name:'Cardio Aufwärmen', gerat:'', gew:'—', saetze:'—', wdh:"10'", pause:'—', hint:'Fahrrad/Laufband', done:false},
-    {name:'Beinpresse', gerat:'25', gew:'82,5 kg', saetze:2, wdh:12, pause:'120', hint:'Größte Gruppe — längere Pause', done:false},
+    {name:'Beinpresse', gerat:'6', gew:'82,5 kg', saetze:2, wdh:12, pause:'120', hint:'Größte Gruppe — längere Pause', done:false},
     {name:'Beinbeuger liegend/Rolle', gerat:'5 · Rolle 5 · Arm 3', gew:'45 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
     {name:'Bauch-Beine', gerat:'18', gew:'70–80 kg', saetze:2, wdh:12, pause:'90', hint:'S1:70 / S2:80 kg', done:false},
     {name:'Beine', gerat:'6', gew:'82,5 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
     {name:'Beine heben seitlich', gerat:'19', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
-    {name:'Hinten und überkreuzen', gerat:'29', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
+    {name:'Hinten und überkreuzen', gerat:'19', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
   ]
 };
+
+
+// Eindeutige IDs für alle Übungen — dauerhaft in localStorage gespeichert,
+// damit sie auch bei künftigen Code-Änderungen (z. B. Namensänderung) stabil bleiben
+const uidMap = JSON.parse(localStorage.getItem('sg-uid') || '{}');
+['a','b'].forEach(u=>{
+  EINHEITEN[u].forEach((e,i)=>{
+    if (e.uid) return; // hinzugefügte Übungen (added:true) bringen ihre eigene UID bereits mit
+    const key = u+':'+e.name;
+    if (!uidMap[key]) uidMap[key] = u + '-' + e.name.toLowerCase().replace(/[^a-z0-9]+/gi,'-') + '-' + i;
+    e.uid = uidMap[key];
+  });
+});
+localStorage.setItem('sg-uid', JSON.stringify(uidMap));
+
+
+// Zusätzlich hinzugefügte Übungen (aus der jeweils anderen Einheit) laden
+const savedExtra = JSON.parse(localStorage.getItem('sg-extra') || '{"a":[],"b":[]}');
+['a','b'].forEach(u => { (savedExtra[u]||[]).forEach(ex => EINHEITEN[u].push(ex)); });
+function saveExtra() {
+  const s = {}; ['a','b'].forEach(u => s[u] = EINHEITEN[u].filter(e=>e.added));
+  localStorage.setItem('sg-extra', JSON.stringify(s));
+}
+
+// Übungsreihenfolge laden und anwenden (Namen-basiert, überlebt Neuladen)
+const savedOrder = JSON.parse(localStorage.getItem('sg-order') || '{}');
+['a','b'].forEach(u => {
+  if (savedOrder[u] && savedOrder[u].length) {
+    const byName = {}; EINHEITEN[u].forEach(e => byName[e.name] = e);
+    const geordnet = savedOrder[u].map(n => byName[n]).filter(Boolean);
+    const rest = EINHEITEN[u].filter(e => !savedOrder[u].includes(e.name));
+    EINHEITEN[u] = geordnet.concat(rest);
+  }
+});
+function saveOrder() {
+  const s = {}; ['a','b'].forEach(u => s[u] = EINHEITEN[u].map(e=>e.name));
+  localStorage.setItem('sg-order', JSON.stringify(s));
+}
 
 // Gespeicherte Gewichte laden
 const savedW = JSON.parse(localStorage.getItem('sg-weights') || '{}');
 ['a','b'].forEach(u => EINHEITEN[u].forEach((ex,i) => {
-  const k = u+'-'+i; if (savedW[k]) {
+  const k = ex.uid || (u+'-'+i);
+  if (savedW[k]) {
     if (savedW[k].gew) ex.gew = savedW[k].gew;
     if (typeof savedW[k].gerat === 'string') ex.gerat = savedW[k].gerat;
   }
@@ -490,7 +542,11 @@ function saveDone() {
   localStorage.setItem('sg-done', JSON.stringify(s));
 }
 function saveWeights() {
-  const w = {}; ['a','b'].forEach(u => EINHEITEN[u].forEach((e,i) => w[u+'-'+i] = {gew:e.gew, gerat:e.gerat}));
+  const w = {};
+  ['a','b'].forEach(u => EINHEITEN[u].forEach((e,i) => {
+    const k = e.uid || (u+'-'+i);
+    w[k] = {gew:e.gew, gerat:e.gerat};
+  }));
   localStorage.setItem('sg-weights', JSON.stringify(w));
 }
 
@@ -519,6 +575,7 @@ function renderEinheit(u) {
     const arrows = `<div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
       <button onclick="moveUebung('${u}',${i},-1)" style="background:var(--surf);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 6px;line-height:1" ${i===0?'disabled':''}>↑</button>
       <button onclick="moveUebung('${u}',${i},1)" style="background:var(--surf);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 6px;line-height:1" ${i===EINHEITEN[u].length-1?'disabled':''}>↓</button>
+      ${ex.added ? `<button onclick="removeUebung('${u}',${i})" style="background:var(--surf);border:1px solid var(--bad);border-radius:4px;color:var(--bad);cursor:pointer;font-size:11px;padding:2px 6px;line-height:1">🗑</button>` : ''}
     </div>`;
     return `<div class="ucard${ex.done?' done-card':''}">
       <button class="uchk${ex.done?' checked-'+u:''}" onclick="toggleDone('${u}',${i})">${ex.done?'✓':''}</button>
@@ -530,6 +587,10 @@ function renderEinheit(u) {
       ${arrows}
     </div>`;
   }).join('');
+  const other = u==='a' ? 'b' : 'a';
+  const sel = document.getElementById('add-sel-'+u);
+  const opts = EINHEITEN[other].map((ex,j) => ex.saetze==='—' ? '' : `<option value="${j}">${ex.name} (${ex.gew})</option>`).join('');
+  sel.innerHTML = '<option value="">— Übung aus Einheit '+other.toUpperCase()+' wählen —</option>' + opts;
 }
 
 function moveUebung(u, i, dir) {
@@ -537,10 +598,29 @@ function moveUebung(u, i, dir) {
   if (j < 0 || j >= EINHEITEN[u].length) return;
   [EINHEITEN[u][i], EINHEITEN[u][j]] = [EINHEITEN[u][j], EINHEITEN[u][i]];
   saveWeights();
+  saveOrder();
   renderEinheit(u);
 }
 function toggleDone(u,i) { EINHEITEN[u][i].done=!EINHEITEN[u][i].done; saveDone(); renderEinheit(u); }
 function resetEinheit(u) { EINHEITEN[u].forEach(e=>e.done=false); saveDone(); renderEinheit(u); }
+function removeUebung(u,i) {
+  if (!EINHEITEN[u][i].added) return;
+  if (!confirm('"'+EINHEITEN[u][i].name+'" aus Einheit '+u.toUpperCase()+' entfernen?')) return;
+  EINHEITEN[u].splice(i,1);
+  saveExtra(); saveWeights(); saveDone(); saveOrder(); renderEinheit(u);
+}
+function addFromOther(u) {
+  const other = u==='a' ? 'b' : 'a';
+  const sel = document.getElementById('add-sel-'+u);
+  const idx = parseInt(sel.value,10);
+  if (isNaN(idx)) return;
+  const src = EINHEITEN[other][idx];
+  if (!src || src.saetze==='—') return;
+  const kopie = Object.assign({}, src, {done:false, added:true, uid: genId()});
+  EINHEITEN[u].push(kopie);
+  saveExtra(); saveWeights(); saveDone(); saveOrder(); renderEinheit(u);
+  sel.value = '';
+}
 
 function editGew(u,i) {
   const v = prompt('Gewicht für "'+EINHEITEN[u][i].name+'":', EINHEITEN[u][i].gew);
@@ -556,10 +636,13 @@ function logTraining(u) {
   const datumInput = prompt('Trainingsdatum (JJJJ-MM-TT):\nLeer lassen = heute.', heute);
   if (datumInput===null) return;
   const datum = datumInput.trim()||heute;
+  if (TLOG.find(t => t.datum===datum && t.unit===u)) {
+    if (!confirm('Für dieses Datum existiert bereits eine gespeicherte Einheit. Trotzdem speichern?')) return;
+  }
   const hsInput = prompt('Harnsäure-Wert (mg/dl)?\nLeer lassen wenn noch nicht gemessen.');
   const hs = hsInput ? parseFloat(hsInput.replace(',','.')) : null;
   const uebungen = EINHEITEN[u].map(e=>({name:e.name, gew:e.gew}));
-  TLOG.unshift({datum, zeit:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}), unit:u, uebungen, hs: isNaN(hs)?null:hs});
+  TLOG.unshift({id:genId(), datum, zeit:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}), unit:u, uebungen, hs: isNaN(hs)?null:hs});
   saveTLOG();
   uebungen.forEach(e => { if(e.gew==='—'||e.gew==='KG') return; GWLOG.push({datum,unit:u,name:e.name,gew:e.gew}); });
   saveGWLOG();
@@ -685,11 +768,21 @@ function renderProto() {
     </div>`).join('');
 }
 
+function naechsterTag(d) {
+  const dt = new Date(d+'T00:00:00'); dt.setDate(dt.getDate()+1);
+  return dt.toISOString().slice(0,10);
+}
 function renderTraining() {
   const list = document.getElementById('training-list');
   if (!TLOG.length) { list.innerHTML='<div class="empty-state">Noch keine Trainingseinträge.</div>'; return; }
   const sorted = [...TLOG].sort((a,b)=>b.datum.localeCompare(a.datum));
-  list.innerHTML = sorted.map((t,i)=>`
+  list.innerHTML = sorted.map((t,i)=>{
+    const folgeDatum = naechsterTag(t.datum);
+    const folgeEintrag = DATA.find(e=>e.d===folgeDatum);
+    const folgeBadge = folgeEintrag
+      ? `<div class="tueb" style="margin-top:4px">📈 Harnsäure Folgetag (${fd(folgeDatum)}): <span class="vha ${haColor(folgeEintrag.h)}" style="padding:2px 8px">${folgeEintrag.h} mg/dl</span></div>`
+      : `<div class="tueb" style="margin-top:4px;opacity:.6">📈 Harnsäure Folgetag: noch kein Eintrag für ${fd(folgeDatum)}</div>`;
+    return `
     <div class="trow">
       <div class="trow-top">
         <div>
@@ -699,13 +792,32 @@ function renderTraining() {
         ${t.hs!==null&&t.hs!==undefined?`<span class="vha ${haColor(t.hs)}">${t.hs} mg/dl</span>`:''}
       </div>
       <div class="tueb">${t.uebungen.map(u=>u.name+(u.gew&&u.gew!=='—'?' ('+u.gew+')':'')).join(' · ')}</div>
-      <div class="vrow-del"><button class="btn-del" onclick="deleteTLog(${TLOG.indexOf(t)})">🗑 Löschen</button></div>
-    </div>`).join('');
+      ${folgeBadge}
+      <div class="vrow-del" style="display:flex;gap:8px">
+        <button class="btn-del" style="background:var(--surf2);border-color:var(--border);color:var(--text)" onclick="editTLog('${t.id}')">✏️ Bearbeiten</button>
+        <button class="btn-del" onclick="deleteTLog('${t.id}')">🗑 Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function deleteTLog(i) {
-  if (!confirm('Training-Eintrag löschen?')) return;
-  TLOG.splice(i,1); saveTLOG(); renderTraining();
+function editTLog(id) {
+  const t = TLOG.find(x=>x.id===id); if (!t) return;
+  const neuDatum = prompt('Trainingsdatum (JJJJ-MM-TT):', t.datum);
+  if (neuDatum===null) return;
+  const neuHsInput = prompt('Harnsäure-Wert (mg/dl)?\nLeer lassen = kein Wert.', t.hs!==null&&t.hs!==undefined?String(t.hs).replace('.',','):'');
+  if (neuHsInput===null) return;
+  const neuHs = neuHsInput.trim() ? parseFloat(neuHsInput.replace(',','.')) : null;
+  t.datum = neuDatum.trim() || t.datum;
+  t.hs = (neuHs!==null && isNaN(neuHs)) ? t.hs : neuHs;
+  saveTLOG(); renderTraining();
+}
+
+function deleteTLog(id) {
+  const t = TLOG.find(x=>x.id===id);
+  if (!t) return;
+  if (!confirm('Training-Eintrag löschen?\n'+t.datum+' — Einheit '+t.unit.toUpperCase()+' ('+t.zeit+' Uhr)')) return;
+  TLOG = TLOG.filter(x=>x.id!==id); saveTLOG(); renderTraining();
 }
 
 // ══ ANALYSE ══
@@ -733,8 +845,8 @@ function renderAnalyse() {
   const yS=v=>H-pad-(v-mn)/(mx-mn)*(H-2*pad);
   const pts = DATA.map((e,i)=>xS(i)+','+yS(e.h)).join(' ');
   chart.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;overflow:visible">
-    <line x1="${pad}" y1="${yS(6)}" x2="${W-pad}" y2="${yS(6)}" stroke="#3fb95040" stroke-width="1.5" stroke-dasharray="4"/>
-    <text x="${pad-2}" y="${yS(6)+4}" fill="#3fb950" font-size="9" text-anchor="end">6,0</text>
+    <line x1="${pad}" y1="${yS(6)}" x2="${W-pad}" y2="${yS(6)}" stroke="var(--good)" opacity="0.25" stroke-width="1.5" stroke-dasharray="4"/>
+    <text x="${pad-2}" y="${yS(6)+4}" fill="var(--good)" font-size="9" text-anchor="end">6,0</text>
     <polyline points="${pts}" fill="none" stroke="var(--a)" stroke-width="2.5" stroke-linejoin="round"/>
     ${DATA.map((e,i)=>`<circle cx="${xS(i)}" cy="${yS(e.h)}" r="5" fill="${e.h<=6?'var(--good)':e.h<=7?'var(--warn)':'var(--bad)'}"/>
     <text x="${xS(i)}" y="${yS(e.h)-9}" text-anchor="middle" fill="var(--muted)" font-size="9">${e.h}</text>`).join('')}
@@ -789,7 +901,15 @@ function showLog(msg, ok=true) {
 
 async function exportJSON() {
   if (!DATA.length) { showLog('Keine Daten vorhanden.', false); return; }
-  const inhalt = JSON.stringify({version:2, exportDatum:new Date().toISOString(), eintraege:DATA, tlog:TLOG, gwlog:GWLOG}, null, 2);
+  const inhalt = JSON.stringify({
+    version:3, exportDatum:new Date().toISOString(),
+    eintraege:DATA, tlog:TLOG, gwlog:GWLOG,
+    planWeights: JSON.parse(localStorage.getItem('sg-weights')||'{}'),
+    planDone: JSON.parse(localStorage.getItem('sg-done')||'{}'),
+    planOrder: JSON.parse(localStorage.getItem('sg-order')||'{}'),
+    planExtra: JSON.parse(localStorage.getItem('sg-extra')||'{"a":[],"b":[]}'),
+    planUid: JSON.parse(localStorage.getItem('sg-uid')||'{}')
+  }, null, 2);
   const name = 'sport-gicht-'+new Date().toISOString().slice(0,10)+'.json';
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([inhalt],{type:'application/json'}));
@@ -809,10 +929,18 @@ function importJSON(input) {
       imp.forEach(neu => { const idx=DATA.findIndex(x=>x.d===neu.d); if(idx>=0) DATA[idx]=neu; else DATA.push(neu); });
       DATA.sort((a,b)=>a.d.localeCompare(b.d)); saveData();
       if (Array.isArray(raw.tlog)&&raw.tlog.length) {
-        raw.tlog.forEach(neu => { if(!TLOG.find(x=>x.datum===neu.datum&&x.unit===neu.unit)) TLOG.unshift(neu); });
+        raw.tlog.forEach(neu => { if(!TLOG.find(x=>x.datum===neu.datum&&x.unit===neu.unit)) { if(!neu.id) neu.id=genId(); TLOG.unshift(neu); } });
         saveTLOG();
       }
-      if (Array.isArray(raw.gwlog)&&raw.gwlog.length) { raw.gwlog.forEach(n=>GWLOG.push(n)); saveGWLOG(); }
+      if (Array.isArray(raw.gwlog)&&raw.gwlog.length) { raw.gwlog.forEach(n=>{ if(!GWLOG.find(x=>x.datum===n.datum&&x.unit===n.unit&&x.name===n.name&&x.gew===n.gew)) GWLOG.push(n); }); saveGWLOG(); }
+      if (raw.planUid) { localStorage.setItem('sg-uid', JSON.stringify(raw.planUid)); }
+      if (raw.planExtra) { localStorage.setItem('sg-extra', JSON.stringify(raw.planExtra)); }
+      if (raw.planOrder) { localStorage.setItem('sg-order', JSON.stringify(raw.planOrder)); }
+      if (raw.planWeights) { localStorage.setItem('sg-weights', JSON.stringify(raw.planWeights)); }
+      if (raw.planDone) { localStorage.setItem('sg-done', JSON.stringify(raw.planDone)); }
+      if (raw.planUid || raw.planExtra || raw.planOrder || raw.planWeights || raw.planDone) {
+        alert('Plan-Daten wurden importiert. Bitte die Seite einmal neu laden, damit Trainingsplan-Gewichte, Geräte und Reihenfolge korrekt übernommen werden.');
+      }
       renderProto(); renderBkStats();
       showLog('Eingelesen: '+imp.length+' Einträge.');
     } catch(e) { showLog('Fehler: '+e.message, false); alert('Import-Fehler: '+e.message); }
@@ -823,10 +951,11 @@ function importJSON(input) {
 
 async function exportCSV() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
-  const h = 'Datum,Harnsäure,RR sys,RR dia,Puls,Aktivität,Trinkmenge,Schlaf,Ernährung,Notiz\n';
-  const rows = DATA.map(e=>[e.d,e.h,e.s||'',e.di||'',e.p||'',e.a||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität;Trinkmenge;Schlaf;Ernährung;Notiz\n';
+  const dez = v => typeof v==='number' ? String(v).replace('.',',') : v;
+  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',e.a||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([h+rows],{type:'text/csv;charset=utf-8'}));
+  a.href = URL.createObjectURL(new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'}));
   a.download = 'sport-gicht-'+new Date().toISOString().slice(0,10)+'.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   showLog('CSV exportiert.');
