@@ -365,6 +365,7 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
 <section id="s-sicherung" class="section">
   <div class="page-title">Sicherung</div>
   <div class="page-sub">Export, Import & Auswertung</div>
+  <div style="font-size:12px;color:var(--muted);margin:-8px 0 12px">📄 Code-Stand: <span id="build-info">wird geladen...</span></div>
 
   <div class="card">
     <div class="card-title">Datensicherung</div>
@@ -437,6 +438,9 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
 </nav>
 
 <script>
+// Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
+const BUILD_VERSION = '2026-07-08 — v6 (UID-Persistenz, Bearbeiten-Funktion, Folgetag-Verknüpfung)';
+document.getElementById('build-info').textContent = BUILD_VERSION;
 // ══ NAV ══
 function showTab(id, btnId) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
