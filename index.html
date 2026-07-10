@@ -206,10 +206,6 @@ select.modal-input{cursor:pointer;}
 .arrow-col{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
 .mini-btn{background:var(--surf);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 6px;line-height:1;}
 .mini-btn-danger{border-color:var(--bad);color:var(--bad);}
-.add-row{display:flex;gap:8px;margin-top:12px;}
-.add-select{flex:1;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:var(--font);}
-.add-btn{background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;cursor:pointer;}
-.edit-btn-neutral{background:var(--surf2);border-color:var(--border);color:var(--text);}
 </style>
 </head>
 <body>
@@ -425,6 +421,7 @@ select.modal-input{cursor:pointer;}
   <div class="page-title">Sicherung</div>
   <div class="page-sub">Export, Import & Auswertung</div>
   <div class="build-info">📄 Code-Stand: <span id="build-info">wird geladen...</span></div>
+  <div class="build-info" id="last-import-info"></div>
 
   <div class="card">
     <div class="card-title">Datensicherung</div>
@@ -498,8 +495,9 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-09 — v11 (Inline-Styles auf CSS-Klassen umgestellt: 31 → 3, verbleibende 3 sind laufzeitdynamisch)';
+const BUILD_VERSION = '2026-07-09 — v14 (Härtung: HTML-Escaping für Nutzertext, Datums-/Zahlenvalidierung, strengere Import-Prüfung, doppelten CSS-Code entfernt)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
+renderLastImport();
 
 // ══ MODAL (ersetzt alert/confirm/prompt) ══
 function modalClose(overlay, esc) {
@@ -619,6 +617,18 @@ function showTab(id, btnId) {
 let DATA = JSON.parse(localStorage.getItem('sg-proto') || '[]');
 let TLOG = JSON.parse(localStorage.getItem('sg-tlog') || '[]');
 function genId() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)+'-'+Math.random().toString(36).slice(2,10); }
+// Escaped Nutzertext vor dem Einfügen in innerHTML (verhindert kaputte Darstellung bei Sonderzeichen wie & < > sowie versehentliche HTML/Skript-Injektion)
+function esc(str) {
+  if (str===null || str===undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+function istGueltigesDatum(str) {
+  if (typeof str!=='string' || !DATE_RE.test(str)) return false;
+  const [y,m,d] = str.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return dt.getFullYear()===y && dt.getMonth()===m-1 && dt.getDate()===d;
+}
 // Migration: bestehende Trainingseinträge ohne ID erhalten eine
 let tlogMigriert = false;
 TLOG.forEach(t => { if (!t.id) { t.id = genId(); tlogMigriert = true; } });
@@ -740,8 +750,8 @@ function renderEinheit(u) {
     const pb = ex.pause==='90' ? '<span class="pbadge p90">90 Sek.</span>'
               : ex.pause==='120' ? '<span class="pbadge p120">2 Min.</span>' : '';
     const xb = ex.saetze!=='—' ? `<span class="xbadge">${ex.saetze}×${ex.wdh}</span>` : `<span class="xbadge">${ex.wdh}</span>`;
-    const gb = ex.gerat!==undefined ? `<span class="gbadge" onclick="editGerat('${u}',${i})">📍 ${ex.gerat||'+ Gerät'}</span>` : '';
-    const wb2 = ex.gew!=='—' ? `<span class="wbadge ${col}" onclick="editGew('${u}',${i})">${ex.gew}</span>` : '';
+    const gb = ex.gerat!==undefined ? `<span class="gbadge" onclick="editGerat('${u}',${i})">📍 ${esc(ex.gerat)||'+ Gerät'}</span>` : '';
+    const wb2 = ex.gew!=='—' ? `<span class="wbadge ${col}" onclick="editGew('${u}',${i})">${esc(ex.gew)}</span>` : '';
     const arrows = `<div class="arrow-col">
       <button onclick="moveUebung('${u}',${i},-1)" class="mini-btn" ${i===0?'disabled':''}>↑</button>
       <button onclick="moveUebung('${u}',${i},1)" class="mini-btn" ${i===EINHEITEN[u].length-1?'disabled':''}>↓</button>
@@ -806,11 +816,15 @@ async function logTraining(u) {
   const datumInput = await modalPrompt('Trainingsdatum (JJJJ-MM-TT):\nLeer lassen = heute.', heute, 'Training speichern');
   if (datumInput===null) return;
   const datum = datumInput.trim()||heute;
+  if (!istGueltigesDatum(datum)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT, z.B. 2026-07-09).', 'Ungültiges Datum'); return; }
   if (TLOG.find(t => t.datum===datum && t.unit===u)) {
     if (!await modalConfirm('Für dieses Datum existiert bereits eine gespeicherte Einheit. Trotzdem speichern?', 'Bereits vorhanden')) return;
   }
   const hsInput = await modalPrompt('Harnsäure-Wert (mg/dl)?\nLeer lassen wenn noch nicht gemessen.', '', 'Harnsäure-Wert');
   const hs = hsInput ? parseFloat(hsInput.replace(',','.')) : null;
+  if (hs!==null && !isNaN(hs) && (hs<=0 || hs>20)) {
+    if (!await modalConfirm('Der Harnsäure-Wert '+hs+' mg/dl wirkt ungewöhnlich. Trotzdem speichern?', 'Wert prüfen')) return;
+  }
   const uebungen = EINHEITEN[u].filter(e=>e.done).map(e=>({name:e.name, gew:e.gew}));
   if (!uebungen.length) {
     if (!await modalConfirm('Keine Übung ist als erledigt abgehakt. Trotzdem einen leeren Trainingseintrag speichern?', 'Keine Übungen abgehakt')) return;
@@ -858,8 +872,10 @@ function haColor(v) { return v<=6?'good':v<=7?'warn':'bad'; }
 
 async function saveEintrag() {
   const d = document.getElementById('pd').value;
-  const h = parseFloat(document.getElementById('ph').value);
+  const h = parseFloat(document.getElementById('ph').value.replace(',','.'));
   if (!d || isNaN(h)) { await modalAlert('Datum und Harnsäure sind Pflichtfelder.', 'Fehlende Angaben'); return; }
+  if (!istGueltigesDatum(d)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT, z.B. 2026-07-09).', 'Ungültiges Datum'); return; }
+  if (h<=0 || h>20) { if (!await modalConfirm('Der Harnsäure-Wert '+h+' mg/dl wirkt ungewöhnlich. Trotzdem speichern?', 'Wert prüfen')) return; }
   const e = {
     d, h,
     s: document.getElementById('ps').value || '',
@@ -926,13 +942,13 @@ function renderProto() {
         <span class="vha ${haColor(e.h)}">${e.h} mg/dl</span>
       </div>
       <div class="vrow-meta">
-        ${e.s&&e.di?`<span class="vmeta">🫀 ${e.s}/${e.di}</span>`:''}
-        ${e.p?`<span class="vmeta">💓 ${e.p} bpm</span>`:''}
-        ${e.a?`<span class="vmeta">🏃 ${e.a}</span>`:''}
-        ${e.tm?`<span class="vmeta">💧 ${e.tm}</span>`:''}
-        ${e.sl?`<span class="vmeta">😴 ${e.sl}</span>`:''}
-        ${e.e?`<span class="vmeta">🍽 ${e.e}</span>`:''}
-        ${e.n?`<span class="vmeta">📝 ${e.n}</span>`:''}
+        ${e.s&&e.di?`<span class="vmeta">🫀 ${esc(e.s)}/${esc(e.di)}</span>`:''}
+        ${e.p?`<span class="vmeta">💓 ${esc(e.p)} bpm</span>`:''}
+        ${e.a?`<span class="vmeta">🏃 ${esc(e.a)}</span>`:''}
+        ${e.tm?`<span class="vmeta">💧 ${esc(e.tm)}</span>`:''}
+        ${e.sl?`<span class="vmeta">😴 ${esc(e.sl)}</span>`:''}
+        ${e.e?`<span class="vmeta">🍽 ${esc(e.e)}</span>`:''}
+        ${e.n?`<span class="vmeta">📝 ${esc(e.n)}</span>`:''}
       </div>
       <div class="vrow-del">
         <button class="btn-del btn-edit-blue" onclick="editEintrag('${e.d}')">✏️ Bearbeiten</button>
@@ -964,7 +980,7 @@ function renderTraining() {
         </div>
         ${t.hs!==null&&t.hs!==undefined?`<span class="vha ${haColor(t.hs)}">${t.hs} mg/dl</span>`:''}
       </div>
-      <div class="tueb">${t.uebungen.map(u=>u.name+(u.gew&&u.gew!=='—'?' ('+u.gew+')':'')).join(' · ')}</div>
+      <div class="tueb">${t.uebungen.map(u=>esc(u.name)+(u.gew&&u.gew!=='—'?' ('+esc(u.gew)+')':'')).join(' · ')}</div>
       ${folgeBadge}
       <div class="vrow-del flex-gap8">
         <button class="btn-del btn-edit-neutral" onclick="editTLog('${t.id}')">✏️ Bearbeiten</button>
@@ -981,7 +997,12 @@ async function editTLog(id) {
   const neuHsInput = await modalPrompt('Harnsäure-Wert (mg/dl)?\nLeer lassen = kein Wert.', t.hs!==null&&t.hs!==undefined?String(t.hs).replace('.',','):'', 'Harnsäure-Wert');
   if (neuHsInput===null) return;
   const neuHs = neuHsInput.trim() ? parseFloat(neuHsInput.replace(',','.')) : null;
-  t.datum = neuDatum.trim() || t.datum;
+  const neuesDatum = neuDatum.trim() || t.datum;
+  if (!istGueltigesDatum(neuesDatum)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT, z.B. 2026-07-09).', 'Ungültiges Datum'); return; }
+  if (neuHs!==null && !isNaN(neuHs) && (neuHs<=0 || neuHs>20)) {
+    if (!await modalConfirm('Der Harnsäure-Wert '+neuHs+' mg/dl wirkt ungewöhnlich. Trotzdem speichern?', 'Wert prüfen')) return;
+  }
+  t.datum = neuesDatum;
   t.hs = (neuHs!==null && isNaN(neuHs)) ? t.hs : neuHs;
 
   // Übung aus der jeweils anderen Einheit zu diesem bereits gespeicherten Eintrag hinzufügen
@@ -1055,7 +1076,7 @@ function renderAnalyse() {
   fak.innerHTML = Object.entries(groups).length ? Object.entries(groups).map(([k,vs])=>{
     const a=(vs.reduce((x,y)=>x+y,0)/vs.length).toFixed(2);
     return `<div class="stat-row-line">
-      <span class="fs-13">${k}</span>
+      <span class="fs-13">${esc(k)}</span>
       <span class="stat-value" style="color:var(--${haColor(parseFloat(a))})">${a} mg/dl</span>
     </div>`;
   }).join('') : '<div class="empty-state">Keine Aktivitätsdaten.</div>';
@@ -1096,6 +1117,14 @@ function showLog(msg, ok=true) {
   el.style.display='block'; setTimeout(()=>el.style.display='none', 4000);
 }
 
+function renderLastImport() {
+  const el = document.getElementById('last-import-info');
+  if (!el) return;
+  const info = JSON.parse(localStorage.getItem('sg-last-import') || 'null');
+  if (!info) { el.textContent = '📥 Zuletzt geladene Sicherung: noch keine'; return; }
+  el.textContent = '📥 Zuletzt geladene Sicherung: '+(info.exportDatum||'unbekanntes Datum')+' — eingelesen am '+info.importiertAm;
+}
+
 async function exportJSON() {
   const planHatDaten = localStorage.getItem('sg-weights') || localStorage.getItem('sg-order') || localStorage.getItem('sg-extra');
   if (!DATA.length && !TLOG.length && !GWLOG.length && !planHatDaten) { showLog('Keine Daten vorhanden.', false); return; }
@@ -1121,16 +1150,46 @@ function importJSON(input) {
   reader.onload = async ev => {
     try {
       const raw = JSON.parse(ev.target.result);
-      const imp = raw.eintraege || raw;
-      if (!Array.isArray(imp)) throw new Error('Ungültiges Format');
-      if (!await modalConfirm('Sicherung einlesen? '+imp.length+' Einträge.', 'Sicherung importieren')) return;
+      const impRoh = raw.eintraege || raw;
+      if (!Array.isArray(impRoh)) throw new Error('Ungültiges Format — kein Array von Einträgen gefunden.');
+
+      // Tagesprotokolle validieren: Datum muss gültig sein, Harnsäure muss eine plausible Zahl sein
+      let uebersprungen = 0;
+      const imp = impRoh.filter(neu => {
+        const hOk = typeof neu.h==='number' ? isFinite(neu.h) : isFinite(parseFloat(neu.h));
+        const gueltig = neu && typeof neu.d==='string' && istGueltigesDatum(neu.d) && hOk;
+        if (!gueltig) uebersprungen++;
+        return gueltig;
+      }).map(neu => ({...neu, h: typeof neu.h==='number' ? neu.h : parseFloat(neu.h)}));
+
+      let meldung = 'Sicherung einlesen? '+imp.length+' gültige Tagesprotokolle gefunden'+(uebersprungen?' ('+uebersprungen+' ungültige übersprungen)':'')+'.';
+      if (!await modalConfirm(meldung, 'Sicherung importieren')) return;
+
       imp.forEach(neu => { const idx=DATA.findIndex(x=>x.d===neu.d); if(idx>=0) DATA[idx]=neu; else DATA.push(neu); });
       DATA.sort((a,b)=>a.d.localeCompare(b.d)); saveData();
+
+      let tlogValide = 0, tlogUngueltig = 0;
       if (Array.isArray(raw.tlog)&&raw.tlog.length) {
-        raw.tlog.forEach(neu => { if(!TLOG.find(x=>x.datum===neu.datum&&x.unit===neu.unit)) { if(!neu.id) neu.id=genId(); TLOG.unshift(neu); } });
+        raw.tlog.forEach(neu => {
+          const gueltig = neu && typeof neu.datum==='string' && istGueltigesDatum(neu.datum) && (neu.unit==='a'||neu.unit==='b');
+          if (!gueltig) { tlogUngueltig++; return; }
+          if(!TLOG.find(x=>x.datum===neu.datum&&x.unit===neu.unit)) {
+            neu.id = genId(); // ID immer neu vergeben, unabhängig vom Dateiinhalt (Absicherung)
+            if (!Array.isArray(neu.uebungen)) neu.uebungen = [];
+            TLOG.unshift(neu);
+            tlogValide++;
+          }
+        });
         saveTLOG();
       }
-      if (Array.isArray(raw.gwlog)&&raw.gwlog.length) { raw.gwlog.forEach(n=>{ if(!GWLOG.find(x=>x.datum===n.datum&&x.unit===n.unit&&x.name===n.name&&x.gew===n.gew)) GWLOG.push(n); }); saveGWLOG(); }
+      if (Array.isArray(raw.gwlog)&&raw.gwlog.length) {
+        raw.gwlog.forEach(n=>{
+          const gueltig = n && typeof n.datum==='string' && istGueltigesDatum(n.datum) && (n.unit==='a'||n.unit==='b') && typeof n.name==='string';
+          if (!gueltig) return;
+          if(!GWLOG.find(x=>x.datum===n.datum&&x.unit===n.unit&&x.name===n.name&&x.gew===n.gew)) GWLOG.push(n);
+        });
+        saveGWLOG();
+      }
       if (raw.planUid) { localStorage.setItem('sg-uid', JSON.stringify(raw.planUid)); }
       if (raw.planExtra) { localStorage.setItem('sg-extra', JSON.stringify(raw.planExtra)); }
       if (raw.planOrder) { localStorage.setItem('sg-order', JSON.stringify(raw.planOrder)); }
@@ -1139,8 +1198,14 @@ function importJSON(input) {
       if (raw.planUid || raw.planExtra || raw.planOrder || raw.planWeights || raw.planDone) {
         await modalAlert('Plan-Daten wurden importiert. Bitte die Seite einmal neu laden, damit Trainingsplan-Gewichte, Geräte und Reihenfolge korrekt übernommen werden.', 'Neu laden empfohlen');
       }
-      renderProto(); renderBkStats();
-      showLog('Eingelesen: '+imp.length+' Einträge.');
+      renderProto(); renderTraining(); renderBkStats();
+      localStorage.setItem('sg-last-import', JSON.stringify({
+        exportDatum: raw.exportDatum ? raw.exportDatum.slice(0,10) : null,
+        importiertAm: new Date().toLocaleDateString('de-DE')+' '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
+      }));
+      renderLastImport();
+      const tlogHinweis = tlogValide+' Trainingseinträge übernommen'+(tlogUngueltig?' ('+tlogUngueltig+' ungültige übersprungen)':'');
+      showLog('Eingelesen: '+imp.length+' Tagesprotokolle, '+tlogHinweis+'.');
     } catch(e) { showLog('Fehler: '+e.message, false); await modalAlert('Import-Fehler: '+e.message, 'Fehler'); }
     input.value='';
   };
