@@ -228,6 +228,7 @@ select.modal-input{cursor:pointer;}
 <section id="s-plan" class="section active">
   <div class="page-title">Trainingsplan</div>
   <div class="page-sub">2× wöchentlich · Muskelerhalt</div>
+  <div class="build-info" id="heute-anzeige"></div>
 
   <div class="einheit-grid">
     <div class="ecard active-a" id="ecard-a" onclick="switchEinheit('a')">
@@ -319,6 +320,12 @@ select.modal-input{cursor:pointer;}
             <option>Ruhetag</option><option>Spaziergang</option><option>Fahrradfahren</option><option>Schwimmen</option><option>Gartenarbeit</option>
             <option>Training Einheit A</option><option>Training Einheit B</option>
             <option>Trainingsnachwirkung</option><option>Sonstiges</option>
+          </select>
+        </div>
+        <div class="fg"><label>Intensität Vortag</label>
+          <select id="pai">
+            <option value="">— wählen —</option>
+            <option>Leicht</option><option>Mittel</option><option>Schwer</option>
           </select>
         </div>
         <div class="fg"><label>Trinkmenge Vortag</label>
@@ -495,7 +502,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-09 — v14 (Härtung: HTML-Escaping für Nutzertext, Datums-/Zahlenvalidierung, strengere Import-Prüfung, doppelten CSS-Code entfernt)';
+const BUILD_VERSION = '2026-07-09 — v17 (Import zeigt jetzt auch "bereits vorhanden" separat an, statt Duplikate stillschweigend zu übergehen)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -825,11 +832,16 @@ async function logTraining(u) {
   if (hs!==null && !isNaN(hs) && (hs<=0 || hs>20)) {
     if (!await modalConfirm('Der Harnsäure-Wert '+hs+' mg/dl wirkt ungewöhnlich. Trotzdem speichern?', 'Wert prüfen')) return;
   }
+  const intensitaet = await modalSelect(
+    'Wie intensiv war das Training?',
+    [{label:'Leicht', value:'Leicht'},{label:'Mittel', value:'Mittel'},{label:'Schwer', value:'Schwer'}],
+    'Intensität', '— keine Angabe —'
+  );
   const uebungen = EINHEITEN[u].filter(e=>e.done).map(e=>({name:e.name, gew:e.gew}));
   if (!uebungen.length) {
     if (!await modalConfirm('Keine Übung ist als erledigt abgehakt. Trotzdem einen leeren Trainingseintrag speichern?', 'Keine Übungen abgehakt')) return;
   }
-  TLOG.unshift({id:genId(), datum, zeit:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}), unit:u, uebungen, hs: isNaN(hs)?null:hs});
+  TLOG.unshift({id:genId(), datum, zeit:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}), unit:u, uebungen, hs: isNaN(hs)?null:hs, intensitaet: intensitaet||''});
   saveTLOG();
   uebungen.forEach(e => { if(e.gew==='—'||e.gew==='KG') return; GWLOG.push({datum,unit:u,name:e.name,gew:e.gew}); });
   saveGWLOG();
@@ -882,6 +894,7 @@ async function saveEintrag() {
     di: document.getElementById('pdi').value || '',
     p: document.getElementById('pp').value || '',
     a: document.getElementById('pak').value || '',
+    ai: document.getElementById('pai').value || '',
     tm: document.getElementById('ptm').value || '',
     sl: document.getElementById('psl').value || '',
     e: document.getElementById('pe').value || '',
@@ -894,7 +907,7 @@ async function saveEintrag() {
   saveData();
   // Felder leeren
   ['ph','ps','pdi','pp','pe','pn'].forEach(id=>document.getElementById(id).value='');
-  ['pak','ptm','psl'].forEach(id=>document.getElementById(id).value='');
+  ['pak','pai','ptm','psl'].forEach(id=>document.getElementById(id).value='');
   renderProto();
   await modalAlert('Gespeichert ✓', 'Erfolg');
 }
@@ -907,6 +920,7 @@ function editEintrag(d) {
   document.getElementById('pdi').value = e.di||'';
   document.getElementById('pp').value = e.p||'';
   document.getElementById('pak').value = e.a||'';
+  document.getElementById('pai').value = e.ai||'';
   document.getElementById('ptm').value = e.tm||'';
   document.getElementById('psl').value = e.sl||'';
   document.getElementById('pe').value = e.e||'';
@@ -944,7 +958,7 @@ function renderProto() {
       <div class="vrow-meta">
         ${e.s&&e.di?`<span class="vmeta">🫀 ${esc(e.s)}/${esc(e.di)}</span>`:''}
         ${e.p?`<span class="vmeta">💓 ${esc(e.p)} bpm</span>`:''}
-        ${e.a?`<span class="vmeta">🏃 ${esc(e.a)}</span>`:''}
+        ${e.a?`<span class="vmeta">🏃 ${esc(e.a)}${e.ai?' ('+esc(e.ai)+')':''}</span>`:''}
         ${e.tm?`<span class="vmeta">💧 ${esc(e.tm)}</span>`:''}
         ${e.sl?`<span class="vmeta">😴 ${esc(e.sl)}</span>`:''}
         ${e.e?`<span class="vmeta">🍽 ${esc(e.e)}</span>`:''}
@@ -976,7 +990,7 @@ function renderTraining() {
       <div class="trow-top">
         <div>
           <div class="tunit tunit-${t.unit}">Einheit ${t.unit.toUpperCase()} — ${t.unit==='a'?'Oberkörper':'Unterkörper'}</div>
-          <div class="tdate">${fd(t.datum)} · ${t.zeit} Uhr</div>
+          <div class="tdate">${fd(t.datum)} · ${t.zeit} Uhr${t.intensitaet?' · '+esc(t.intensitaet):''}</div>
         </div>
         ${t.hs!==null&&t.hs!==undefined?`<span class="vha ${haColor(t.hs)}">${t.hs} mg/dl</span>`:''}
       </div>
@@ -1004,6 +1018,13 @@ async function editTLog(id) {
   }
   t.datum = neuesDatum;
   t.hs = (neuHs!==null && isNaN(neuHs)) ? t.hs : neuHs;
+
+  const neueIntensitaet = await modalSelect(
+    'Intensität dieser Einheit (aktuell: '+(t.intensitaet||'keine Angabe')+'):',
+    [{label:'Leicht', value:'Leicht'},{label:'Mittel', value:'Mittel'},{label:'Schwer', value:'Schwer'}],
+    'Intensität ändern', '— unverändert lassen —'
+  );
+  if (neueIntensitaet) t.intensitaet = neueIntensitaet;
 
   // Übung aus der jeweils anderen Einheit zu diesem bereits gespeicherten Eintrag hinzufügen
   const other = t.unit==='a' ? 'b' : 'a';
@@ -1168,7 +1189,7 @@ function importJSON(input) {
       imp.forEach(neu => { const idx=DATA.findIndex(x=>x.d===neu.d); if(idx>=0) DATA[idx]=neu; else DATA.push(neu); });
       DATA.sort((a,b)=>a.d.localeCompare(b.d)); saveData();
 
-      let tlogValide = 0, tlogUngueltig = 0;
+      let tlogValide = 0, tlogUngueltig = 0, tlogDuplikat = 0;
       if (Array.isArray(raw.tlog)&&raw.tlog.length) {
         raw.tlog.forEach(neu => {
           const gueltig = neu && typeof neu.datum==='string' && istGueltigesDatum(neu.datum) && (neu.unit==='a'||neu.unit==='b');
@@ -1178,6 +1199,8 @@ function importJSON(input) {
             if (!Array.isArray(neu.uebungen)) neu.uebungen = [];
             TLOG.unshift(neu);
             tlogValide++;
+          } else {
+            tlogDuplikat++;
           }
         });
         saveTLOG();
@@ -1204,8 +1227,10 @@ function importJSON(input) {
         importiertAm: new Date().toLocaleDateString('de-DE')+' '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
       }));
       renderLastImport();
-      const tlogHinweis = tlogValide+' Trainingseinträge übernommen'+(tlogUngueltig?' ('+tlogUngueltig+' ungültige übersprungen)':'');
-      showLog('Eingelesen: '+imp.length+' Tagesprotokolle, '+tlogHinweis+'.');
+      const tlogTeile = [tlogValide+' übernommen'];
+      if (tlogDuplikat) tlogTeile.push(tlogDuplikat+' bereits vorhanden');
+      if (tlogUngueltig) tlogTeile.push(tlogUngueltig+' ungültig');
+      showLog('Eingelesen: '+imp.length+' Tagesprotokolle. Trainingseinträge: '+tlogTeile.join(', ')+'.');
     } catch(e) { showLog('Fehler: '+e.message, false); await modalAlert('Import-Fehler: '+e.message, 'Fehler'); }
     input.value='';
   };
@@ -1214,9 +1239,9 @@ function importJSON(input) {
 
 async function exportCSV() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
-  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität;Trinkmenge;Schlaf;Ernährung;Notiz\n';
+  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität;Intensität;Trinkmenge;Schlaf;Ernährung;Notiz\n';
   const dez = v => typeof v==='number' ? String(v).replace('.',',') : v;
-  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',e.a||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',e.a||'',e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'}));
   a.download = 'sport-gicht-'+new Date().toISOString().slice(0,10)+'.csv';
@@ -1233,8 +1258,8 @@ function exportClaude() {
   let txt = `# PROJEKT SPORT & GICHT — AUSWERTUNGSDATEN\nExportiert: ${new Date().toLocaleDateString('de-DE')}\n\n`;
   txt += `## Zusammenfassung\n- Einträge: ${DATA.length}\n- Zeitraum: ${DATA[0].d} bis ${DATA[DATA.length-1].d}\n`;
   txt += `- Ø Harnsäure: ${avg} mg/dl\n- Bestwert: ${best} mg/dl\n- Im Ziel (≤6,0): ${ziel}/${DATA.length} (${Math.round(ziel/DATA.length*100)}%)\n- Medikament: Allopurinol 150 mg täglich\n\n`;
-  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität | Trinkmenge | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|-----------|------------|--------|-----------|------\n`;
-  DATA.forEach(e => { txt += `${e.d} | ${e.h} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.a||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
+  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität | Intensität | Trinkmenge | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|-----------|------------|------------|--------|-----------|------\n`;
+  DATA.forEach(e => { txt += `${e.d} | ${e.h} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.a||'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
   txt += `\n## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
   navigator.clipboard.writeText(txt).then(()=>showLog('Text in Zwischenablage kopiert!')).catch(()=>{
     const a=document.createElement('a');
@@ -1248,6 +1273,7 @@ function exportClaude() {
 document.getElementById('pd').value = new Date().toISOString().slice(0,10);
 
 // ══ INIT ══
+document.getElementById('heute-anzeige').textContent = '📅 Heute: '+new Date().toLocaleDateString('de-DE',{weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
 renderEinheit('a');
 renderEinheit('b');
 renderProto();
