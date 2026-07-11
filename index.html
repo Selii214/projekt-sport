@@ -109,7 +109,9 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
 .sbox{background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;}
 .sv{font-size:22px;font-weight:800;}
 .sl{font-size:10px;color:var(--muted);margin-top:2px;}
+.sv-sub{font-size:13px;font-weight:700;margin-top:1px;}
 .sv.good{color:var(--good);}.sv.warn{color:var(--warn);}.sv.bad{color:var(--bad);}
+.sv-sub.good{color:var(--good);}.sv-sub.warn{color:var(--warn);}
 
 .vlist{display:flex;flex-direction:column;gap:8px;}
 .vrow{background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);padding:12px;}
@@ -350,7 +352,7 @@ select.modal-input{cursor:pointer;}
     <div class="stats-row hidden" id="stats-row">
       <div class="sbox"><div class="sv" id="s-avg">—</div><div class="sl">Ø mg/dl</div></div>
       <div class="sbox"><div class="sv good" id="s-best">—</div><div class="sl">Bestwert</div></div>
-      <div class="sbox"><div class="sv" id="s-ziel">—</div><div class="sl">Im Ziel</div></div>
+      <div class="sbox"><div class="sv" id="s-ziel">—</div><div class="sv-sub" id="s-ziel-prozent"></div><div class="sl">Im Ziel</div></div>
     </div>
 
     <div id="proto-list"></div>
@@ -502,7 +504,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-11 — v19 (echter Bugfix: Verlauf-Training-Tab und Einheit-B-Ansicht blieben nach der CSS-Aufräumaktion dauerhaft unsichtbar — Klassen-/Inline-Style-Konflikt behoben)';
+const BUILD_VERSION = '2026-07-11 — v22 (Korrektur: linke/mittlere Verlauf-Statistik-Box zurück auf Original, Prozentzahl bei "Im Ziel" jetzt als eigene Zeile unter der Zahl)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -846,6 +848,7 @@ async function logTraining(u) {
   uebungen.forEach(e => { if(e.gew==='—'||e.gew==='KG') return; GWLOG.push({datum,unit:u,name:e.name,gew:e.gew}); });
   saveGWLOG();
   await modalAlert('Einheit '+u.toUpperCase()+' vom '+datum+' gespeichert!', 'Gespeichert');
+  resetEinheit(u);
 }
 
 // ══ CHECK ══
@@ -942,12 +945,15 @@ function renderProto() {
   const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
   const best = Math.min(...vals).toFixed(1);
   const ziel = vals.filter(v=>v<=6).length;
+  const zielProzent = Math.round(ziel/vals.length*100);
   sr.style.display='grid';
   document.getElementById('s-avg').textContent = avg;
   document.getElementById('s-avg').className = 'sv '+haColor(parseFloat(avg));
   document.getElementById('s-best').textContent = best+' mg/dl';
   document.getElementById('s-ziel').textContent = ziel+'/'+vals.length;
   document.getElementById('s-ziel').className = 'sv '+(ziel/vals.length>=0.6?'good':'warn');
+  document.getElementById('s-ziel-prozent').textContent = zielProzent+'%';
+  document.getElementById('s-ziel-prozent').className = 'sv-sub '+(ziel/vals.length>=0.6?'good':'warn');
 
   list.innerHTML = [...DATA].reverse().map(e=>`
     <div class="vrow">
