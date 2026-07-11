@@ -502,7 +502,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-09 — v18 (Bugfix: mehrdeutige Bestätigungsdialoge konnten ganzes Training unbemerkt verwerfen — Buttons jetzt eindeutig beschriftet, Harnsäure-Ablehnung verwirft nur den Wert)';
+const BUILD_VERSION = '2026-07-11 — v19 (echter Bugfix: Verlauf-Training-Tab und Einheit-B-Ansicht blieben nach der CSS-Aufräumaktion dauerhaft unsichtbar — Klassen-/Inline-Style-Konflikt behoben)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -740,8 +740,8 @@ function saveWeights() {
 let aktEinheit = 'a';
 function switchEinheit(u) {
   aktEinheit = u;
-  document.getElementById('plan-a').style.display = u==='a' ? '' : 'none';
-  document.getElementById('plan-b').style.display = u==='b' ? '' : 'none';
+  document.getElementById('plan-a').classList.toggle('hidden', u!=='a');
+  document.getElementById('plan-b').classList.toggle('hidden', u!=='b');
   document.getElementById('ecard-a').className = 'ecard' + (u==='a' ? ' active-a' : '');
   document.getElementById('ecard-b').className = 'ecard' + (u==='b' ? ' active-b' : '');
 }
@@ -867,8 +867,8 @@ function renderCheck() {
 
 // ══ VERLAUF-UNTER-TABS ══
 function switchVtab(t) {
-  document.getElementById('vt-proto').style.display = t==='proto'?'':'none';
-  document.getElementById('vt-training').style.display = t==='training'?'':'none';
+  document.getElementById('vt-proto').classList.toggle('hidden', t!=='proto');
+  document.getElementById('vt-training').classList.toggle('hidden', t!=='training');
   document.getElementById('vtab-proto').className = 'vtab'+(t==='proto'?' active':'');
   document.getElementById('vtab-training').className = 'vtab'+(t==='training'?' active':'');
   if (t==='proto') renderProto();
