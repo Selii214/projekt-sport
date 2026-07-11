@@ -504,7 +504,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-11 — v22 (Korrektur: linke/mittlere Verlauf-Statistik-Box zurück auf Original, Prozentzahl bei "Im Ziel" jetzt als eigene Zeile unter der Zahl)';
+const BUILD_VERSION = '2026-07-11 — v23 (echter Zeitzonen-Bug behoben: "Harnsäure Folgetag" zeigte durch UTC-Berechnung das Trainingsdatum selbst statt den Folgetag — 5 Stellen korrigiert)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -632,6 +632,13 @@ function esc(str) {
   return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// Liefert das heutige Datum in lokaler Zeit als JJJJ-MM-TT — bewusst NICHT toISOString()
+// verwenden, da das intern in UTC rechnet und in Zeitzonen östlich von UTC (z.B. Deutschland)
+// kurz nach Mitternacht fälschlich noch den Vortag liefern würde.
+function heuteLokal() {
+  const dt = new Date();
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
 function istGueltigesDatum(str) {
   if (typeof str!=='string' || !DATE_RE.test(str)) return false;
   const [y,m,d] = str.split('-').map(Number);
@@ -821,7 +828,7 @@ async function editGerat(u,i) {
 }
 
 async function logTraining(u) {
-  const heute = new Date().toISOString().slice(0,10);
+  const heute = heuteLokal();
   const datumInput = await modalPrompt('Trainingsdatum (JJJJ-MM-TT):\nLeer lassen = heute.', heute, 'Training speichern');
   if (datumInput===null) return;
   const datum = datumInput.trim()||heute;
@@ -978,8 +985,12 @@ function renderProto() {
 }
 
 function naechsterTag(d) {
-  const dt = new Date(d+'T00:00:00'); dt.setDate(dt.getDate()+1);
-  return dt.toISOString().slice(0,10);
+  const dt = new Date(d+'T00:00:00');
+  dt.setDate(dt.getDate()+1);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth()+1).padStart(2,'0');
+  const day = String(dt.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
 }
 function renderTraining() {
   const list = document.getElementById('training-list');
@@ -1164,7 +1175,7 @@ async function exportJSON() {
     planExtra: JSON.parse(localStorage.getItem('sg-extra')||'{"a":[],"b":[]}'),
     planUid: JSON.parse(localStorage.getItem('sg-uid')||'{}')
   }, null, 2);
-  const name = 'sport-gicht-'+new Date().toISOString().slice(0,10)+'.json';
+  const name = 'sport-gicht-'+heuteLokal()+'.json';
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([inhalt],{type:'application/json'}));
   a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
@@ -1250,7 +1261,7 @@ async function exportCSV() {
   const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',e.a||'',e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'}));
-  a.download = 'sport-gicht-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.download = 'sport-gicht-'+heuteLokal()+'.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   showLog('CSV exportiert.');
 }
@@ -1276,7 +1287,7 @@ function exportClaude() {
 }
 
 // ══ DATUM DEFAULT ══
-document.getElementById('pd').value = new Date().toISOString().slice(0,10);
+document.getElementById('pd').value = heuteLokal();
 
 // ══ INIT ══
 document.getElementById('heute-anzeige').textContent = '📅 Heute: '+new Date().toLocaleDateString('de-DE',{weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
