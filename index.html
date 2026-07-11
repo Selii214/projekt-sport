@@ -502,7 +502,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-09 — v17 (Import zeigt jetzt auch "bereits vorhanden" separat an, statt Duplikate stillschweigend zu übergehen)';
+const BUILD_VERSION = '2026-07-09 — v18 (Bugfix: mehrdeutige Bestätigungsdialoge konnten ganzes Training unbemerkt verwerfen — Buttons jetzt eindeutig beschriftet, Harnsäure-Ablehnung verwirft nur den Wert)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -533,7 +533,7 @@ function modalAlert(message, title) {
     ok.focus();
   });
 }
-function modalConfirm(message, title, danger) {
+function modalConfirm(message, title, danger, okLabel, cancelLabel) {
   return new Promise(resolve => {
     const overlay = document.getElementById('modal-overlay');
     document.getElementById('modal-title').textContent = title || 'Bestätigen';
@@ -542,9 +542,9 @@ function modalConfirm(message, title, danger) {
     const btns = document.getElementById('modal-buttons');
     btns.innerHTML = '';
     const cancel = document.createElement('button');
-    cancel.className = 'modal-btn modal-btn-cancel'; cancel.textContent = 'Abbrechen';
+    cancel.className = 'modal-btn modal-btn-cancel'; cancel.textContent = cancelLabel || 'Abbrechen';
     const ok = document.createElement('button');
-    ok.className = 'modal-btn ' + (danger ? 'modal-btn-danger' : 'modal-btn-ok'); ok.textContent = 'OK';
+    ok.className = 'modal-btn ' + (danger ? 'modal-btn-danger' : 'modal-btn-ok'); ok.textContent = okLabel || 'OK';
     const esc = e => { if (e.key==='Escape') finish(false); if (e.key==='Enter') finish(true); };
     function finish(v) { modalClose(overlay, esc); resolve(v); }
     cancel.onclick = () => finish(false);
@@ -825,12 +825,12 @@ async function logTraining(u) {
   const datum = datumInput.trim()||heute;
   if (!istGueltigesDatum(datum)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT, z.B. 2026-07-09).', 'Ungültiges Datum'); return; }
   if (TLOG.find(t => t.datum===datum && t.unit===u)) {
-    if (!await modalConfirm('Für dieses Datum existiert bereits eine gespeicherte Einheit. Trotzdem speichern?', 'Bereits vorhanden')) return;
+    if (!await modalConfirm('Für dieses Datum existiert bereits eine gespeicherte Einheit.', 'Bereits vorhanden', false, 'Zusätzlich speichern', 'Abbrechen, nichts speichern')) return;
   }
   const hsInput = await modalPrompt('Harnsäure-Wert (mg/dl)?\nLeer lassen wenn noch nicht gemessen.', '', 'Harnsäure-Wert');
-  const hs = hsInput ? parseFloat(hsInput.replace(',','.')) : null;
+  let hs = hsInput ? parseFloat(hsInput.replace(',','.')) : null;
   if (hs!==null && !isNaN(hs) && (hs<=0 || hs>20)) {
-    if (!await modalConfirm('Der Harnsäure-Wert '+hs+' mg/dl wirkt ungewöhnlich. Trotzdem speichern?', 'Wert prüfen')) return;
+    if (!await modalConfirm('Der Harnsäure-Wert '+hs+' mg/dl wirkt ungewöhnlich.', 'Wert prüfen', false, 'Trotzdem übernehmen', 'Wert verwerfen, Training trotzdem speichern')) hs = null;
   }
   const intensitaet = await modalSelect(
     'Wie intensiv war das Training?',
@@ -839,7 +839,7 @@ async function logTraining(u) {
   );
   const uebungen = EINHEITEN[u].filter(e=>e.done).map(e=>({name:e.name, gew:e.gew}));
   if (!uebungen.length) {
-    if (!await modalConfirm('Keine Übung ist als erledigt abgehakt. Trotzdem einen leeren Trainingseintrag speichern?', 'Keine Übungen abgehakt')) return;
+    if (!await modalConfirm('Keine Übung ist als erledigt abgehakt.', 'Keine Übungen abgehakt', false, 'Trotzdem als leeres Training speichern', 'Abbrechen, zurück zum Abhaken')) return;
   }
   TLOG.unshift({id:genId(), datum, zeit:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}), unit:u, uebungen, hs: isNaN(hs)?null:hs, intensitaet: intensitaet||''});
   saveTLOG();
@@ -887,7 +887,7 @@ async function saveEintrag() {
   const h = parseFloat(document.getElementById('ph').value.replace(',','.'));
   if (!d || isNaN(h)) { await modalAlert('Datum und Harnsäure sind Pflichtfelder.', 'Fehlende Angaben'); return; }
   if (!istGueltigesDatum(d)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT, z.B. 2026-07-09).', 'Ungültiges Datum'); return; }
-  if (h<=0 || h>20) { if (!await modalConfirm('Der Harnsäure-Wert '+h+' mg/dl wirkt ungewöhnlich. Trotzdem speichern?', 'Wert prüfen')) return; }
+  if (h<=0 || h>20) { if (!await modalConfirm('Der Harnsäure-Wert '+h+' mg/dl wirkt ungewöhnlich.', 'Wert prüfen', false, 'Trotzdem speichern', 'Abbrechen, nichts speichern')) return; }
   const e = {
     d, h,
     s: document.getElementById('ps').value || '',
@@ -1010,11 +1010,11 @@ async function editTLog(id) {
   if (neuDatum===null) return;
   const neuHsInput = await modalPrompt('Harnsäure-Wert (mg/dl)?\nLeer lassen = kein Wert.', t.hs!==null&&t.hs!==undefined?String(t.hs).replace('.',','):'', 'Harnsäure-Wert');
   if (neuHsInput===null) return;
-  const neuHs = neuHsInput.trim() ? parseFloat(neuHsInput.replace(',','.')) : null;
+  let neuHs = neuHsInput.trim() ? parseFloat(neuHsInput.replace(',','.')) : null;
   const neuesDatum = neuDatum.trim() || t.datum;
   if (!istGueltigesDatum(neuesDatum)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT, z.B. 2026-07-09).', 'Ungültiges Datum'); return; }
   if (neuHs!==null && !isNaN(neuHs) && (neuHs<=0 || neuHs>20)) {
-    if (!await modalConfirm('Der Harnsäure-Wert '+neuHs+' mg/dl wirkt ungewöhnlich. Trotzdem speichern?', 'Wert prüfen')) return;
+    if (!await modalConfirm('Der Harnsäure-Wert '+neuHs+' mg/dl wirkt ungewöhnlich.', 'Wert prüfen', false, 'Trotzdem übernehmen', 'Wert verwerfen')) neuHs = null;
   }
   t.datum = neuesDatum;
   t.hs = (neuHs!==null && isNaN(neuHs)) ? t.hs : neuHs;
