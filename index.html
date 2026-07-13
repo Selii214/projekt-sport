@@ -405,6 +405,7 @@ select.modal-input{cursor:pointer;}
       <div class="check-item" id="ci5" onclick="toggleCheck(5)"><div class="check-chk" id="cc5"></div><div class="check-icon">💧</div><div class="check-text"><div class="check-title">500 ml + Tagesziel ≥ 3,5 L</div><div class="check-desc">Gesamttrinkmenge Trainingstag mind. 3,5–4 L.</div></div></div>
       <div class="check-item" id="ci6" onclick="toggleCheck(6)"><div class="check-chk" id="cc6"></div><div class="check-icon">📏</div><div class="check-text"><div class="check-title">Morgen nüchtern messen</div><div class="check-desc">Harnsäure am Folgetag morgens messen und eintragen.</div></div></div>
     </div>
+    <button class="btn-save mt-12" onclick="saveCheck()">💾 Gicht-Check speichern</button>
   </div>
 
   <div class="card">
@@ -515,7 +516,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-12 — v24 (neuer Verlauf-Unterreiter "Niere": Kreatinin/GFR erfassen, CKD-Stufe automatisch, Trend zum Vorwert, in Sicherung integriert)';
+const BUILD_VERSION = '2026-07-14 — v25 (Gicht-Check: "Speichern"-Button mit Bestätigung ergänzt, wird automatisch zurückgesetzt sobald ein Training gespeichert wird)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -878,6 +879,7 @@ async function logTraining(u) {
   saveGWLOG();
   await modalAlert('Einheit '+u.toUpperCase()+' vom '+datum+' gespeichert!', 'Gespeichert');
   resetEinheit(u);
+  resetCheck();
 }
 
 // ══ CHECK ══
@@ -885,6 +887,15 @@ let checkState = JSON.parse(localStorage.getItem('sg-check') || '{}');
 function toggleCheck(i) {
   checkState[i] = !checkState[i];
   localStorage.setItem('sg-check', JSON.stringify(checkState));
+  renderCheck();
+}
+async function saveCheck() {
+  localStorage.setItem('sg-check', JSON.stringify(checkState));
+  await modalAlert('Gicht-Check gespeichert!', 'Gespeichert');
+}
+function resetCheck() {
+  checkState = {};
+  localStorage.setItem('sg-check', '{}');
   renderCheck();
 }
 function renderCheck() {
