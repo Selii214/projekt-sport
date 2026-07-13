@@ -304,6 +304,7 @@ select.modal-input{cursor:pointer;}
   <div class="verlauf-tabs">
     <button class="vtab active" id="vtab-proto" onclick="switchVtab('proto')">📋 Protokoll</button>
     <button class="vtab" id="vtab-training" onclick="switchVtab('training')">🏋️ Training</button>
+    <button class="vtab" id="vtab-niere" onclick="switchVtab('niere')">🩺 Niere</button>
   </div>
 
   <!-- Protokoll-Unter-Tab -->
@@ -361,6 +362,16 @@ select.modal-input{cursor:pointer;}
   <!-- Training-Unter-Tab -->
   <div id="vt-training" class="hidden">
     <div id="training-list"></div>
+  </div>
+
+  <!-- Niere-Unter-Tab -->
+  <div id="vt-niere" class="hidden">
+    <div class="fg"><label>Datum</label><input type="date" id="nid"></div>
+    <div class="fg"><label>Kreatinin (mg/dl)</label><input type="number" id="nik" step="0.01" placeholder="1,40"></div>
+    <div class="fg"><label>GFR (ml/min/1,73m²)</label><input type="number" id="nig" step="1" placeholder="53"></div>
+    <div class="fg"><label>Notiz</label><input type="text" id="nin" placeholder="z.B. Laborwert vom Nephrologen"></div>
+    <button class="btn-save" onclick="saveNieren()">💾 Nierenwert speichern</button>
+    <div id="niere-list" class="mt-12"></div>
   </div>
 </section>
 
@@ -504,7 +515,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-11 — v23 (echter Zeitzonen-Bug behoben: "Harnsäure Folgetag" zeigte durch UTC-Berechnung das Trainingsdatum selbst statt den Folgetag — 5 Stellen korrigiert)';
+const BUILD_VERSION = '2026-07-12 — v24 (neuer Verlauf-Unterreiter "Niere": Kreatinin/GFR erfassen, CKD-Stufe automatisch, Trend zum Vorwert, in Sicherung integriert)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -639,6 +650,15 @@ function heuteLokal() {
   const dt = new Date();
   return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
 }
+// CKD-Einordnung nach KDIGO-Klassifikation, rein informativ — ersetzt keine ärztliche Einschätzung
+function ckdInfo(gfr) {
+  if (gfr>=90) return {stufe:'G1', label:'Normal/leicht erhöht', klasse:'good'};
+  if (gfr>=60) return {stufe:'G2', label:'Leicht eingeschränkt', klasse:'good'};
+  if (gfr>=45) return {stufe:'G3a', label:'Leicht-moderat eingeschränkt', klasse:'warn'};
+  if (gfr>=30) return {stufe:'G3b', label:'Moderat-stark eingeschränkt', klasse:'warn'};
+  if (gfr>=15) return {stufe:'G4', label:'Stark eingeschränkt', klasse:'bad'};
+  return {stufe:'G5', label:'Nierenversagen', klasse:'bad'};
+}
 function istGueltigesDatum(str) {
   if (typeof str!=='string' || !DATE_RE.test(str)) return false;
   const [y,m,d] = str.split('-').map(Number);
@@ -650,10 +670,12 @@ let tlogMigriert = false;
 TLOG.forEach(t => { if (!t.id) { t.id = genId(); tlogMigriert = true; } });
 if (tlogMigriert) localStorage.setItem('sg-tlog', JSON.stringify(TLOG));
 let GWLOG = JSON.parse(localStorage.getItem('sg-gwlog') || '[]');
+let NLOG = JSON.parse(localStorage.getItem('sg-nlog') || '[]');
 
 function saveData() { localStorage.setItem('sg-proto', JSON.stringify(DATA)); }
 function saveTLOG() { localStorage.setItem('sg-tlog', JSON.stringify(TLOG)); }
 function saveGWLOG() { localStorage.setItem('sg-gwlog', JSON.stringify(GWLOG)); }
+function saveNLOG() { localStorage.setItem('sg-nlog', JSON.stringify(NLOG)); }
 
 // ══ TRAININGSPLAN ══
 const EINHEITEN = {
@@ -879,10 +901,13 @@ function renderCheck() {
 function switchVtab(t) {
   document.getElementById('vt-proto').classList.toggle('hidden', t!=='proto');
   document.getElementById('vt-training').classList.toggle('hidden', t!=='training');
+  document.getElementById('vt-niere').classList.toggle('hidden', t!=='niere');
   document.getElementById('vtab-proto').className = 'vtab'+(t==='proto'?' active':'');
   document.getElementById('vtab-training').className = 'vtab'+(t==='training'?' active':'');
+  document.getElementById('vtab-niere').className = 'vtab'+(t==='niere'?' active':'');
   if (t==='proto') renderProto();
   if (t==='training') renderTraining();
+  if (t==='niere') renderNieren();
 }
 
 // ══ PROTOKOLL ══
@@ -1075,6 +1100,94 @@ async function deleteTLog(id) {
   TLOG = TLOG.filter(x=>x.id!==id); saveTLOG(); renderTraining();
 }
 
+// ══ NIERE ══
+async function saveNieren() {
+  const datum = document.getElementById('nid').value || heuteLokal();
+  const krea = parseFloat(document.getElementById('nik').value.replace(',','.'));
+  const gfr = parseFloat(document.getElementById('nig').value.replace(',','.'));
+  const notiz = document.getElementById('nin').value || '';
+  if (!istGueltigesDatum(datum)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT).', 'Ungültiges Datum'); return; }
+  if (isNaN(krea) && isNaN(gfr)) { await modalAlert('Bitte mindestens Kreatinin oder GFR eintragen.', 'Fehlende Angaben'); return; }
+  const idx = NLOG.findIndex(x=>x.datum===datum);
+  const eintrag = {id: idx>=0?NLOG[idx].id:genId(), datum, krea: isNaN(krea)?null:krea, gfr: isNaN(gfr)?null:gfr, notiz};
+  if (idx>=0) {
+    if (!await modalConfirm('Für dieses Datum existiert bereits ein Nierenwert-Eintrag. Überschreiben?', 'Bereits vorhanden')) return;
+    NLOG[idx] = eintrag;
+  } else {
+    NLOG.push(eintrag);
+  }
+  NLOG.sort((a,b)=>a.datum.localeCompare(b.datum));
+  saveNLOG();
+  document.getElementById('nid').value = '';
+  document.getElementById('nik').value = '';
+  document.getElementById('nig').value = '';
+  document.getElementById('nin').value = '';
+  renderNieren();
+  await modalAlert('Nierenwert gespeichert!', 'Gespeichert');
+}
+
+function renderNieren() {
+  const list = document.getElementById('niere-list');
+  if (!NLOG.length) { list.innerHTML = '<div class="empty-state">Noch keine Nierenwerte erfasst.</div>'; return; }
+  const sorted = [...NLOG].sort((a,b)=>b.datum.localeCompare(a.datum));
+  list.innerHTML = sorted.map((n,i) => {
+    const naechster = sorted[i+1]; // chronologisch vorheriger Eintrag (Liste ist neueste zuerst)
+    let trend = '';
+    if (naechster && n.gfr!=null && naechster.gfr!=null) {
+      const diff = n.gfr - naechster.gfr;
+      if (Math.abs(diff) < 1) trend = '→ stabil';
+      else trend = diff > 0 ? '↑ verbessert (+'+diff.toFixed(0)+')' : '↓ verschlechtert ('+diff.toFixed(0)+')';
+    }
+    const info = n.gfr!=null ? ckdInfo(n.gfr) : null;
+    return `
+    <div class="trow">
+      <div class="trow-top">
+        <div>
+          <div class="tdate">${fd(n.datum)}</div>
+        </div>
+        ${info ? `<span class="vha ${info.klasse}">${info.stufe}</span>` : ''}
+      </div>
+      <div class="tueb">
+        ${n.krea!=null ? 'Kreatinin: '+n.krea+' mg/dl' : ''}${n.krea!=null&&n.gfr!=null?' · ':''}${n.gfr!=null ? 'GFR: '+n.gfr+' ml/min/1,73m²' : ''}
+        ${info ? ' — '+esc(info.label) : ''}
+      </div>
+      ${trend ? `<div class="tueb mt-4 opacity-60">${trend} gegenüber vorherigem Eintrag</div>` : ''}
+      ${n.notiz ? `<div class="tueb mt-4">📝 ${esc(n.notiz)}</div>` : ''}
+      <div class="vrow-del flex-gap8">
+        <button class="btn-del btn-edit-neutral" onclick="editNieren('${n.id}')">✏️ Bearbeiten</button>
+        <button class="btn-del" onclick="deleteNieren('${n.id}')">🗑 Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function editNieren(id) {
+  const n = NLOG.find(x=>x.id===id); if (!n) return;
+  const neuDatum = await modalPrompt('Datum (JJJJ-MM-TT):', n.datum, 'Nierenwert bearbeiten');
+  if (neuDatum===null) return;
+  if (!istGueltigesDatum(neuDatum.trim())) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT).', 'Ungültiges Datum'); return; }
+  const neuKreaInput = await modalPrompt('Kreatinin (mg/dl):', n.krea!=null?String(n.krea).replace('.',','):'', 'Kreatinin');
+  if (neuKreaInput===null) return;
+  const neuGfrInput = await modalPrompt('GFR (ml/min/1,73m²):', n.gfr!=null?String(n.gfr):'', 'GFR');
+  if (neuGfrInput===null) return;
+  const neuNotiz = await modalPrompt('Notiz:', n.notiz||'', 'Notiz');
+  if (neuNotiz===null) return;
+  n.datum = neuDatum.trim();
+  const neuKrea = parseFloat(neuKreaInput.replace(',','.'));
+  const neuGfr = parseFloat(neuGfrInput.replace(',','.'));
+  n.krea = isNaN(neuKrea) ? null : neuKrea;
+  n.gfr = isNaN(neuGfr) ? null : neuGfr;
+  n.notiz = neuNotiz;
+  NLOG.sort((a,b)=>a.datum.localeCompare(b.datum));
+  saveNLOG(); renderNieren();
+}
+
+async function deleteNieren(id) {
+  const n = NLOG.find(x=>x.id===id); if (!n) return;
+  if (!await modalConfirm('Nierenwert-Eintrag löschen?\n'+fd(n.datum), 'Eintrag löschen', true)) return;
+  NLOG = NLOG.filter(x=>x.id!==id); saveNLOG(); renderNieren();
+}
+
 // ══ ANALYSE ══
 function renderAnalyse() {
   const aw = document.getElementById('aw-stats');
@@ -1165,10 +1278,10 @@ function renderLastImport() {
 
 async function exportJSON() {
   const planHatDaten = localStorage.getItem('sg-weights') || localStorage.getItem('sg-order') || localStorage.getItem('sg-extra');
-  if (!DATA.length && !TLOG.length && !GWLOG.length && !planHatDaten) { showLog('Keine Daten vorhanden.', false); return; }
+  if (!DATA.length && !TLOG.length && !GWLOG.length && !NLOG.length && !planHatDaten) { showLog('Keine Daten vorhanden.', false); return; }
   const inhalt = JSON.stringify({
-    version:3, exportDatum:new Date().toISOString(),
-    eintraege:DATA, tlog:TLOG, gwlog:GWLOG,
+    version:4, exportDatum:new Date().toISOString(),
+    eintraege:DATA, tlog:TLOG, gwlog:GWLOG, nlog:NLOG,
     planWeights: JSON.parse(localStorage.getItem('sg-weights')||'{}'),
     planDone: JSON.parse(localStorage.getItem('sg-done')||'{}'),
     planOrder: JSON.parse(localStorage.getItem('sg-order')||'{}'),
@@ -1230,6 +1343,20 @@ function importJSON(input) {
         });
         saveGWLOG();
       }
+      let nlogValide = 0, nlogUngueltig = 0, nlogDuplikat = 0;
+      if (Array.isArray(raw.nlog)&&raw.nlog.length) {
+        raw.nlog.forEach(n=>{
+          const gueltig = n && typeof n.datum==='string' && istGueltigesDatum(n.datum) && (typeof n.krea==='number' || typeof n.gfr==='number' || n.krea===null || n.gfr===null);
+          if (!gueltig) { nlogUngueltig++; return; }
+          if (!NLOG.find(x=>x.datum===n.datum)) {
+            n.id = genId();
+            NLOG.push(n);
+            nlogValide++;
+          } else nlogDuplikat++;
+        });
+        NLOG.sort((a,b)=>a.datum.localeCompare(b.datum));
+        saveNLOG();
+      }
       if (raw.planUid) { localStorage.setItem('sg-uid', JSON.stringify(raw.planUid)); }
       if (raw.planExtra) { localStorage.setItem('sg-extra', JSON.stringify(raw.planExtra)); }
       if (raw.planOrder) { localStorage.setItem('sg-order', JSON.stringify(raw.planOrder)); }
@@ -1238,7 +1365,7 @@ function importJSON(input) {
       if (raw.planUid || raw.planExtra || raw.planOrder || raw.planWeights || raw.planDone) {
         await modalAlert('Plan-Daten wurden importiert. Bitte die Seite einmal neu laden, damit Trainingsplan-Gewichte, Geräte und Reihenfolge korrekt übernommen werden.', 'Neu laden empfohlen');
       }
-      renderProto(); renderTraining(); renderBkStats();
+      renderProto(); renderTraining(); renderNieren(); renderBkStats();
       localStorage.setItem('sg-last-import', JSON.stringify({
         exportDatum: raw.exportDatum ? raw.exportDatum.slice(0,10) : null,
         importiertAm: new Date().toLocaleDateString('de-DE')+' '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
@@ -1247,7 +1374,7 @@ function importJSON(input) {
       const tlogTeile = [tlogValide+' übernommen'];
       if (tlogDuplikat) tlogTeile.push(tlogDuplikat+' bereits vorhanden');
       if (tlogUngueltig) tlogTeile.push(tlogUngueltig+' ungültig');
-      showLog('Eingelesen: '+imp.length+' Tagesprotokolle. Trainingseinträge: '+tlogTeile.join(', ')+'.');
+      showLog('Eingelesen: '+imp.length+' Tagesprotokolle. Trainingseinträge: '+tlogTeile.join(', ')+'. Nierenwerte: '+nlogValide+' übernommen'+(nlogDuplikat?', '+nlogDuplikat+' bereits vorhanden':'')+(nlogUngueltig?', '+nlogUngueltig+' ungültig':'')+'.');
     } catch(e) { showLog('Fehler: '+e.message, false); await modalAlert('Import-Fehler: '+e.message, 'Fehler'); }
     input.value='';
   };
