@@ -516,7 +516,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-14 — v25 (Gicht-Check: "Speichern"-Button mit Bestätigung ergänzt, wird automatisch zurückgesetzt sobald ein Training gespeichert wird)';
+const BUILD_VERSION = '2026-07-14 — v29 (Robustheit: alle 17 localStorage.setItem-Aufrufe gegen vollen Speicher/privaten Browsermodus abgesichert — echte Fehlermeldung statt falschem "Gespeichert" bei den drei Haupt-Speicherpunkten)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -635,8 +635,41 @@ function showTab(id, btnId) {
 }
 
 // ══ DATEN ══
-let DATA = JSON.parse(localStorage.getItem('sg-proto') || '[]');
-let TLOG = JSON.parse(localStorage.getItem('sg-tlog') || '[]');
+// Geschütztes Auslesen von localStorage: verhindert, dass beschädigtes JSON
+// (z.B. durch abgebrochenes Schreiben oder manuelle Manipulation) die gesamte
+// App am Start hindert. Bei Fehler wird der übergebene Fallback verwendet.
+function safeParse(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null || raw === undefined) return fallback;
+    const parsed = JSON.parse(raw);
+    // Zusätzliche Typ-Prüfung: gültiges JSON kann trotzdem den falschen Typ haben
+    // (z.B. "null" oder eine Zahl statt des erwarteten Arrays/Objekts)
+    if (fallback !== null) {
+      const erwartetArray = Array.isArray(fallback);
+      const typOk = erwartetArray ? Array.isArray(parsed) : (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed));
+      if (!typOk) { console.warn('Unerwarteter Datentyp für "'+key+'" — Fallback wird verwendet.'); return fallback; }
+    }
+    return parsed;
+  } catch(e) {
+    console.warn('Beschädigte Daten für "'+key+'" — Fallback wird verwendet.', e);
+    return fallback;
+  }
+}
+// Geschriebenes Speichern: fängt z.B. vollen Speicher (QuotaExceededError) oder
+// private Browsermodi ab, in denen localStorage.setItem() eine Exception werfen kann.
+// Gibt true/false zurück, damit Aufrufer bei Bedarf den Nutzer informieren können.
+function safeSet(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch(e) {
+    console.error('Speichern fehlgeschlagen für "'+key+'" — evtl. Speicher voll oder privater Modus.', e);
+    return false;
+  }
+}
+let DATA = safeParse('sg-proto', []);
+let TLOG = safeParse('sg-tlog', []);
 function genId() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)+'-'+Math.random().toString(36).slice(2,10); }
 // Escaped Nutzertext vor dem Einfügen in innerHTML (verhindert kaputte Darstellung bei Sonderzeichen wie & < > sowie versehentliche HTML/Skript-Injektion)
 function esc(str) {
@@ -669,14 +702,14 @@ function istGueltigesDatum(str) {
 // Migration: bestehende Trainingseinträge ohne ID erhalten eine
 let tlogMigriert = false;
 TLOG.forEach(t => { if (!t.id) { t.id = genId(); tlogMigriert = true; } });
-if (tlogMigriert) localStorage.setItem('sg-tlog', JSON.stringify(TLOG));
-let GWLOG = JSON.parse(localStorage.getItem('sg-gwlog') || '[]');
-let NLOG = JSON.parse(localStorage.getItem('sg-nlog') || '[]');
+if (tlogMigriert) safeSet('sg-tlog', TLOG);
+let GWLOG = safeParse('sg-gwlog', []);
+let NLOG = safeParse('sg-nlog', []);
 
-function saveData() { localStorage.setItem('sg-proto', JSON.stringify(DATA)); }
-function saveTLOG() { localStorage.setItem('sg-tlog', JSON.stringify(TLOG)); }
-function saveGWLOG() { localStorage.setItem('sg-gwlog', JSON.stringify(GWLOG)); }
-function saveNLOG() { localStorage.setItem('sg-nlog', JSON.stringify(NLOG)); }
+function saveData() { return safeSet('sg-proto', DATA); }
+function saveTLOG() { return safeSet('sg-tlog', TLOG); }
+function saveGWLOG() { return safeSet('sg-gwlog', GWLOG); }
+function saveNLOG() { return safeSet('sg-nlog', NLOG); }
 
 // ══ TRAININGSPLAN ══
 const EINHEITEN = {
@@ -705,7 +738,7 @@ const EINHEITEN = {
 
 // Eindeutige IDs für alle Übungen — dauerhaft in localStorage gespeichert,
 // damit sie auch bei künftigen Code-Änderungen (z. B. Namensänderung) stabil bleiben
-const uidMap = JSON.parse(localStorage.getItem('sg-uid') || '{}');
+const uidMap = safeParse('sg-uid', {});
 ['a','b'].forEach(u=>{
   EINHEITEN[u].forEach((e,i)=>{
     if (e.uid) return; // hinzugefügte Übungen (added:true) bringen ihre eigene UID bereits mit
@@ -714,19 +747,19 @@ const uidMap = JSON.parse(localStorage.getItem('sg-uid') || '{}');
     e.uid = uidMap[key];
   });
 });
-localStorage.setItem('sg-uid', JSON.stringify(uidMap));
+safeSet('sg-uid', uidMap);
 
 
 // Zusätzlich hinzugefügte Übungen (aus der jeweils anderen Einheit) laden
-const savedExtra = JSON.parse(localStorage.getItem('sg-extra') || '{"a":[],"b":[]}');
+const savedExtra = safeParse('sg-extra', {"a":[],"b":[]});
 ['a','b'].forEach(u => { (savedExtra[u]||[]).forEach(ex => EINHEITEN[u].push(ex)); });
 function saveExtra() {
   const s = {}; ['a','b'].forEach(u => s[u] = EINHEITEN[u].filter(e=>e.added));
-  localStorage.setItem('sg-extra', JSON.stringify(s));
+  safeSet('sg-extra', s);
 }
 
 // Übungsreihenfolge laden und anwenden (UID-basiert — stabil auch bei künftigen Namensänderungen)
-const savedOrder = JSON.parse(localStorage.getItem('sg-order') || '{}');
+const savedOrder = safeParse('sg-order', {});
 ['a','b'].forEach(u => {
   if (savedOrder[u] && savedOrder[u].length) {
     const byUid = {}; const byName = {};
@@ -739,11 +772,11 @@ const savedOrder = JSON.parse(localStorage.getItem('sg-order') || '{}');
 });
 function saveOrder() {
   const s = {}; ['a','b'].forEach(u => s[u] = EINHEITEN[u].map(e=>e.uid));
-  localStorage.setItem('sg-order', JSON.stringify(s));
+  safeSet('sg-order', s);
 }
 
 // Gespeicherte Gewichte laden
-const savedW = JSON.parse(localStorage.getItem('sg-weights') || '{}');
+const savedW = safeParse('sg-weights', {});
 ['a','b'].forEach(u => EINHEITEN[u].forEach((ex,i) => {
   const k = ex.uid || (u+'-'+i);
   if (savedW[k]) {
@@ -753,12 +786,12 @@ const savedW = JSON.parse(localStorage.getItem('sg-weights') || '{}');
 }));
 
 // Done-Status laden
-const savedDone = JSON.parse(localStorage.getItem('sg-done') || '{}');
+const savedDone = safeParse('sg-done', {});
 ['a','b'].forEach(u => { if (savedDone[u]) savedDone[u].forEach((d,i) => { if (EINHEITEN[u][i]) EINHEITEN[u][i].done = d; }); });
 
 function saveDone() {
   const s = {}; ['a','b'].forEach(u => s[u] = EINHEITEN[u].map(e => e.done));
-  localStorage.setItem('sg-done', JSON.stringify(s));
+  safeSet('sg-done', s);
 }
 function saveWeights() {
   const w = {};
@@ -766,7 +799,7 @@ function saveWeights() {
     const k = e.uid || (u+'-'+i);
     w[k] = {gew:e.gew, gerat:e.gerat};
   }));
-  localStorage.setItem('sg-weights', JSON.stringify(w));
+  safeSet('sg-weights', w);
 }
 
 let aktEinheit = 'a';
@@ -874,28 +907,32 @@ async function logTraining(u) {
     if (!await modalConfirm('Keine Übung ist als erledigt abgehakt.', 'Keine Übungen abgehakt', false, 'Trotzdem als leeres Training speichern', 'Abbrechen, zurück zum Abhaken')) return;
   }
   TLOG.unshift({id:genId(), datum, zeit:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}), unit:u, uebungen, hs: isNaN(hs)?null:hs, intensitaet: intensitaet||''});
-  saveTLOG();
+  const erfolgreich = saveTLOG();
   uebungen.forEach(e => { if(e.gew==='—'||e.gew==='KG') return; GWLOG.push({datum,unit:u,name:e.name,gew:e.gew}); });
   saveGWLOG();
+  if (!erfolgreich) { await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus.', 'Fehler beim Speichern'); return; }
   await modalAlert('Einheit '+u.toUpperCase()+' vom '+datum+' gespeichert!', 'Gespeichert');
   resetEinheit(u);
   resetCheck();
 }
 
 // ══ CHECK ══
-let checkState = JSON.parse(localStorage.getItem('sg-check') || '{}');
+let checkState = safeParse('sg-check', {});
 function toggleCheck(i) {
   checkState[i] = !checkState[i];
-  localStorage.setItem('sg-check', JSON.stringify(checkState));
+  safeSet('sg-check', checkState);
   renderCheck();
 }
 async function saveCheck() {
-  localStorage.setItem('sg-check', JSON.stringify(checkState));
+  if (!safeSet('sg-check', checkState)) {
+    await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus.', 'Fehler beim Speichern');
+    return;
+  }
   await modalAlert('Gicht-Check gespeichert!', 'Gespeichert');
 }
 function resetCheck() {
   checkState = {};
-  localStorage.setItem('sg-check', '{}');
+  safeSet('sg-check', {});
   renderCheck();
 }
 function renderCheck() {
@@ -930,10 +967,12 @@ function haColor(v) { return v<=6?'good':v<=7?'warn':'bad'; }
 
 async function saveEintrag() {
   const d = document.getElementById('pd').value;
-  const h = parseFloat(document.getElementById('ph').value.replace(',','.'));
-  if (!d || isNaN(h)) { await modalAlert('Datum und Harnsäure sind Pflichtfelder.', 'Fehlende Angaben'); return; }
+  const hInput = document.getElementById('ph').value;
+  const h = hInput.trim() ? parseFloat(hInput.replace(',','.')) : null;
+  if (!d) { await modalAlert('Datum ist ein Pflichtfeld.', 'Fehlende Angabe'); return; }
   if (!istGueltigesDatum(d)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT, z.B. 2026-07-09).', 'Ungültiges Datum'); return; }
-  if (h<=0 || h>20) { if (!await modalConfirm('Der Harnsäure-Wert '+h+' mg/dl wirkt ungewöhnlich.', 'Wert prüfen', false, 'Trotzdem speichern', 'Abbrechen, nichts speichern')) return; }
+  if (hInput.trim() && isNaN(h)) { await modalAlert('Der Harnsäure-Wert ist ungültig.', 'Ungültiger Wert'); return; }
+  if (h!==null && (h<=0 || h>20)) { if (!await modalConfirm('Der Harnsäure-Wert '+h+' mg/dl wirkt ungewöhnlich.', 'Wert prüfen', false, 'Trotzdem speichern', 'Abbrechen, nichts speichern')) return; }
   const e = {
     d, h,
     s: document.getElementById('ps').value || '',
@@ -950,18 +989,19 @@ async function saveEintrag() {
   if (idx>=0) { if(!await modalConfirm('Eintrag für '+fd(d)+' existiert. Überschreiben?', 'Eintrag existiert bereits')) return; DATA[idx]=e; }
   else DATA.push(e);
   DATA.sort((a,b)=>a.d.localeCompare(b.d));
-  saveData();
+  const erfolgreich = saveData();
   // Felder leeren
   ['ph','ps','pdi','pp','pe','pn'].forEach(id=>document.getElementById(id).value='');
   ['pak','pai','ptm','psl'].forEach(id=>document.getElementById(id).value='');
   renderProto();
+  if (!erfolgreich) { await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus. Bitte Sicherung exportieren, sobald möglich.', 'Fehler beim Speichern'); return; }
   await modalAlert('Gespeichert ✓', 'Erfolg');
 }
 
 function editEintrag(d) {
   const e = DATA.find(x=>x.d===d); if (!e) return;
   document.getElementById('pd').value = e.d;
-  document.getElementById('ph').value = e.h;
+  document.getElementById('ph').value = e.h!=null ? e.h : '';
   document.getElementById('ps').value = e.s||'';
   document.getElementById('pdi').value = e.di||'';
   document.getElementById('pp').value = e.p||'';
@@ -984,25 +1024,29 @@ function renderProto() {
   const list = document.getElementById('proto-list');
   const sr = document.getElementById('stats-row');
   if (!DATA.length) { sr.style.display='none'; list.innerHTML='<div class="empty-state">Noch keine Einträge.</div>'; return; }
-  const vals = DATA.map(e=>e.h);
-  const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
-  const best = Math.min(...vals).toFixed(1);
-  const ziel = vals.filter(v=>v<=6).length;
-  const zielProzent = Math.round(ziel/vals.length*100);
-  sr.style.display='grid';
-  document.getElementById('s-avg').textContent = avg;
-  document.getElementById('s-avg').className = 'sv '+haColor(parseFloat(avg));
-  document.getElementById('s-best').textContent = best+' mg/dl';
-  document.getElementById('s-ziel').textContent = ziel+'/'+vals.length;
-  document.getElementById('s-ziel').className = 'sv '+(ziel/vals.length>=0.6?'good':'warn');
-  document.getElementById('s-ziel-prozent').textContent = zielProzent+'%';
-  document.getElementById('s-ziel-prozent').className = 'sv-sub '+(ziel/vals.length>=0.6?'good':'warn');
+  const vals = DATA.filter(e=>e.h!=null).map(e=>e.h);
+  if (!vals.length) {
+    sr.style.display='none';
+  } else {
+    const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+    const best = Math.min(...vals).toFixed(1);
+    const ziel = vals.filter(v=>v<=6).length;
+    const zielProzent = Math.round(ziel/vals.length*100);
+    sr.style.display='grid';
+    document.getElementById('s-avg').textContent = avg;
+    document.getElementById('s-avg').className = 'sv '+haColor(parseFloat(avg));
+    document.getElementById('s-best').textContent = best+' mg/dl';
+    document.getElementById('s-ziel').textContent = ziel+'/'+vals.length;
+    document.getElementById('s-ziel').className = 'sv '+(ziel/vals.length>=0.6?'good':'warn');
+    document.getElementById('s-ziel-prozent').textContent = zielProzent+'%';
+    document.getElementById('s-ziel-prozent').className = 'sv-sub '+(ziel/vals.length>=0.6?'good':'warn');
+  }
 
   list.innerHTML = [...DATA].reverse().map(e=>`
     <div class="vrow">
       <div class="vrow-top">
         <span class="vdate">${fd(e.d)}</span>
-        <span class="vha ${haColor(e.h)}">${e.h} mg/dl</span>
+        ${e.h!=null ? `<span class="vha ${haColor(e.h)}">${e.h} mg/dl</span>` : `<span class="vha opacity-60">Nicht gemessen</span>`}
       </div>
       <div class="vrow-meta">
         ${e.s&&e.di?`<span class="vmeta">🫀 ${esc(e.s)}/${esc(e.di)}</span>`:''}
@@ -1035,9 +1079,11 @@ function renderTraining() {
   list.innerHTML = sorted.map((t,i)=>{
     const folgeDatum = naechsterTag(t.datum);
     const folgeEintrag = DATA.find(e=>e.d===folgeDatum);
-    const folgeBadge = folgeEintrag
+    const folgeBadge = folgeEintrag && folgeEintrag.h!=null
       ? `<div class="tueb mt-4">📈 Harnsäure Folgetag (${fd(folgeDatum)}): <span class="vha ${haColor(folgeEintrag.h)} px-8">${folgeEintrag.h} mg/dl</span></div>`
-      : `<div class="tueb mt-4 opacity-60">📈 Harnsäure Folgetag: noch kein Eintrag für ${fd(folgeDatum)}</div>`;
+      : folgeEintrag
+        ? `<div class="tueb mt-4 opacity-60">📈 Harnsäure Folgetag (${fd(folgeDatum)}): nicht gemessen</div>`
+        : `<div class="tueb mt-4 opacity-60">📈 Harnsäure Folgetag: noch kein Eintrag für ${fd(folgeDatum)}</div>`;
     return `
     <div class="trow">
       <div class="trow-top">
@@ -1128,12 +1174,13 @@ async function saveNieren() {
     NLOG.push(eintrag);
   }
   NLOG.sort((a,b)=>a.datum.localeCompare(b.datum));
-  saveNLOG();
+  const erfolgreich = saveNLOG();
   document.getElementById('nid').value = '';
   document.getElementById('nik').value = '';
   document.getElementById('nig').value = '';
   document.getElementById('nin').value = '';
   renderNieren();
+  if (!erfolgreich) { await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus.', 'Fehler beim Speichern'); return; }
   await modalAlert('Nierenwert gespeichert!', 'Gespeichert');
 }
 
@@ -1207,7 +1254,10 @@ function renderAnalyse() {
   const muster = document.getElementById('aw-muster');
   if (!DATA.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine Daten.</div>'; fak.innerHTML=''; muster.innerHTML=''; return; }
 
-  const vals = DATA.map(e=>e.h);
+  const gemessene = DATA.filter(e=>e.h!=null);
+  if (!gemessene.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine gemessenen Werte (nur Aktivitätseinträge ohne Harnsäure vorhanden).</div>'; fak.innerHTML=''; muster.innerHTML=''; return; }
+
+  const vals = gemessene.map(e=>e.h);
   const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
   const best = Math.min(...vals).toFixed(1);
   const ziel = vals.filter(v=>v<=6).length;
@@ -1217,24 +1267,24 @@ function renderAnalyse() {
     <div class="sbox"><div class="sv good">${best}</div><div class="sl">Bestwert</div></div>
     <div class="sbox"><div class="sv">${ziel}/${vals.length}</div><div class="sl">Im Ziel ≤6,0</div></div>`;
 
-  // SVG Chart
+  // SVG Chart — nur Einträge mit tatsächlich gemessenem Wert
   const W=560,H=160,pad=36;
   const mn=Math.min(...vals)-0.3, mxRoh=Math.max(...vals)+0.3;
   const mx = (mxRoh - mn) < 0.1 ? mn + 0.1 : mxRoh; // Absicherung: verhindert Division durch (fast) Null bei identischen Werten
-  const xS=i=>(DATA.length<2?W/2:pad+(W-2*pad)*i/(DATA.length-1));
+  const xS=i=>(gemessene.length<2?W/2:pad+(W-2*pad)*i/(gemessene.length-1));
   const yS=v=>H-pad-(v-mn)/(mx-mn)*(H-2*pad);
-  const pts = DATA.map((e,i)=>xS(i)+','+yS(e.h)).join(' ');
+  const pts = gemessene.map((e,i)=>xS(i)+','+yS(e.h)).join(' ');
   chart.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="svg-chart">
     <line x1="${pad}" y1="${yS(6)}" x2="${W-pad}" y2="${yS(6)}" stroke="var(--good)" opacity="0.25" stroke-width="1.5" stroke-dasharray="4"/>
     <text x="${pad-2}" y="${yS(6)+4}" fill="var(--good)" font-size="9" text-anchor="end">6,0</text>
     <polyline points="${pts}" fill="none" stroke="var(--a)" stroke-width="2.5" stroke-linejoin="round"/>
-    ${DATA.map((e,i)=>`<circle cx="${xS(i)}" cy="${yS(e.h)}" r="5" fill="${e.h<=6?'var(--good)':e.h<=7?'var(--warn)':'var(--bad)'}"/>
+    ${gemessene.map((e,i)=>`<circle cx="${xS(i)}" cy="${yS(e.h)}" r="5" fill="${e.h<=6?'var(--good)':e.h<=7?'var(--warn)':'var(--bad)'}"/>
     <text x="${xS(i)}" y="${yS(e.h)-9}" text-anchor="middle" fill="var(--muted)" font-size="9">${e.h}</text>`).join('')}
   </svg>`;
 
-  // Faktoren
+  // Faktoren — nur Einträge mit gemessenem Wert je Aktivität gruppieren
   const groups = {};
-  DATA.forEach(e => { if (!e.a) return; if(!groups[e.a]) groups[e.a]=[]; groups[e.a].push(e.h); });
+  gemessene.forEach(e => { if (!e.a) return; if(!groups[e.a]) groups[e.a]=[]; groups[e.a].push(e.h); });
   fak.innerHTML = Object.entries(groups).length ? Object.entries(groups).map(([k,vs])=>{
     const a=(vs.reduce((x,y)=>x+y,0)/vs.length).toFixed(2);
     return `<div class="stat-row-line">
@@ -1243,18 +1293,18 @@ function renderAnalyse() {
     </div>`;
   }).join('') : '<div class="empty-state">Keine Aktivitätsdaten.</div>';
 
-  // Muster
-  if (DATA.length < 5) { muster.innerHTML='<div class="empty-state">Mind. 5 Einträge nötig.</div>'; return; }
+  // Muster — nur Einträge mit gemessenem Wert einbeziehen
+  if (gemessene.length < 5) { muster.innerHTML='<div class="empty-state">Mind. 5 gemessene Werte nötig.</div>'; return; }
   const tips = [];
-  const trainD = DATA.filter(e=>(e.a||'').includes('Training'));
-  const restD = DATA.filter(e=>!(e.a||'').includes('Training'));
+  const trainD = gemessene.filter(e=>(e.a||'').includes('Training'));
+  const restD = gemessene.filter(e=>!(e.a||'').includes('Training'));
   if (trainD.length && restD.length) {
     const tA=(trainD.map(e=>e.h).reduce((a,b)=>a+b,0)/trainD.length).toFixed(2);
     const rA=(restD.map(e=>e.h).reduce((a,b)=>a+b,0)/restD.length).toFixed(2);
     tips.push(`Training: Ø ${tA} mg/dl · Ruhe: Ø ${rA} mg/dl`);
   }
-  const gut = DATA.filter(e=>e.sl==='Gut').map(e=>e.h);
-  const schl = DATA.filter(e=>e.sl==='Schlecht').map(e=>e.h);
+  const gut = gemessene.filter(e=>e.sl==='Gut').map(e=>e.h);
+  const schl = gemessene.filter(e=>e.sl==='Schlecht').map(e=>e.h);
   if (gut.length&&schl.length) {
     const gA=(gut.reduce((a,b)=>a+b,0)/gut.length).toFixed(2);
     const sA=(schl.reduce((a,b)=>a+b,0)/schl.length).toFixed(2);
@@ -1266,7 +1316,7 @@ function renderAnalyse() {
 // ══ SICHERUNG ══
 function renderBkStats() {
   const el = document.getElementById('bk-stats'); if(!el) return;
-  const vals = DATA.map(e=>e.h);
+  const vals = DATA.filter(e=>e.h!=null).map(e=>e.h);
   el.innerHTML = `
     <div class="sbox"><div class="sv">${DATA.length}</div><div class="sl">Einträge</div></div>
     <div class="sbox"><div class="sv">${DATA.length?DATA[DATA.length-1].d.slice(5).replace('-','.'):'—'}</div><div class="sl">Letzter</div></div>
@@ -1282,7 +1332,7 @@ function showLog(msg, ok=true) {
 function renderLastImport() {
   const el = document.getElementById('last-import-info');
   if (!el) return;
-  const info = JSON.parse(localStorage.getItem('sg-last-import') || 'null');
+  const info = safeParse('sg-last-import', null);
   if (!info) { el.textContent = '📥 Zuletzt geladene Sicherung: noch keine'; return; }
   el.textContent = '📥 Zuletzt geladene Sicherung: '+(info.exportDatum||'unbekanntes Datum')+' — eingelesen am '+info.importiertAm;
 }
@@ -1293,11 +1343,11 @@ async function exportJSON() {
   const inhalt = JSON.stringify({
     version:4, exportDatum:new Date().toISOString(),
     eintraege:DATA, tlog:TLOG, gwlog:GWLOG, nlog:NLOG,
-    planWeights: JSON.parse(localStorage.getItem('sg-weights')||'{}'),
-    planDone: JSON.parse(localStorage.getItem('sg-done')||'{}'),
-    planOrder: JSON.parse(localStorage.getItem('sg-order')||'{}'),
-    planExtra: JSON.parse(localStorage.getItem('sg-extra')||'{"a":[],"b":[]}'),
-    planUid: JSON.parse(localStorage.getItem('sg-uid')||'{}')
+    planWeights: safeParse('sg-weights', {}),
+    planDone: safeParse('sg-done', {}),
+    planOrder: safeParse('sg-order', {}),
+    planExtra: safeParse('sg-extra', {"a":[],"b":[]}),
+    planUid: safeParse('sg-uid', {})
   }, null, 2);
   const name = 'sport-gicht-'+heuteLokal()+'.json';
   const a = document.createElement('a');
@@ -1315,14 +1365,18 @@ function importJSON(input) {
       const impRoh = raw.eintraege || raw;
       if (!Array.isArray(impRoh)) throw new Error('Ungültiges Format — kein Array von Einträgen gefunden.');
 
-      // Tagesprotokolle validieren: Datum muss gültig sein, Harnsäure muss eine plausible Zahl sein
+      // Tagesprotokolle validieren: Datum muss gültig sein; Harnsäure ist optional, aber falls angegeben muss sie eine Zahl sein
       let uebersprungen = 0;
       const imp = impRoh.filter(neu => {
-        const hOk = typeof neu.h==='number' ? isFinite(neu.h) : isFinite(parseFloat(neu.h));
+        const hVorhanden = neu.h!==null && neu.h!==undefined && neu.h!=='';
+        const hOk = !hVorhanden || (typeof neu.h==='number' ? isFinite(neu.h) : isFinite(parseFloat(neu.h)));
         const gueltig = neu && typeof neu.d==='string' && istGueltigesDatum(neu.d) && hOk;
         if (!gueltig) uebersprungen++;
         return gueltig;
-      }).map(neu => ({...neu, h: typeof neu.h==='number' ? neu.h : parseFloat(neu.h)}));
+      }).map(neu => {
+        const hVorhanden = neu.h!==null && neu.h!==undefined && neu.h!=='';
+        return {...neu, h: hVorhanden ? (typeof neu.h==='number' ? neu.h : parseFloat(neu.h)) : null};
+      });
 
       let meldung = 'Sicherung einlesen? '+imp.length+' gültige Tagesprotokolle gefunden'+(uebersprungen?' ('+uebersprungen+' ungültige übersprungen)':'')+'.';
       if (!await modalConfirm(meldung, 'Sicherung importieren')) return;
@@ -1368,19 +1422,19 @@ function importJSON(input) {
         NLOG.sort((a,b)=>a.datum.localeCompare(b.datum));
         saveNLOG();
       }
-      if (raw.planUid) { localStorage.setItem('sg-uid', JSON.stringify(raw.planUid)); }
-      if (raw.planExtra) { localStorage.setItem('sg-extra', JSON.stringify(raw.planExtra)); }
-      if (raw.planOrder) { localStorage.setItem('sg-order', JSON.stringify(raw.planOrder)); }
-      if (raw.planWeights) { localStorage.setItem('sg-weights', JSON.stringify(raw.planWeights)); }
-      if (raw.planDone) { localStorage.setItem('sg-done', JSON.stringify(raw.planDone)); }
+      if (raw.planUid) { safeSet('sg-uid', raw.planUid); }
+      if (raw.planExtra) { safeSet('sg-extra', raw.planExtra); }
+      if (raw.planOrder) { safeSet('sg-order', raw.planOrder); }
+      if (raw.planWeights) { safeSet('sg-weights', raw.planWeights); }
+      if (raw.planDone) { safeSet('sg-done', raw.planDone); }
       if (raw.planUid || raw.planExtra || raw.planOrder || raw.planWeights || raw.planDone) {
         await modalAlert('Plan-Daten wurden importiert. Bitte die Seite einmal neu laden, damit Trainingsplan-Gewichte, Geräte und Reihenfolge korrekt übernommen werden.', 'Neu laden empfohlen');
       }
       renderProto(); renderTraining(); renderNieren(); renderBkStats();
-      localStorage.setItem('sg-last-import', JSON.stringify({
+      safeSet('sg-last-import', {
         exportDatum: raw.exportDatum ? raw.exportDatum.slice(0,10) : null,
         importiertAm: new Date().toLocaleDateString('de-DE')+' '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
-      }));
+      });
       renderLastImport();
       const tlogTeile = [tlogValide+' übernommen'];
       if (tlogDuplikat) tlogTeile.push(tlogDuplikat+' bereits vorhanden');
@@ -1395,7 +1449,7 @@ function importJSON(input) {
 async function exportCSV() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
   const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität;Intensität;Trinkmenge;Schlaf;Ernährung;Notiz\n';
-  const dez = v => typeof v==='number' ? String(v).replace('.',',') : v;
+  const dez = v => v==null ? '' : (typeof v==='number' ? String(v).replace('.',',') : v);
   const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',e.a||'',e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'}));
@@ -1406,22 +1460,31 @@ async function exportCSV() {
 
 function exportClaude() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
-  const vals = DATA.map(e=>e.h);
-  const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
-  const best = Math.min(...vals).toFixed(1);
-  const ziel = vals.filter(v=>v<=6).length;
+  // Eigene, unabhängige Sortierung — verlässt sich nicht darauf, dass DATA an anderer Stelle im Code sortiert gehalten wird
+  const sortiert = [...DATA].sort((a,b)=>a.d.localeCompare(b.d));
+  const gemessene = sortiert.filter(e=>e.h!=null);
+  const vals = gemessene.map(e=>e.h);
+  const zusammenfassungZeile = vals.length
+    ? `- Ø Harnsäure: ${(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2)} mg/dl\n- Bestwert: ${Math.min(...vals).toFixed(1)} mg/dl\n- Im Ziel (≤6,0): ${vals.filter(v=>v<=6).length}/${vals.length} (${Math.round(vals.filter(v=>v<=6).length/vals.length*100)}%)\n- Gemessene Werte: ${vals.length}/${sortiert.length} Einträge\n`
+    : `- Noch keine gemessenen Harnsäure-Werte vorhanden (nur Aktivitätseinträge)\n`;
   let txt = `# PROJEKT SPORT & GICHT — AUSWERTUNGSDATEN\nExportiert: ${new Date().toLocaleDateString('de-DE')}\n\n`;
-  txt += `## Zusammenfassung\n- Einträge: ${DATA.length}\n- Zeitraum: ${DATA[0].d} bis ${DATA[DATA.length-1].d}\n`;
-  txt += `- Ø Harnsäure: ${avg} mg/dl\n- Bestwert: ${best} mg/dl\n- Im Ziel (≤6,0): ${ziel}/${DATA.length} (${Math.round(ziel/DATA.length*100)}%)\n- Medikament: Allopurinol 150 mg täglich\n\n`;
+  txt += `## Zusammenfassung\n- Einträge: ${sortiert.length}\n- Zeitraum: ${sortiert[0].d} bis ${sortiert[sortiert.length-1].d}\n`;
+  txt += zusammenfassungZeile + `- Medikament: Allopurinol 150 mg täglich\n\n`;
   txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität | Intensität | Trinkmenge | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|-----------|------------|------------|--------|-----------|------\n`;
-  DATA.forEach(e => { txt += `${e.d} | ${e.h} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.a||'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
+  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.a||'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
   txt += `\n## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
-  navigator.clipboard.writeText(txt).then(()=>showLog('Text in Zwischenablage kopiert!')).catch(()=>{
+  const clipboardVerfuegbar = navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
+  const herunterladenAlsDatei = () => {
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));
     a.download='auswertung-claude.txt'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     showLog('Als Textdatei gespeichert.');
-  });
+  };
+  if (clipboardVerfuegbar) {
+    navigator.clipboard.writeText(txt).then(()=>showLog('Text in Zwischenablage kopiert!')).catch(herunterladenAlsDatei);
+  } else {
+    herunterladenAlsDatei();
+  }
 }
 
 // ══ DATUM DEFAULT ══
