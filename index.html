@@ -516,7 +516,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-14 — v29 (Robustheit: alle 17 localStorage.setItem-Aufrufe gegen vollen Speicher/privaten Browsermodus abgesichert — echte Fehlermeldung statt falschem "Gespeichert" bei den drei Haupt-Speicherpunkten)';
+const BUILD_VERSION = '2026-07-18 — v31 (Datumsfeld-Fix vervollständigt: bewusst gewähltes/geladenes Datum bleibt bei pageshow erhalten, springt nach erfolgreichem Speichern wieder auf "heute" zurück)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -995,12 +995,15 @@ async function saveEintrag() {
   ['pak','pai','ptm','psl'].forEach(id=>document.getElementById(id).value='');
   renderProto();
   if (!erfolgreich) { await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus. Bitte Sicherung exportieren, sobald möglich.', 'Fehler beim Speichern'); return; }
+  datumManuellGeaendert = false;
+  document.getElementById('pd').value = heuteLokal();
   await modalAlert('Gespeichert ✓', 'Erfolg');
 }
 
 function editEintrag(d) {
   const e = DATA.find(x=>x.d===d); if (!e) return;
   document.getElementById('pd').value = e.d;
+  datumManuellGeaendert = true;
   document.getElementById('ph').value = e.h!=null ? e.h : '';
   document.getElementById('ps').value = e.s||'';
   document.getElementById('pdi').value = e.di||'';
@@ -1488,10 +1491,20 @@ function exportClaude() {
 }
 
 // ══ DATUM DEFAULT ══
-document.getElementById('pd').value = heuteLokal();
+// Merkt sich, ob der Nutzer das Datumsfeld selbst bewusst geändert hat (z.B. um einen
+// vergangenen Tag nachzutragen) — nur dann NICHT automatisch überschreiben.
+let datumManuellGeaendert = false;
+document.getElementById('pd').addEventListener('change', () => { datumManuellGeaendert = true; });
+function aktualisiereHeute() {
+  document.getElementById('heute-anzeige').textContent = '📅 Heute: '+new Date().toLocaleDateString('de-DE',{weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
+  if (!datumManuellGeaendert) document.getElementById('pd').value = heuteLokal();
+}
+aktualisiereHeute();
+// pageshow feuert auch, wenn die Seite aus dem Browser-Zwischenspeicher (bfcache) wiederhergestellt wird
+// (z.B. nach App-Wechsel und Zurückkehren) — ohne das würde das Datumsfeld auf einem alten Stand hängen bleiben.
+window.addEventListener('pageshow', aktualisiereHeute);
 
 // ══ INIT ══
-document.getElementById('heute-anzeige').textContent = '📅 Heute: '+new Date().toLocaleDateString('de-DE',{weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
 renderEinheit('a');
 renderEinheit('b');
 renderProto();
