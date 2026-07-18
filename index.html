@@ -516,7 +516,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-18 — v31 (Datumsfeld-Fix vervollständigt: bewusst gewähltes/geladenes Datum bleibt bei pageshow erhalten, springt nach erfolgreichem Speichern wieder auf "heute" zurück)';
+const BUILD_VERSION = '2026-07-18 — v32 (Gicht-Check-Stand wird jetzt beim Trainingseintrag mitgespeichert und im Verlauf angezeigt, z.B. "5/7 erfüllt", statt nur als kurze Bestätigung zu erscheinen)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -906,7 +906,8 @@ async function logTraining(u) {
   if (!uebungen.length) {
     if (!await modalConfirm('Keine Übung ist als erledigt abgehakt.', 'Keine Übungen abgehakt', false, 'Trotzdem als leeres Training speichern', 'Abbrechen, zurück zum Abhaken')) return;
   }
-  TLOG.unshift({id:genId(), datum, zeit:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}), unit:u, uebungen, hs: isNaN(hs)?null:hs, intensitaet: intensitaet||''});
+  const checkErfuellt = Object.values(checkState).filter(Boolean).length;
+  TLOG.unshift({id:genId(), datum, zeit:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}), unit:u, uebungen, hs: isNaN(hs)?null:hs, intensitaet: intensitaet||'', checkErfuellt, checkGesamt: CHECK_TOTAL});
   const erfolgreich = saveTLOG();
   uebungen.forEach(e => { if(e.gew==='—'||e.gew==='KG') return; GWLOG.push({datum,unit:u,name:e.name,gew:e.gew}); });
   saveGWLOG();
@@ -917,6 +918,7 @@ async function logTraining(u) {
 }
 
 // ══ CHECK ══
+const CHECK_TOTAL = 7;
 let checkState = safeParse('sg-check', {});
 function toggleCheck(i) {
   checkState[i] = !checkState[i];
@@ -1087,6 +1089,12 @@ function renderTraining() {
       : folgeEintrag
         ? `<div class="tueb mt-4 opacity-60">📈 Harnsäure Folgetag (${fd(folgeDatum)}): nicht gemessen</div>`
         : `<div class="tueb mt-4 opacity-60">📈 Harnsäure Folgetag: noch kein Eintrag für ${fd(folgeDatum)}</div>`;
+    const checkKlasse = (t.checkErfuellt!=null && t.checkGesamt!=null)
+      ? (t.checkErfuellt>=t.checkGesamt ? 'good' : t.checkErfuellt>0 ? 'warn' : 'opacity-60')
+      : '';
+    const checkBadge = (t.checkErfuellt!=null && t.checkGesamt!=null)
+      ? `<div class="tueb mt-4">✅ Gicht-Check: <span class="vha ${checkKlasse} px-8">${t.checkErfuellt}/${t.checkGesamt} erfüllt</span></div>`
+      : '';
     return `
     <div class="trow">
       <div class="trow-top">
@@ -1097,6 +1105,7 @@ function renderTraining() {
         ${t.hs!==null&&t.hs!==undefined?`<span class="vha ${haColor(t.hs)}">${t.hs} mg/dl</span>`:''}
       </div>
       <div class="tueb">${t.uebungen.map(u=>esc(u.name)+(u.gew&&u.gew!=='—'?' ('+esc(u.gew)+')':'')).join(' · ')}</div>
+      ${checkBadge}
       ${folgeBadge}
       <div class="vrow-del flex-gap8">
         <button class="btn-del btn-edit-neutral" onclick="editTLog('${t.id}')">✏️ Bearbeiten</button>
