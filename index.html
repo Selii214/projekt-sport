@@ -183,6 +183,26 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
 .fs-13{font-size:13px;}
 .stat-value{font-size:15px;font-weight:800;}
 .tip-box{padding:10px;background:var(--surf2);border-radius:8px;margin-bottom:8px;font-size:13px;}
+.erk-block{padding:12px;background:var(--surf2);border-radius:8px;margin-bottom:10px;}
+.erk-faktor{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;}
+.erk-line{font-size:13px;margin-bottom:4px;line-height:1.4;}
+.erk-line.erk-good strong{color:var(--good);}
+.erk-line.erk-bad strong{color:var(--bad);}
+.erk-line.erk-diff{color:var(--muted);font-size:12px;margin-top:2px;}
+.fs-11-muted{font-size:11px;color:var(--muted);}
+.akt-card{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;}
+.akt-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:8px;}
+.akt-name{font-size:14px;font-weight:700;}
+.akt-avg{font-size:17px;font-weight:800;white-space:nowrap;}
+.akt-avg.good{color:var(--good);}.akt-avg.warn{color:var(--warn);}.akt-avg.bad{color:var(--bad);}
+.akt-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--muted);}
+.akt-dev{font-weight:700;}
+.akt-dev.pos{color:var(--bad);}.akt-dev.neg{color:var(--good);}.akt-dev.neutral{color:var(--muted);}
+.te-card{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;}
+.te-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;font-weight:700;}
+.te-vals{font-size:13px;color:var(--muted);margin-bottom:4px;}
+.te-vals strong{color:var(--text);}
+.trend-up{color:var(--bad);}.trend-down{color:var(--good);}.trend-flat{color:var(--muted);}
 
 /* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:1000;}
@@ -429,12 +449,53 @@ select.modal-input{cursor:pointer;}
     <div class="chart-wrap" id="aw-chart"><div class="empty-state">Noch keine Daten vorhanden.</div></div>
   </div>
   <div class="card">
+    <div class="card-title">Erweiterte Statistik</div>
+    <div id="aw-erwstat"><div class="empty-state">Noch keine gemessenen Werte vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Zielbereichsanalyse</div>
+    <div id="aw-zielbereich"><div class="empty-state">Noch keine gemessenen Werte vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Langfristige Trendanalyse</div>
+    <div id="aw-trend"><div class="empty-state">Mind. 4 gemessene Werte nötig.</div></div>
+  </div>
+  <div class="card">
     <div class="card-title">Ø nach Einflussfaktor</div>
     <div id="aw-fak"><div class="empty-state">Noch keine Daten vorhanden.</div></div>
   </div>
   <div class="card">
+    <div class="card-title">Erweiterte Aktivitätsanalyse</div>
+    <div id="aw-aktivitaet"><div class="empty-state">Noch keine gemessenen Werte vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Trinkmengenanalyse</div>
+    <div id="aw-trink"><div class="empty-state">Noch keine Daten zur Trinkmenge vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Schlafanalyse</div>
+    <div id="aw-schlaf"><div class="empty-state">Noch keine Daten zum Schlaf vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Trainingsintensität</div>
+    <div id="aw-intens"><div class="empty-state">Noch keine Intensitätsdaten vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Trainingseffekt (Anstieg &amp; Erholung)</div>
+    <div id="aw-traineffekt"><div class="empty-state">Noch keine auswertbaren Trainingsereignisse.</div></div>
+  </div>
+  <div class="card">
     <div class="card-title">Automatische Musteranalyse</div>
     <div id="aw-muster"><div class="empty-state">Mind. 5 Einträge nötig.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Persönliche Erkenntnisse</div>
+    <div id="aw-erkenntnisse"><div class="empty-state">Mind. 5 gemessene Werte nötig.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Automatische medizinische Hinweise</div>
+    <div id="aw-hinweise"><div class="empty-state">Noch nicht genug Daten für belegte Hinweise.</div></div>
+    <div class="info-box mt-4">Diese Hinweise sind rein datenbasierte Beobachtungen (Korrelation), kein medizinischer Rat. Sie ersetzen keine ärztliche Einschätzung — insbesondere zu Allopurinol-Dosierung liegt die Entscheidung ausschließlich beim behandelnden Arzt.</div>
   </div>
 </section>
 
@@ -517,7 +578,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-07-20 — v33 (Aktivität "Wandern" mit optionalem km-Feld ergänzt — Anzeige, Bearbeiten und Exporte berücksichtigen die Strecke)';
+const BUILD_VERSION = '2026-07-31 — v34 (Analyse-Tab stark erweitert: Persönliche Erkenntnisse, Aktivitätsanalyse, Trinkmengen-/Schlaf-/Intensitätsanalyse, Trainingseffekt mit Anstieg & Erholung, Trendanalyse, erweiterte Statistik, erweiterte Zielbereichsanalyse, automatische medizinische Hinweise; Claude-Export um alle neuen Analysen ergänzt)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -1088,6 +1149,19 @@ function naechsterTag(d) {
   const day = String(dt.getDate()).padStart(2,'0');
   return y+'-'+m+'-'+day;
 }
+function vorherigerTag(d) {
+  const dt = new Date(d+'T00:00:00');
+  dt.setDate(dt.getDate()-1);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth()+1).padStart(2,'0');
+  const day = String(dt.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+// Erkennt eine tatsächlich durchgeführte Trainingseinheit (nicht den Folgetag "Trainingsnachwirkung",
+// der zwar den Teilstring "Training" enthält, aber selbst kein neuer Trainingsreiz ist).
+function istEchtesTraining(a) {
+  return a === 'Training Einheit A' || a === 'Training Einheit B';
+}
 function renderTraining() {
   const list = document.getElementById('training-list');
   if (!TLOG.length) { list.innerHTML='<div class="empty-state">Noch keine Trainingseinträge.</div>'; return; }
@@ -1274,11 +1348,22 @@ function renderAnalyse() {
   const aw = document.getElementById('aw-stats');
   const chart = document.getElementById('aw-chart');
   const fak = document.getElementById('aw-fak');
+  const aktEl = document.getElementById('aw-aktivitaet');
   const muster = document.getElementById('aw-muster');
-  if (!DATA.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine Daten.</div>'; fak.innerHTML=''; muster.innerHTML=''; return; }
+  const erk = document.getElementById('aw-erkenntnisse');
+  const trinkEl = document.getElementById('aw-trink');
+  const schlafEl = document.getElementById('aw-schlaf');
+  const intensEl = document.getElementById('aw-intens');
+  const teEl = document.getElementById('aw-traineffekt');
+  const trendEl = document.getElementById('aw-trend');
+  const erwstatEl = document.getElementById('aw-erwstat');
+  const zielEl = document.getElementById('aw-zielbereich');
+  const hinweiseEl = document.getElementById('aw-hinweise');
+  const alleLeeren = () => { fak.innerHTML=''; aktEl.innerHTML=''; muster.innerHTML=''; erk.innerHTML=''; trinkEl.innerHTML=''; schlafEl.innerHTML=''; intensEl.innerHTML=''; teEl.innerHTML=''; trendEl.innerHTML=''; erwstatEl.innerHTML=''; zielEl.innerHTML=''; hinweiseEl.innerHTML=''; };
+  if (!DATA.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine Daten.</div>'; alleLeeren(); return; }
 
   const gemessene = DATA.filter(e=>e.h!=null);
-  if (!gemessene.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine gemessenen Werte (nur Aktivitätseinträge ohne Harnsäure vorhanden).</div>'; fak.innerHTML=''; muster.innerHTML=''; return; }
+  if (!gemessene.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine gemessenen Werte (nur Aktivitätseinträge ohne Harnsäure vorhanden).</div>'; alleLeeren(); return; }
 
   const vals = gemessene.map(e=>e.h);
   const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
@@ -1316,24 +1401,404 @@ function renderAnalyse() {
     </div>`;
   }).join('') : '<div class="empty-state">Keine Aktivitätsdaten.</div>';
 
+  renderAktivitaetsanalyse(gemessene, parseFloat(avg));
+  renderTrinkmengenanalyse(gemessene, parseFloat(avg));
+  renderSchlafanalyse(gemessene, parseFloat(avg));
+  renderIntensitaetsanalyse(gemessene, parseFloat(avg));
+  renderTrainingseffekt();
+  renderTrendanalyse(gemessene);
+  renderErweiterteStatistik(gemessene);
+  renderZielbereich(gemessene);
+
   // Muster — nur Einträge mit gemessenem Wert einbeziehen
-  if (gemessene.length < 5) { muster.innerHTML='<div class="empty-state">Mind. 5 gemessene Werte nötig.</div>'; return; }
-  const tips = [];
-  const trainD = gemessene.filter(e=>(e.a||'').includes('Training'));
-  const restD = gemessene.filter(e=>!(e.a||'').includes('Training'));
-  if (trainD.length && restD.length) {
-    const tA=(trainD.map(e=>e.h).reduce((a,b)=>a+b,0)/trainD.length).toFixed(2);
-    const rA=(restD.map(e=>e.h).reduce((a,b)=>a+b,0)/restD.length).toFixed(2);
-    tips.push(`Training: Ø ${tA} mg/dl · Ruhe: Ø ${rA} mg/dl`);
+  if (gemessene.length < 5) {
+    muster.innerHTML='<div class="empty-state">Mind. 5 gemessene Werte nötig.</div>';
+  } else {
+    const tips = [];
+    const trainD = gemessene.filter(e=>(e.a||'').includes('Training'));
+    const restD = gemessene.filter(e=>!(e.a||'').includes('Training'));
+    if (trainD.length && restD.length) {
+      const tA=(trainD.map(e=>e.h).reduce((a,b)=>a+b,0)/trainD.length).toFixed(2);
+      const rA=(restD.map(e=>e.h).reduce((a,b)=>a+b,0)/restD.length).toFixed(2);
+      tips.push(`Training: Ø ${tA} mg/dl · Ruhe: Ø ${rA} mg/dl`);
+    }
+    const gut = gemessene.filter(e=>e.sl==='Gut').map(e=>e.h);
+    const schl = gemessene.filter(e=>e.sl==='Schlecht').map(e=>e.h);
+    if (gut.length&&schl.length) {
+      const gA=(gut.reduce((a,b)=>a+b,0)/gut.length).toFixed(2);
+      const sA=(schl.reduce((a,b)=>a+b,0)/schl.length).toFixed(2);
+      tips.push(`Guter Schlaf: Ø ${gA} mg/dl · Schlechter Schlaf: Ø ${sA} mg/dl`);
+    }
+    muster.innerHTML = tips.length ? tips.map(t=>`<div class="tip-box">💡 ${t}</div>`).join('') : '<div class="empty-state">Noch zu wenig Daten für Muster.</div>';
   }
-  const gut = gemessene.filter(e=>e.sl==='Gut').map(e=>e.h);
-  const schl = gemessene.filter(e=>e.sl==='Schlecht').map(e=>e.h);
-  if (gut.length&&schl.length) {
-    const gA=(gut.reduce((a,b)=>a+b,0)/gut.length).toFixed(2);
-    const sA=(schl.reduce((a,b)=>a+b,0)/schl.length).toFixed(2);
-    tips.push(`Guter Schlaf: Ø ${gA} mg/dl · Schlechter Schlaf: Ø ${sA} mg/dl`);
+
+  renderErkenntnisse(gemessene);
+  renderMedizinischeHinweise(gemessene);
+}
+
+// ══ PERSÖNLICHE ERKENNTNISSE ══
+// Nichts hier ist vorprogrammiert oder mit festen Texten hinterlegt — jede Aussage wird bei
+// jedem Aufruf frisch aus den aktuellen DATA-Einträgen berechnet. Ändern sich die Daten
+// (neue Einträge, Korrekturen, Löschungen), ändern sich automatisch auch die Aussagen.
+function gruppenStatistik(gemessene, feld) {
+  // feld: Objektschlüssel im DATA-Eintrag, z.B. 'a' (Aktivität), 'tm' (Trinkmenge), 'sl' (Schlaf), 'ai' (Intensität)
+  const groups = {};
+  gemessene.forEach(e => {
+    const k = e[feld];
+    if (!k) return; // leere/fehlende Angaben fließen nicht in den Vergleich ein
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(e.h);
+  });
+  return Object.entries(groups)
+    .map(([kategorie, vs]) => ({
+      kategorie,
+      n: vs.length,
+      avg: vs.reduce((a,b)=>a+b,0)/vs.length,
+      min: Math.min(...vs),
+      max: Math.max(...vs)
+    }))
+    .sort((x,y)=>x.avg-y.avg); // aufsteigend: niedrigster Ø zuerst
+}
+
+// ══ ERWEITERTE AKTIVITÄTSANALYSE ══
+// Vollständige Aufschlüsselung je Aktivität (u.a. Training A/B, Schwimmen, Spaziergänge,
+// Gartenarbeit, Ruhetage, Sonstiges — abhängig davon, was tatsächlich protokolliert wurde).
+// gesamtAvg wird von renderAnalyse() übergeben, damit exakt derselbe Gesamtdurchschnitt
+// verwendet wird, der auch oben in der Statistikzeile angezeigt wird (keine doppelte Berechnung).
+// baueKategorieRanglisteHTML() ist die gemeinsame Basis für Aktivität, Trinkmenge, Schlaf und
+// Trainingsintensität — eine Änderung an der Berechnung wirkt sich automatisch auf alle vier aus.
+function baueKategorieRanglisteHTML(gemessene, feld, gesamtAvg) {
+  const stats = gruppenStatistik(gemessene, feld); // bereits aufsteigend nach Ø sortiert
+  if (!stats.length) return null;
+  return stats.map(s => {
+    const spannweite = s.max - s.min;
+    const abw = s.avg - gesamtAvg;
+    const abwKlasse = Math.abs(abw) < 0.05 ? 'neutral' : (abw > 0 ? 'pos' : 'neg');
+    const abwText = Math.abs(abw) < 0.05
+      ? 'entspricht dem Gesamt-Ø'
+      : (abw > 0 ? '+' : '−') + Math.abs(abw).toFixed(2) + ' mg/dl vs. Gesamt-Ø';
+    return `
+      <div class="akt-card">
+        <div class="akt-head">
+          <span class="akt-name">${esc(s.kategorie)}</span>
+          <span class="akt-avg ${haColor(s.avg)}">${s.avg.toFixed(2)} mg/dl</span>
+        </div>
+        <div class="akt-meta">
+          <span>n = ${s.n}</span>
+          <span>Min ${s.min.toFixed(1)}</span>
+          <span>Max ${s.max.toFixed(1)}</span>
+          <span>Spannweite ${spannweite.toFixed(2)}</span>
+          <span class="akt-dev ${abwKlasse}">${abwText}</span>
+        </div>
+      </div>`;
+  }).join('') + '<div class="fs-11-muted mt-4">Automatisch sortiert: niedrigster Ø-Wert zuerst. Kategorien mit wenigen Messungen (n=1–2) sind statistisch wenig belastbar.</div>';
+}
+
+function renderAktivitaetsanalyse(gemessene, gesamtAvg) {
+  const el = document.getElementById('aw-aktivitaet');
+  if (!el) return;
+  const html = baueKategorieRanglisteHTML(gemessene, 'a', gesamtAvg);
+  el.innerHTML = html || '<div class="empty-state">Keine Aktivitätsdaten.</div>';
+}
+
+// ══ TRINKMENGENANALYSE ══
+function renderTrinkmengenanalyse(gemessene, gesamtAvg) {
+  const el = document.getElementById('aw-trink');
+  if (!el) return;
+  const html = baueKategorieRanglisteHTML(gemessene, 'tm', gesamtAvg);
+  if (!html) { el.innerHTML = '<div class="empty-state">Noch keine Daten zur Trinkmenge vorhanden.</div>'; return; }
+  const hinweis = baueTrainingHydrationHinweis(gemessene);
+  el.innerHTML = html + (hinweis
+    ? `<div class="tip-box mt-4">💧 ${hinweis}</div>`
+    : '<div class="fs-11-muted mt-4">Noch zu wenig Trainingstage mit unterschiedlicher Trinkmenge dokumentiert, um zu prüfen, ob mehr Trinken den trainingsbedingten Anstieg abschwächt.</div>');
+}
+// Prüft speziell an Trainingstagen: unterscheidet sich der Folgetagswert zwischen geringer
+// (unter 1,5 L / 1,5–2 L) und hoher Trinkmenge (3–3,5 L / über 3,5 L)? Die mittlere Kategorie
+// (2–3 L) wird bewusst ausgeklammert, um die beiden Enden klar gegenüberzustellen.
+function baueTrainingHydrationHinweis(gemessene) {
+  const TM_ORDER = ['unter 1,5 L','1,5–2 L','2–3 L','3–3,5 L','über 3,5 L'];
+  const trainD = gemessene.filter(e => istEchtesTraining(e.a) && e.tm);
+  const niedrig = trainD.filter(e => TM_ORDER.indexOf(e.tm) <= 1).map(e=>e.h);
+  const hoch = trainD.filter(e => TM_ORDER.indexOf(e.tm) >= 3).map(e=>e.h);
+  if (!niedrig.length || !hoch.length) return null;
+  const avgN = niedrig.reduce((a,b)=>a+b,0)/niedrig.length;
+  const avgH = hoch.reduce((a,b)=>a+b,0)/hoch.length;
+  const diff = avgN - avgH;
+  if (Math.abs(diff) < 0.05) {
+    return `An Trainingstagen kein erkennbarer Unterschied zwischen geringerer (Ø ${avgN.toFixed(2)} mg/dl, n=${niedrig.length}) und höherer Trinkmenge (Ø ${avgH.toFixed(2)} mg/dl, n=${hoch.length}).`;
   }
-  muster.innerHTML = tips.length ? tips.map(t=>`<div class="tip-box">💡 ${t}</div>`).join('') : '<div class="empty-state">Noch zu wenig Daten für Muster.</div>';
+  const richtung = diff > 0
+    ? 'Deine Werte an Trainingstagen mit höherer Trinkmenge liegen niedriger — passend zur Annahme eines abschwächenden Effekts'
+    : 'Deine Werte an Trainingstagen mit höherer Trinkmenge liegen höher — entgegen der Annahme eines abschwächenden Effekts';
+  return `${richtung}: geringe Trinkmenge Ø ${avgN.toFixed(2)} mg/dl (n=${niedrig.length}) vs. hohe Trinkmenge Ø ${avgH.toFixed(2)} mg/dl (n=${hoch.length}), Unterschied ${Math.abs(diff).toFixed(2)} mg/dl. Bei diesen kleinen Fallzahlen ein erster Hinweis, kein Beleg.`;
+}
+
+// ══ SCHLAFANALYSE ══
+function renderSchlafanalyse(gemessene, gesamtAvg) {
+  const el = document.getElementById('aw-schlaf');
+  if (!el) return;
+  const html = baueKategorieRanglisteHTML(gemessene, 'sl', gesamtAvg);
+  el.innerHTML = html || '<div class="empty-state">Noch keine Daten zum Schlaf vorhanden.</div>';
+}
+
+// ══ TRAININGSINTENSITÄT ══
+function renderIntensitaetsanalyse(gemessene, gesamtAvg) {
+  const el = document.getElementById('aw-intens');
+  if (!el) return;
+  const html = baueKategorieRanglisteHTML(gemessene, 'ai', gesamtAvg);
+  el.innerHTML = html || '<div class="empty-state">Noch keine Intensitätsdaten vorhanden.</div>';
+}
+
+
+// ══ PERSÖNLICHE ERKENNTNISSE ══
+function berechneErkenntnisse(gemessene) {
+  const MIN_N = 2; // ab dieser Anzahl Messungen gilt eine Kategorie als (etwas) belastbarer
+  const faktoren = [
+    { feld:'a',  label:'Aktivität' },
+    { feld:'tm', label:'Trinkmenge' },
+    { feld:'sl', label:'Schlafqualität' },
+    { feld:'ai', label:'Trainingsintensität' }
+  ];
+  const ergebnisse = [];
+  faktoren.forEach(f => {
+    const stats = gruppenStatistik(gemessene, f.feld);
+    if (stats.length < 2) return; // ein Ranking braucht mindestens 2 unterschiedliche Kategorien mit Daten
+    const beste = stats[0];
+    const schlechteste = stats[stats.length-1];
+    const diff = schlechteste.avg - beste.avg;
+    if (diff < 0.05) return; // kein nennenswerter Unterschied — keine Aussage erzwingen, wo keine ist
+    ergebnisse.push({ label: f.label, beste, schlechteste, diff, unsicherBeste: beste.n < MIN_N, unsicherSchlechteste: schlechteste.n < MIN_N });
+  });
+  return ergebnisse;
+}
+
+function renderErkenntnisse(gemessene) {
+  const el = document.getElementById('aw-erkenntnisse');
+  if (!el) return;
+  if (gemessene.length < 5) { el.innerHTML = '<div class="empty-state">Mind. 5 gemessene Werte nötig.</div>'; return; }
+
+  const ergebnisse = berechneErkenntnisse(gemessene);
+  const bloecke = ergebnisse.map(r => {
+    const hinweisBeste = r.unsicherBeste ? ` <span class="fs-11-muted">(nur ${r.beste.n} Messung — vorläufig)</span>` : '';
+    const hinweisSchlechteste = r.unsicherSchlechteste ? ` <span class="fs-11-muted">(nur ${r.schlechteste.n} Messung — vorläufig)</span>` : '';
+    return `
+      <div class="erk-block">
+        <div class="erk-faktor">${esc(r.label)}</div>
+        <div class="erk-line erk-good">✅ Niedrigste Ø-Werte: <strong>${esc(r.beste.kategorie)}</strong> — ${r.beste.avg.toFixed(2)} mg/dl (n=${r.beste.n})${hinweisBeste}</div>
+        <div class="erk-line erk-bad">⚠️ Höchste Ø-Werte: <strong>${esc(r.schlechteste.kategorie)}</strong> — ${r.schlechteste.avg.toFixed(2)} mg/dl (n=${r.schlechteste.n})${hinweisSchlechteste}</div>
+        <div class="erk-line erk-diff">Unterschied: ${r.diff.toFixed(2)} mg/dl</div>
+      </div>`;
+  });
+
+  el.innerHTML = bloecke.length
+    ? bloecke.join('') + '<div class="erk-line fs-11-muted mt-4">Hinweis: Korrelation, keine bewiesene Kausalität. Kategorien mit wenigen Messungen sind statistisch unsicher.</div>'
+    : '<div class="empty-state">Noch zu wenig unterschiedliche Kategorien pro Faktor für einen Vergleich.</div>';
+}
+
+// ══ TRAININGSEFFEKT (Anstieg & Erholung) ══
+// Definition "Ausgangsniveau": der gemessene Harnsäurewert am Morgen DES Trainingstags selbst
+// (also vor dem Training) — das ist der DATA-Eintrag mit Datum = Trainingseintrag.datum - 1 Tag,
+// da der Trainingseintrag laut Eingaberegel den Vortag beschreibt.
+// Definition "Erholungsdauer": Anzahl Kalendertage bis zum ersten gemessenen Folgewert ≤ Ausgangsniveau.
+// WICHTIG: Seit 14.07.2026 wird nicht mehr täglich gemessen (nur Trainingstag + 2 Folgetage, oder
+// bei vermutetem Anstieg). Ungemessene Tage liefern keine Information — die berechnete Erholungsdauer
+// kann sich dadurch nur auf tatsächlich gemessene Tage stützen und wird bei Datenlücken als
+// "nicht ermittelbar" ausgewiesen statt geraten.
+function berechneTrainingsereignisse() {
+  const sortiert = [...DATA].sort((a,b)=>a.d.localeCompare(b.d)); // eigene, unabhängige Sortierung
+  const ereignisse = [];
+  sortiert.forEach(rec => {
+    if (!istEchtesTraining(rec.a)) return;
+    if (rec.h == null) return; // Peak-Wert muss vorhanden sein
+    const baseRec = sortiert.find(x => x.d === vorherigerTag(rec.d));
+    if (!baseRec || baseRec.h == null) return; // ohne gemessenes Ausgangsniveau keine Aussage möglich
+    const baseline = baseRec.h;
+    const peak = rec.h;
+    let erholungsTage = null;
+    let cursor = rec.d;
+    for (let i=0; i<30; i++) { // Obergrenze verhindert Endlosschleife bei dauerhaften Datenlücken
+      cursor = naechsterTag(cursor);
+      const folge = sortiert.find(x => x.d === cursor);
+      if (!folge || folge.h == null) continue; // ungemessener Tag: überspringen, zählt nicht als Erholung
+      if (folge.h <= baseline) { erholungsTage = (new Date(cursor) - new Date(rec.d)) / 86400000; break; }
+    }
+    ereignisse.push({ datum: rec.d, aktivitaet: rec.a, baseline, peak, anstieg: peak-baseline, erholungsTage });
+  });
+  return ereignisse;
+}
+
+function renderTrainingseffekt() {
+  const el = document.getElementById('aw-traineffekt');
+  if (!el) return;
+  const ereignisse = berechneTrainingsereignisse();
+  if (!ereignisse.length) { el.innerHTML = '<div class="empty-state">Noch keine auswertbaren Trainingsereignisse (Trainingseintrag + gemessenes Ausgangsniveau am Vortag nötig).</div>'; return; }
+
+  const anstiege = ereignisse.map(e=>e.anstieg);
+  const avgAnstieg = anstiege.reduce((a,b)=>a+b,0)/anstiege.length;
+  const erholt = ereignisse.filter(e=>e.erholungsTage!=null);
+  const avgErholung = erholt.length ? (erholt.map(e=>e.erholungsTage).reduce((a,b)=>a+b,0)/erholt.length) : null;
+
+  const summary = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv ${avgAnstieg>0?'bad':'good'}">${avgAnstieg>=0?'+':''}${avgAnstieg.toFixed(2)}</div><div class="sl">Ø Anstieg mg/dl</div></div>
+      <div class="sbox"><div class="sv">${erholt.length}/${ereignisse.length}</div><div class="sl">Erholung ermittelbar</div></div>
+      <div class="sbox"><div class="sv">${avgErholung!=null?avgErholung.toFixed(1)+' Tg.':'—'}</div><div class="sl">Ø Erholungsdauer</div></div>
+    </div>`;
+
+  const liste = ereignisse.map(e => `
+    <div class="te-card">
+      <div class="te-top"><span>${fd(e.datum)}</span><span style="color:var(--${haColor(e.peak)})">${e.baseline.toFixed(1)} → ${e.peak.toFixed(1)} mg/dl</span></div>
+      <div class="te-vals">${esc(e.aktivitaet)} · Anstieg: <strong>${e.anstieg>=0?'+':''}${e.anstieg.toFixed(2)} mg/dl</strong></div>
+      <div class="te-vals">Erholung: <strong>${e.erholungsTage!=null ? e.erholungsTage+' Tag(e) bis ≤ Ausgangsniveau' : 'nicht ermittelbar (fehlende Folgemessung)'}</strong></div>
+    </div>`).join('');
+
+  el.innerHTML = summary + liste + '<div class="fs-11-muted mt-4">Ausgangsniveau = gemessener Wert am Morgen des Trainingstags selbst (vor dem Training). Seit Juli 2026 wird nicht mehr täglich gemessen — "nicht ermittelbar" bedeutet fehlende Folgemessung, nicht fehlende Erholung.</div>';
+}
+
+// ══ LANGFRISTIGE TRENDANALYSE ══
+// Teilt die gemessenen Werte chronologisch in zwei Hälften (nach Anzahl, nicht nach Kalenderzeit)
+// und vergleicht sie. Bei ungerader Anzahl gehört der mittlere Wert zur ersten Hälfte.
+function teileInHaelften(sortierteListe) {
+  const mitte = Math.ceil(sortierteListe.length/2);
+  return { erste: sortierteListe.slice(0, mitte), zweite: sortierteListe.slice(mitte) };
+}
+
+function renderTrendanalyse(gemessene) {
+  const el = document.getElementById('aw-trend');
+  if (!el) return;
+  if (gemessene.length < 4) { el.innerHTML = '<div class="empty-state">Mind. 4 gemessene Werte nötig.</div>'; return; }
+  const sortiert = [...gemessene].sort((a,b)=>a.d.localeCompare(b.d));
+  const { erste, zweite } = teileInHaelften(sortiert);
+  const avgE = erste.map(e=>e.h).reduce((a,b)=>a+b,0)/erste.length;
+  const avgZ = zweite.map(e=>e.h).reduce((a,b)=>a+b,0)/zweite.length;
+  const diff = avgZ - avgE;
+  const prozent = (diff/avgE)*100;
+  const richtungKlasse = Math.abs(diff)<0.05 ? 'trend-flat' : (diff<0 ? 'trend-down' : 'trend-up');
+  const richtungText = Math.abs(diff)<0.05 ? 'Kein klarer Trend erkennbar' : (diff<0 ? '📉 Verbesserung (rückläufig)' : '📈 Verschlechterung (steigend)');
+
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv">${avgE.toFixed(2)}</div><div class="sl">Ø 1. Hälfte (n=${erste.length})</div></div>
+      <div class="sbox"><div class="sv">${avgZ.toFixed(2)}</div><div class="sl">Ø 2. Hälfte (n=${zweite.length})</div></div>
+      <div class="sbox"><div class="sv ${richtungKlasse}">${diff>=0?'+':''}${diff.toFixed(2)}</div><div class="sl">Differenz mg/dl</div></div>
+    </div>
+    <div class="tip-box ${richtungKlasse}">${richtungText} · Veränderung: ${prozent>=0?'+':''}${prozent.toFixed(1)}% gegenüber der ersten Hälfte des dokumentierten Zeitraums (${fd(sortiert[0].d)} – ${fd(sortiert[sortiert.length-1].d)}).</div>
+    <div class="fs-11-muted mt-4">Zeitliche Aufteilung nach Anzahl der Messungen, nicht nach Kalenderwochen. Seit 14.07.2026 wird gezielter statt täglich gemessen — das kann den Durchschnitt der zweiten Hälfte nach oben verzerren (mehr Messungen an vermutet kritischen Tagen).</div>`;
+}
+
+// ══ ERWEITERTE STATISTIK ══
+function berechneErweiterteStatistik(gemessene) {
+  const vals = [...gemessene.map(e=>e.h)].sort((a,b)=>a-b);
+  const n = vals.length;
+  const min = vals[0], max = vals[n-1];
+  const mittel = vals.reduce((a,b)=>a+b,0)/n;
+  const median = n%2===1 ? vals[(n-1)/2] : (vals[n/2-1]+vals[n/2])/2;
+  const spannweite = max-min;
+  // Stichproben-Standardabweichung (n-1 im Nenner) — üblich, wenn die Messreihe als Stichprobe
+  // aus einer größeren, nicht vollständig erfassten Grundgesamtheit betrachtet wird.
+  const stdabw = n>1 ? Math.sqrt(vals.reduce((a,v)=>a+Math.pow(v-mittel,2),0)/(n-1)) : 0;
+  return { n, min, max, median, spannweite, stdabw, mittel };
+}
+
+function renderErweiterteStatistik(gemessene) {
+  const el = document.getElementById('aw-erwstat');
+  if (!el) return;
+  const s = berechneErweiterteStatistik(gemessene);
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv">${s.n}</div><div class="sl">Gültige Messungen</div></div>
+      <div class="sbox"><div class="sv good">${s.min.toFixed(1)}</div><div class="sl">Minimum</div></div>
+      <div class="sbox"><div class="sv bad">${s.max.toFixed(1)}</div><div class="sl">Maximum</div></div>
+      <div class="sbox"><div class="sv">${s.median.toFixed(2)}</div><div class="sl">Median</div></div>
+      <div class="sbox"><div class="sv">${s.spannweite.toFixed(2)}</div><div class="sl">Spannweite</div></div>
+      <div class="sbox"><div class="sv">${s.stdabw.toFixed(2)}</div><div class="sl">Std.-Abw. (s)</div></div>
+    </div>
+    <div class="fs-11-muted mt-4">Standardabweichung als Stichproben-Streuung (n−1) berechnet.</div>`;
+}
+
+// ══ ZIELBEREICHSANALYSE (erweitert) ══
+function renderZielbereich(gemessene) {
+  const el = document.getElementById('aw-zielbereich');
+  if (!el) return;
+  const n = gemessene.length;
+  const imZiel = gemessene.filter(e=>e.h<=6).length;
+  const prozent = (imZiel/n)*100;
+  let entwicklungHTML = '<div class="fs-11-muted mt-4">Mind. 4 Messungen nötig, um die Entwicklung über den Zeitraum darzustellen.</div>';
+  if (n >= 4) {
+    const sortiert = [...gemessene].sort((a,b)=>a.d.localeCompare(b.d));
+    const { erste, zweite } = teileInHaelften(sortiert);
+    const pE = erste.filter(e=>e.h<=6).length/erste.length*100;
+    const pZ = zweite.filter(e=>e.h<=6).length/zweite.length*100;
+    const diffP = pZ - pE;
+    const klasse = Math.abs(diffP)<1 ? 'trend-flat' : (diffP>0?'trend-down':'trend-up');
+    entwicklungHTML = `<div class="tip-box ${klasse} mt-4">1. Hälfte: ${pE.toFixed(0)}% im Ziel (n=${erste.length}) · 2. Hälfte: ${pZ.toFixed(0)}% im Ziel (n=${zweite.length}) · ${diffP>=0?'+':''}${diffP.toFixed(0)} Prozentpunkte</div>`;
+  }
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv">${n}</div><div class="sl">Messungen gesamt</div></div>
+      <div class="sbox"><div class="sv good">${imZiel}</div><div class="sl">Im Ziel ≤6,0</div></div>
+      <div class="sbox"><div class="sv ${prozent>=60?'good':'warn'}">${prozent.toFixed(0)}%</div><div class="sl">Anteil im Ziel</div></div>
+    </div>` + entwicklungHTML;
+}
+
+// ══ AUTOMATISCHE MEDIZINISCHE HINWEISE ══
+// Nur datenbasierte, vorsichtig formulierte Beobachtungen — keine Diagnose, keine Therapieempfehlung.
+// Jeder Hinweis wird nur angezeigt, wenn die zugrundeliegende Berechnung ausreichend Datenbasis hat.
+function berechneMedizinischeHinweise(gemessene) {
+  const hinweise = [];
+
+  // 1) Regelmäßiger Anstieg nach Krafttraining
+  const ereignisse = berechneTrainingsereignisse();
+  if (ereignisse.length >= 2) {
+    const anzahlAnstieg = ereignisse.filter(e=>e.anstieg>0).length;
+    const avgAnstieg = ereignisse.map(e=>e.anstieg).reduce((a,b)=>a+b,0)/ereignisse.length;
+    if (anzahlAnstieg === ereignisse.length) {
+      hinweise.push(`🏋️ Bei allen ${ereignisse.length} auswertbaren Trainingsereignissen stieg die Harnsäure am Folgetag an (Ø +${avgAnstieg.toFixed(2)} mg/dl). Ein konsistentes Muster, aber ${ereignisse.length} Ereignisse sind noch eine kleine Stichprobe.`);
+    } else if (anzahlAnstieg > 0) {
+      hinweise.push(`🏋️ Bei ${anzahlAnstieg} von ${ereignisse.length} auswertbaren Trainingsereignissen stieg die Harnsäure am Folgetag an (Ø ${avgAnstieg>=0?'+':''}${avgAnstieg.toFixed(2)} mg/dl) — kein durchgängiges Muster.`);
+    }
+  }
+
+  // 2) Trinkmenge an Trainingstagen
+  const hydHinweis = baueTrainingHydrationHinweis(gemessene);
+  if (hydHinweis) hinweise.push('💧 ' + hydHinweis);
+
+  // 3) Zusammenhang mit Schlafqualität — nur wenn beide Extreme mit ausreichend Messungen vorliegen
+  const schlafStats = gruppenStatistik(gemessene, 'sl');
+  const gut = schlafStats.find(s=>s.kategorie==='Gut');
+  const schlecht = schlafStats.find(s=>s.kategorie==='Schlecht');
+  if (gut && schlecht && gut.n>=2 && schlecht.n>=2) {
+    const diff = schlecht.avg - gut.avg;
+    if (Math.abs(diff) >= 0.1) {
+      hinweise.push(`😴 Schlechter Schlaf ist bei dir mit ${diff>0?'höheren':'niedrigeren'} Harnsäurewerten assoziiert (Gut: Ø ${gut.avg.toFixed(2)} mg/dl, n=${gut.n} · Schlecht: Ø ${schlecht.avg.toFixed(2)} mg/dl, n=${schlecht.n}).`);
+    } else {
+      hinweise.push(`😴 Kein nennenswerter Zusammenhang zwischen Schlafqualität und Harnsäure erkennbar (Gut: Ø ${gut.avg.toFixed(2)} mg/dl, n=${gut.n} · Schlecht: Ø ${schlecht.avg.toFixed(2)} mg/dl, n=${schlecht.n}).`);
+    }
+  }
+
+  // 4) Entwicklung im dokumentierten Zeitraum unter durchgehender Allopurinol-Einnahme
+  // Rein deskriptiv — keine Aussage über Dosis-Wirkung möglich, da keine Dosisänderung dokumentiert ist.
+  if (gemessene.length >= 4) {
+    const sortiert = [...gemessene].sort((a,b)=>a.d.localeCompare(b.d));
+    const { erste, zweite } = teileInHaelften(sortiert);
+    const avgE = erste.map(e=>e.h).reduce((a,b)=>a+b,0)/erste.length;
+    const avgZ = zweite.map(e=>e.h).reduce((a,b)=>a+b,0)/zweite.length;
+    const diff = avgZ-avgE;
+    if (Math.abs(diff) >= 0.1) {
+      hinweise.push(`💊 Unter durchgehender Einnahme von Allopurinol 150 mg/Tag zeigt der dokumentierte Zeitraum eine ${diff<0?'rückläufige':'steigende'} Entwicklung (Ø 1. Hälfte ${avgE.toFixed(2)} → 2. Hälfte ${avgZ.toFixed(2)} mg/dl). Da keine Dosisänderung protokolliert ist, lässt sich daraus keine Dosis-Wirkungs-Aussage ableiten — dafür wären gezielte, ärztlich begleitete Dosisanpassungen nötig.`);
+    }
+  }
+
+  return hinweise;
+}
+
+function renderMedizinischeHinweise(gemessene) {
+  const el = document.getElementById('aw-hinweise');
+  if (!el) return;
+  const hinweise = berechneMedizinischeHinweise(gemessene);
+  el.innerHTML = hinweise.length
+    ? hinweise.map(h=>`<div class="tip-box">${h}</div>`).join('')
+    : '<div class="empty-state">Noch nicht genug Daten für belegte Hinweise.</div>';
 }
 
 // ══ SICHERUNG ══
@@ -1481,6 +1946,78 @@ async function exportCSV() {
   showLog('CSV exportiert.');
 }
 
+// ══ EXPORT-TEXT DER ANALYSEN ══
+// Nutzt exakt dieselben Berechnungsfunktionen wie die Anzeige im Analyse-Tab, damit App und
+// Claude-Export niemals unterschiedliche Zahlen zeigen können.
+function formatKategorieListeText(gemessene, feld, titel) {
+  const stats = gruppenStatistik(gemessene, feld);
+  if (!stats.length) return `### ${titel}\nKeine Daten.\n\n`;
+  let t = `### ${titel}\n`;
+  stats.forEach(s => { t += `- ${s.kategorie}: Ø ${s.avg.toFixed(2)} mg/dl (n=${s.n}, Min ${s.min.toFixed(1)}, Max ${s.max.toFixed(1)}, Spannweite ${(s.max-s.min).toFixed(2)})\n`; });
+  return t + '\n';
+}
+
+function baueAnalyseExportText(gemessene) {
+  let t = '';
+
+  t += '## Persönliche Erkenntnisse\n';
+  const erk = berechneErkenntnisse(gemessene);
+  t += erk.length
+    ? erk.map(r => `- ${r.label}: niedrigste Werte bei "${r.beste.kategorie}" (Ø ${r.beste.avg.toFixed(2)} mg/dl, n=${r.beste.n}), höchste Werte bei "${r.schlechteste.kategorie}" (Ø ${r.schlechteste.avg.toFixed(2)} mg/dl, n=${r.schlechteste.n}), Unterschied ${r.diff.toFixed(2)} mg/dl.`).join('\n')+'\n\n'
+    : 'Noch zu wenig Daten für einen Faktor-Vergleich.\n\n';
+
+  t += formatKategorieListeText(gemessene, 'a', 'Erweiterte Aktivitätsanalyse');
+
+  t += formatKategorieListeText(gemessene, 'tm', 'Trinkmengenanalyse');
+  const hyd = baueTrainingHydrationHinweis(gemessene);
+  t += (hyd || 'Noch zu wenig Trainingstage mit unterschiedlicher Trinkmenge dokumentiert, um einen abschwächenden Effekt zu prüfen.') + '\n\n';
+
+  t += formatKategorieListeText(gemessene, 'sl', 'Schlafanalyse');
+  t += formatKategorieListeText(gemessene, 'ai', 'Trainingsintensität');
+
+  t += '### Trainingseffekt (Anstieg & Erholung)\n';
+  const ereignisse = berechneTrainingsereignisse();
+  if (ereignisse.length) {
+    ereignisse.forEach(e => { t += `- ${e.datum} (${e.aktivitaet}): ${e.baseline.toFixed(1)} → ${e.peak.toFixed(1)} mg/dl (Anstieg ${e.anstieg>=0?'+':''}${e.anstieg.toFixed(2)} mg/dl), Erholung: ${e.erholungsTage!=null ? e.erholungsTage+' Tag(e) bis ≤ Ausgangsniveau' : 'nicht ermittelbar (fehlende Folgemessung)'}\n`; });
+    const erholt = ereignisse.filter(e=>e.erholungsTage!=null);
+    if (erholt.length) t += `Ø Erholungsdauer: ${(erholt.map(e=>e.erholungsTage).reduce((a,b)=>a+b,0)/erholt.length).toFixed(1)} Tage (${erholt.length}/${ereignisse.length} Ereignisse auswertbar)\n`;
+  } else { t += 'Noch keine auswertbaren Trainingsereignisse.\n'; }
+  t += '\n';
+
+  t += '### Langfristige Trendanalyse\n';
+  if (gemessene.length >= 4) {
+    const sortiertG = [...gemessene].sort((a,b)=>a.d.localeCompare(b.d));
+    const { erste, zweite } = teileInHaelften(sortiertG);
+    const avgE = erste.map(e=>e.h).reduce((a,b)=>a+b,0)/erste.length;
+    const avgZ = zweite.map(e=>e.h).reduce((a,b)=>a+b,0)/zweite.length;
+    const diff = avgZ - avgE, prozent = (diff/avgE)*100;
+    t += `Ø 1. Hälfte: ${avgE.toFixed(2)} mg/dl (n=${erste.length}) · Ø 2. Hälfte: ${avgZ.toFixed(2)} mg/dl (n=${zweite.length}) · Veränderung: ${diff>=0?'+':''}${diff.toFixed(2)} mg/dl (${prozent>=0?'+':''}${prozent.toFixed(1)}%)\n`;
+  } else { t += 'Mind. 4 gemessene Werte nötig.\n'; }
+  t += '\n';
+
+  t += '### Erweiterte Statistik\n';
+  const st = berechneErweiterteStatistik(gemessene);
+  t += `Gültige Messungen: ${st.n} · Min: ${st.min.toFixed(1)} · Max: ${st.max.toFixed(1)} · Median: ${st.median.toFixed(2)} · Spannweite: ${st.spannweite.toFixed(2)} · Std.-Abw. (Stichprobe, n−1): ${st.stdabw.toFixed(2)}\n\n`;
+
+  t += '### Zielbereichsanalyse\n';
+  const nZ = gemessene.length, imZielZ = gemessene.filter(e=>e.h<=6).length;
+  t += `Messungen gesamt: ${nZ} · Im Ziel ≤6,0: ${imZielZ} (${(imZielZ/nZ*100).toFixed(0)}%)\n`;
+  if (nZ >= 4) {
+    const sortiertZ = [...gemessene].sort((a,b)=>a.d.localeCompare(b.d));
+    const { erste, zweite } = teileInHaelften(sortiertZ);
+    const pE = erste.filter(e=>e.h<=6).length/erste.length*100, pZ = zweite.filter(e=>e.h<=6).length/zweite.length*100;
+    t += `Entwicklung: 1. Hälfte ${pE.toFixed(0)}% im Ziel → 2. Hälfte ${pZ.toFixed(0)}% im Ziel (${(pZ-pE)>=0?'+':''}${(pZ-pE).toFixed(0)} Prozentpunkte)\n`;
+  }
+  t += '\n';
+
+  t += '### Automatische medizinische Hinweise\n';
+  const hinweise = berechneMedizinischeHinweise(gemessene);
+  t += hinweise.length ? hinweise.map(h=>'- '+h).join('\n')+'\n' : 'Noch nicht genug Daten für belegte Hinweise.\n';
+  t += 'Hinweis: Rein datenbasierte Beobachtungen (Korrelation), kein medizinischer Rat. Medizinische Entscheidungen liegen ausschließlich beim behandelnden Arzt.\n\n';
+
+  return t;
+}
+
 function exportClaude() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
   // Eigene, unabhängige Sortierung — verlässt sich nicht darauf, dass DATA an anderer Stelle im Code sortiert gehalten wird
@@ -1495,7 +2032,9 @@ function exportClaude() {
   txt += zusammenfassungZeile + `- Medikament: Allopurinol 150 mg täglich\n\n`;
   txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität | km | Intensität | Trinkmenge | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|-----------|----|------------|------------|--------|-----------|------\n`;
   sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.a||'—'} | ${e.km!=null?e.km:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
-  txt += `\n## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
+  txt += `\n`;
+  if (vals.length) txt += baueAnalyseExportText(gemessene);
+  txt += `## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
   const clipboardVerfuegbar = navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
   const herunterladenAlsDatei = () => {
     const a=document.createElement('a');
@@ -1509,6 +2048,7 @@ function exportClaude() {
     herunterladenAlsDatei();
   }
 }
+
 
 // ══ DATUM DEFAULT ══
 // Merkt sich, ob der Nutzer das Datumsfeld selbst bewusst geändert hat (z.B. um einen
