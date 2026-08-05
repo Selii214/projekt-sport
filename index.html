@@ -578,7 +578,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-08-01 — v39 (Einheit B: doppelten "Rückenstrecker"-Eintrag entfernt — nur noch Gerät 20, 5 kg. Duplikat hätte zu kollidierenden internen IDs geführt, da UIDs über den Übungsnamen gebildet werden)';
+const BUILD_VERSION = '2026-08-01 — v40 (Einheit B: "Beine" mit Gerät 6, 82,5 kg wieder hinzugefügt — Einheit B hat jetzt 7 Übungen, keine Namens-Duplikate)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -791,6 +791,7 @@ const EINHEITEN = {
     {name:'Rückenstrecker', gerat:'20', gew:'5 kg', saetze:2, wdh:12, pause:'120', hint:'Größte Gruppe — längere Pause', done:false},
     {name:'Beinbeuger liegend/Rolle', gerat:'5 · Rolle 5 · Arm 3', gew:'45 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
     {name:'Bauch-Beine', gerat:'18', gew:'70–80 kg', saetze:2, wdh:12, pause:'90', hint:'S1:70 / S2:80 kg', done:false},
+    {name:'Beine', gerat:'6', gew:'82,5 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
     {name:'Beine heben seitlich', gerat:'19', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
     {name:'Hinten und überkreuzen', gerat:'19', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
   ]
