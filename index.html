@@ -337,9 +337,17 @@ select.modal-input{cursor:pointer;}
         <div class="fg"><label>RR systolisch</label><input type="number" id="ps" placeholder="125"></div>
         <div class="fg"><label>RR diastolisch</label><input type="number" id="pdi" placeholder="75"></div>
         <div class="fg"><label>Puls (bpm)</label><input type="number" id="pp" placeholder="62"></div>
-        <div class="fg"><label>Aktivität Vortag</label>
+        <div class="fg"><label>Aktivität heute</label>
           <select id="pak" onchange="toggleKmFeld()">
             <option value="">— wählen —</option>
+            <option>Ruhetag</option><option>Spaziergang</option><option>Fahrradfahren</option><option>Schwimmen</option><option>Wandern</option><option>Gartenarbeit</option>
+            <option>Training Einheit A</option><option>Training Einheit B</option>
+            <option>Trainingsnachwirkung</option><option>Sonstiges</option>
+          </select>
+        </div>
+        <div class="fg"><label>Weitere Aktivität Vortag (optional)</label>
+          <select id="pak2" onchange="toggleKmFeld()">
+            <option value="">— keine —</option>
             <option>Ruhetag</option><option>Spaziergang</option><option>Fahrradfahren</option><option>Schwimmen</option><option>Wandern</option><option>Gartenarbeit</option>
             <option>Training Einheit A</option><option>Training Einheit B</option>
             <option>Trainingsnachwirkung</option><option>Sonstiges</option>
@@ -578,7 +586,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-08-01 — v40 (Einheit B: "Beine" mit Gerät 6, 82,5 kg wieder hinzugefügt — Einheit B hat jetzt 7 Übungen, keine Namens-Duplikate)';
+const BUILD_VERSION = '2026-08-01 — v44 (Einmalige Migration ergänzt: bestehende a/a2-Daten aus v41/v42 werden beim ersten Laden automatisch korrekt getauscht, damit deine Historie unter der neuen v43-Bedeutung stimmt. Läuft nur einmal, per Flag abgesichert)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -731,6 +739,28 @@ function safeSet(key, value) {
   }
 }
 let DATA = safeParse('sg-proto', []);
+// ══ EINMALIGE MIGRATION (v43) ══
+// Bis v42 galt: 'a' = Aktivität Vortag, 'a2' = weitere Aktivität heute.
+// Seit v43 gilt genau umgekehrt: 'a' = Aktivität heute, 'a2' = weitere Aktivität Vortag.
+// Ohne diese Migration würden alle bereits gespeicherten Aktivitäten (auch die komplette
+// Historie seit 14.06.2026, die immer nur 'a' im alten Sinn "Vortag" genutzt hat) plötzlich
+// falsch interpretiert. Tauscht daher einmalig a<->a2 in allen Einträgen und markiert das
+// per Flag, damit nicht bei jedem Laden erneut (und damit wieder falsch) getauscht wird.
+(function migriereAA2Tausch() {
+  const FLAG = 'sg-a-a2-getauscht-v43';
+  if (localStorage.getItem(FLAG) === '1') return; // bereits migriert
+  let geaendert = false;
+  DATA.forEach(e => {
+    if (e.a || e.a2) {
+      const alt_a = e.a || '';
+      e.a = e.a2 || '';
+      e.a2 = alt_a;
+      geaendert = true;
+    }
+  });
+  if (geaendert) safeSet('sg-proto', DATA);
+  localStorage.setItem(FLAG, '1');
+})();
 let TLOG = safeParse('sg-tlog', []);
 function genId() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)+'-'+Math.random().toString(36).slice(2,10); }
 // Escaped Nutzertext vor dem Einfügen in innerHTML (verhindert kaputte Darstellung bei Sonderzeichen wie & < > sowie versehentliche HTML/Skript-Injektion)
@@ -1030,7 +1060,7 @@ function fd(d) {
 function haColor(v) { return v<=6?'good':v<=7?'warn':'bad'; }
 
 function toggleKmFeld() {
-  const istWandern = document.getElementById('pak').value === 'Wandern';
+  const istWandern = document.getElementById('pak').value === 'Wandern' || document.getElementById('pak2').value === 'Wandern';
   document.getElementById('fg-km').classList.toggle('hidden', !istWandern);
   if (!istWandern) document.getElementById('pkm').value = '';
 }
@@ -1048,6 +1078,7 @@ async function saveEintrag() {
     di: document.getElementById('pdi').value || '',
     p: document.getElementById('pp').value || '',
     a: document.getElementById('pak').value || '',
+    a2: document.getElementById('pak2').value || '',
     ai: document.getElementById('pai').value || '',
     km: document.getElementById('pkm').value ? parseFloat(document.getElementById('pkm').value.replace(',','.')) : null,
     tm: document.getElementById('ptm').value || '',
@@ -1062,7 +1093,7 @@ async function saveEintrag() {
   const erfolgreich = saveData();
   // Felder leeren
   ['ph','ps','pdi','pp','pe','pn'].forEach(id=>document.getElementById(id).value='');
-  ['pak','pai','ptm','psl'].forEach(id=>document.getElementById(id).value='');
+  ['pak','pak2','pai','ptm','psl'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('pkm').value = '';
   toggleKmFeld();
   renderProto();
@@ -1081,6 +1112,7 @@ function editEintrag(d) {
   document.getElementById('pdi').value = e.di||'';
   document.getElementById('pp').value = e.p||'';
   document.getElementById('pak').value = e.a||'';
+  document.getElementById('pak2').value = e.a2||'';
   document.getElementById('pai').value = e.ai||'';
   document.getElementById('pkm').value = e.km!=null ? e.km : '';
   toggleKmFeld();
@@ -1128,7 +1160,8 @@ function renderProto() {
       <div class="vrow-meta">
         ${e.s&&e.di?`<span class="vmeta">🫀 ${esc(e.s)}/${esc(e.di)}</span>`:''}
         ${e.p?`<span class="vmeta">💓 ${esc(e.p)} bpm</span>`:''}
-        ${e.a?`<span class="vmeta">🏃 ${esc(e.a)}${e.km!=null?' ('+e.km+' km)':''}${e.ai?' — '+esc(e.ai):''}</span>`:''}
+        ${e.a?`<span class="vmeta">🏃 ${esc(e.a)} (heute)${e.km!=null?' ('+e.km+' km)':''}${e.ai?' — '+esc(e.ai):''}</span>`:''}
+        ${e.a2?`<span class="vmeta">➕ ${esc(e.a2)} (Vortag)</span>`:''}
         ${e.tm?`<span class="vmeta">💧 ${esc(e.tm)}</span>`:''}
         ${e.sl?`<span class="vmeta">😴 ${esc(e.sl)}</span>`:''}
         ${e.e?`<span class="vmeta">🍽 ${esc(e.e)}</span>`:''}
@@ -1390,14 +1423,12 @@ function renderAnalyse() {
     <text x="${xS(i)}" y="${yS(e.h)-9}" text-anchor="middle" fill="var(--muted)" font-size="9">${e.h}</text>`).join('')}
   </svg>`;
 
-  // Faktoren — nur Einträge mit gemessenem Wert je Aktivität gruppieren
-  const groups = {};
-  gemessene.forEach(e => { if (!e.a) return; if(!groups[e.a]) groups[e.a]=[]; groups[e.a].push(e.h); });
-  fak.innerHTML = Object.entries(groups).length ? Object.entries(groups).map(([k,vs])=>{
-    const a=(vs.reduce((x,y)=>x+y,0)/vs.length).toFixed(2);
+  // Faktoren — nur Einträge mit gemessenem Wert; a UND a2 fließen beide ein
+  const aktFaktorStats = gruppenStatistikAktivitaet();
+  fak.innerHTML = aktFaktorStats.length ? aktFaktorStats.map(s=>{
     return `<div class="stat-row-line">
-      <span class="fs-13">${esc(k)}</span>
-      <span class="stat-value" style="color:var(--${haColor(parseFloat(a))})">${a} mg/dl</span>
+      <span class="fs-13">${esc(s.kategorie)}</span>
+      <span class="stat-value" style="color:var(--${haColor(s.avg)})">${s.avg.toFixed(2)} mg/dl</span>
     </div>`;
   }).join('') : '<div class="empty-state">Keine Aktivitätsdaten.</div>';
 
@@ -1415,8 +1446,11 @@ function renderAnalyse() {
     muster.innerHTML='<div class="empty-state">Mind. 5 gemessene Werte nötig.</div>';
   } else {
     const tips = [];
-    const trainD = gemessene.filter(e=>(e.a||'').includes('Training'));
-    const restD = gemessene.filter(e=>!(e.a||'').includes('Training'));
+    // Nur 'a2' prüfen: 'a2' beschreibt jetzt den Vortag und gehört zum eigenen h dieses Eintrags.
+    // 'a' beschreibt den aktuellen Tag und wirkt erst auf den Folgetags-Wert — würde hier fälschlich
+    // einen "Vorher"-Wert als "Trainings-Tag"-Wert zählen (siehe berechneTrainingsereignisse).
+    const trainD = gemessene.filter(e=>(e.a2||'').includes('Training'));
+    const restD = gemessene.filter(e=>!(e.a2||'').includes('Training'));
     if (trainD.length && restD.length) {
       const tA=(trainD.map(e=>e.h).reduce((a,b)=>a+b,0)/trainD.length).toFixed(2);
       const rA=(restD.map(e=>e.h).reduce((a,b)=>a+b,0)/restD.length).toFixed(2);
@@ -1440,14 +1474,17 @@ function renderAnalyse() {
 // Nichts hier ist vorprogrammiert oder mit festen Texten hinterlegt — jede Aussage wird bei
 // jedem Aufruf frisch aus den aktuellen DATA-Einträgen berechnet. Ändern sich die Daten
 // (neue Einträge, Korrekturen, Löschungen), ändern sich automatisch auch die Aussagen.
-function gruppenStatistik(gemessene, feld) {
-  // feld: Objektschlüssel im DATA-Eintrag, z.B. 'a' (Aktivität), 'tm' (Trinkmenge), 'sl' (Schlaf), 'ai' (Intensität)
+// Gemeinsame Basis: sammelt für jeden Messwert die Kategorien, zu denen er zählen soll
+// (kategorienFn liefert pro Eintrag ein Array von Kategorie-Strings — meist genau 1,
+// bei der Aktivität ggf. 2, wenn eine weitere Aktivität Vortag erfasst wurde).
+function sammleKategorienWerte(eintraege, paarFn) {
   const groups = {};
-  gemessene.forEach(e => {
-    const k = e[feld];
-    if (!k) return; // leere/fehlende Angaben fließen nicht in den Vergleich ein
-    if (!groups[k]) groups[k] = [];
-    groups[k].push(e.h);
+  eintraege.forEach(e => {
+    paarFn(e).forEach(({kategorie, wert}) => {
+      if (!kategorie || wert == null) return; // leere/fehlende Angaben fließen nicht ein
+      if (!groups[kategorie]) groups[kategorie] = [];
+      groups[kategorie].push(wert);
+    });
   });
   return Object.entries(groups)
     .map(([kategorie, vs]) => ({
@@ -1460,6 +1497,32 @@ function gruppenStatistik(gemessene, feld) {
     .sort((x,y)=>x.avg-y.avg); // aufsteigend: niedrigster Ø zuerst
 }
 
+function gruppenStatistik(gemessene, feld) {
+  // feld: Objektschlüssel im DATA-Eintrag, z.B. 'tm' (Trinkmenge), 'sl' (Schlaf), 'ai' (Intensität)
+  return sammleKategorienWerte(gemessene, e => [{kategorie: e[feld], wert: e.h}]);
+}
+
+// Aktivität hat zwei Felder pro Tag — aber mit UNTERSCHIEDLICHEM Zeitbezug, keine einfache Verdopplung:
+// - 'a' (Aktivität heute) beschreibt den Tag DER Messung selbst → ihre physiologische Wirkung
+//   zeigt sich erst im Harnsäurewert des FOLGETAGS, nicht im eigenen h.
+// - 'a2' (weitere Aktivität Vortag) beschreibt den Tag VOR der Messung → gehört zum eigenen h
+//   dieses Eintrags.
+// Braucht deshalb Zugriff auf die komplette DATA (nicht nur 'gemessene'), um für a den
+// passenden Folgetags-Wert nachzuschlagen — auch wenn der Tag mit a selbst nicht gemessen wurde.
+function gruppenStatistikAktivitaet() {
+  const nachDatum = {};
+  DATA.forEach(e => { nachDatum[e.d] = e; });
+  return sammleKategorienWerte(DATA, e => {
+    const paare = [];
+    if (e.a) {
+      const folge = nachDatum[naechsterTag(e.d)];
+      if (folge && folge.h != null) paare.push({ kategorie: e.a, wert: folge.h });
+    }
+    if (e.a2 && e.h != null) paare.push({ kategorie: e.a2, wert: e.h });
+    return paare;
+  });
+}
+
 // ══ ERWEITERTE AKTIVITÄTSANALYSE ══
 // Vollständige Aufschlüsselung je Aktivität (u.a. Training A/B, Schwimmen, Spaziergänge,
 // Gartenarbeit, Ruhetage, Sonstiges — abhängig davon, was tatsächlich protokolliert wurde).
@@ -1468,7 +1531,7 @@ function gruppenStatistik(gemessene, feld) {
 // baueKategorieRanglisteHTML() ist die gemeinsame Basis für Aktivität, Trinkmenge, Schlaf und
 // Trainingsintensität — eine Änderung an der Berechnung wirkt sich automatisch auf alle vier aus.
 function baueKategorieRanglisteHTML(gemessene, feld, gesamtAvg) {
-  const stats = gruppenStatistik(gemessene, feld); // bereits aufsteigend nach Ø sortiert
+  const stats = feld === 'a' ? gruppenStatistikAktivitaet() : gruppenStatistik(gemessene, feld); // bereits aufsteigend nach Ø sortiert
   if (!stats.length) return null;
   return stats.map(s => {
     const spannweite = s.max - s.min;
@@ -1507,19 +1570,22 @@ function renderTrinkmengenanalyse(gemessene, gesamtAvg) {
   if (!el) return;
   const html = baueKategorieRanglisteHTML(gemessene, 'tm', gesamtAvg);
   if (!html) { el.innerHTML = '<div class="empty-state">Noch keine Daten zur Trinkmenge vorhanden.</div>'; return; }
-  const hinweis = baueTrainingHydrationHinweis(gemessene);
+  const hinweis = baueTrainingHydrationHinweis();
   el.innerHTML = html + (hinweis
     ? `<div class="tip-box mt-4">💧 ${hinweis}</div>`
     : '<div class="fs-11-muted mt-4">Noch zu wenig Trainingstage mit unterschiedlicher Trinkmenge dokumentiert, um zu prüfen, ob mehr Trinken den trainingsbedingten Anstieg abschwächt.</div>');
 }
-// Prüft speziell an Trainingstagen: unterscheidet sich der Folgetagswert zwischen geringer
+// Prüft speziell an Trainingstagen: unterscheidet sich der Spitzenwert zwischen geringer
 // (unter 1,5 L / 1,5–2 L) und hoher Trinkmenge (3–3,5 L / über 3,5 L)? Die mittlere Kategorie
 // (2–3 L) wird bewusst ausgeklammert, um die beiden Enden klar gegenüberzustellen.
-function baueTrainingHydrationHinweis(gemessene) {
+// Nutzt berechneTrainingsereignisse(), damit die Trinkmenge korrekt dem jeweiligen Trainingstag
+// zugeordnet ist — bei 'a2'-Training ist das die Trinkmenge des FOLGETAGS-Eintrags, nicht die
+// dieses Eintrags (siehe dortige Fallunterscheidung).
+function baueTrainingHydrationHinweis() {
   const TM_ORDER = ['unter 1,5 L','1,5–2 L','2–3 L','3–3,5 L','über 3,5 L'];
-  const trainD = gemessene.filter(e => istEchtesTraining(e.a) && e.tm);
-  const niedrig = trainD.filter(e => TM_ORDER.indexOf(e.tm) <= 1).map(e=>e.h);
-  const hoch = trainD.filter(e => TM_ORDER.indexOf(e.tm) >= 3).map(e=>e.h);
+  const ereignisse = berechneTrainingsereignisse().filter(e => e.tm);
+  const niedrig = ereignisse.filter(e => TM_ORDER.indexOf(e.tm) <= 1).map(e=>e.peak);
+  const hoch = ereignisse.filter(e => TM_ORDER.indexOf(e.tm) >= 3).map(e=>e.peak);
   if (!niedrig.length || !hoch.length) return null;
   const avgN = niedrig.reduce((a,b)=>a+b,0)/niedrig.length;
   const avgH = hoch.reduce((a,b)=>a+b,0)/hoch.length;
@@ -1561,7 +1627,7 @@ function berechneErkenntnisse(gemessene) {
   ];
   const ergebnisse = [];
   faktoren.forEach(f => {
-    const stats = gruppenStatistik(gemessene, f.feld);
+    const stats = f.feld === 'a' ? gruppenStatistikAktivitaet() : gruppenStatistik(gemessene, f.feld);
     if (stats.length < 2) return; // ein Ranking braucht mindestens 2 unterschiedliche Kategorien mit Daten
     const beste = stats[0];
     const schlechteste = stats[stats.length-1];
@@ -1596,35 +1662,64 @@ function renderErkenntnisse(gemessene) {
 }
 
 // ══ TRAININGSEFFEKT (Anstieg & Erholung) ══
-// Definition "Ausgangsniveau": der gemessene Harnsäurewert am Morgen DES Trainingstags selbst
-// (also vor dem Training) — das ist der DATA-Eintrag mit Datum = Trainingseintrag.datum - 1 Tag,
-// da der Trainingseintrag laut Eingaberegel den Vortag beschreibt.
-// Definition "Erholungsdauer": Anzahl Kalendertage bis zum ersten gemessenen Folgewert ≤ Ausgangsniveau.
+// Zwei Fälle, weil 'a' und 'a2' einen unterschiedlichen Zeitbezug haben:
+// Fall 1 — Training über 'a' (Aktivität heute): 'a' beschreibt den Tag DER Messung selbst.
+//   Das Training wirkt sich erst auf den FOLGETAG aus:
+//   Ausgangsniveau = h dieses Eintrags selbst, Spitzenwert = h des Folgetags-Eintrags.
+// Fall 2 — Training über 'a2' (weitere Aktivität Vortag): 'a2' beschreibt den Tag VOR der Messung.
+//   Ausgangsniveau = h des Vortags-Eintrags, Spitzenwert = h dieses Eintrags selbst.
+// In beiden Fällen ist "Ereignisdatum" der Tag mit dem Spitzenwert — konsistent vergleichbar.
+// Definition "Erholungsdauer": Anzahl Kalendertage nach dem Ereignisdatum bis zum ersten
+// gemessenen Folgewert ≤ Ausgangsniveau.
 // WICHTIG: Seit 14.07.2026 wird nicht mehr täglich gemessen (nur Trainingstag + 2 Folgetage, oder
 // bei vermutetem Anstieg). Ungemessene Tage liefern keine Information — die berechnete Erholungsdauer
 // kann sich dadurch nur auf tatsächlich gemessene Tage stützen und wird bei Datenlücken als
 // "nicht ermittelbar" ausgewiesen statt geraten.
+function sucheErholung(nachDatum, abDatum, baseline) {
+  let erholungsTage = null;
+  let cursor = abDatum;
+  for (let i=0; i<30; i++) { // Obergrenze verhindert Endlosschleife bei dauerhaften Datenlücken
+    cursor = naechsterTag(cursor);
+    const folge = nachDatum[cursor];
+    if (!folge || folge.h == null) continue; // ungemessener Tag: überspringen, zählt nicht als Erholung
+    if (folge.h <= baseline) { erholungsTage = (new Date(cursor) - new Date(abDatum)) / 86400000; break; }
+  }
+  return erholungsTage;
+}
+
 function berechneTrainingsereignisse() {
   const sortiert = [...DATA].sort((a,b)=>a.d.localeCompare(b.d)); // eigene, unabhängige Sortierung
+  const nachDatum = {};
+  sortiert.forEach(e => { nachDatum[e.d] = e; });
   const ereignisse = [];
+
   sortiert.forEach(rec => {
-    if (!istEchtesTraining(rec.a)) return;
-    if (rec.h == null) return; // Peak-Wert muss vorhanden sein
-    const baseRec = sortiert.find(x => x.d === vorherigerTag(rec.d));
-    if (!baseRec || baseRec.h == null) return; // ohne gemessenes Ausgangsniveau keine Aussage möglich
-    const baseline = baseRec.h;
-    const peak = rec.h;
-    let erholungsTage = null;
-    let cursor = rec.d;
-    for (let i=0; i<30; i++) { // Obergrenze verhindert Endlosschleife bei dauerhaften Datenlücken
-      cursor = naechsterTag(cursor);
-      const folge = sortiert.find(x => x.d === cursor);
-      if (!folge || folge.h == null) continue; // ungemessener Tag: überspringen, zählt nicht als Erholung
-      if (folge.h <= baseline) { erholungsTage = (new Date(cursor) - new Date(rec.d)) / 86400000; break; }
+    // Fall 1: 'a' (Aktivität heute) beschreibt den aktuellen Tag → der FOLGETAG ist der Spitzenwert
+    if (istEchtesTraining(rec.a) && rec.h != null) {
+      const peakRec = nachDatum[naechsterTag(rec.d)];
+      if (peakRec && peakRec.h != null) {
+        const baseline = rec.h, peak = peakRec.h;
+        ereignisse.push({
+          datum: peakRec.d, aktivitaet: rec.a, quelle: 'a', tm: peakRec.tm || null,
+          baseline, peak, anstieg: peak-baseline,
+          erholungsTage: sucheErholung(nachDatum, peakRec.d, baseline)
+        });
+      }
     }
-    ereignisse.push({ datum: rec.d, aktivitaet: rec.a, baseline, peak, anstieg: peak-baseline, erholungsTage });
+    // Fall 2: 'a2' (weitere Aktivität Vortag) beschreibt den Vortag → dieser Eintrag selbst ist der Spitzenwert
+    if (istEchtesTraining(rec.a2) && rec.h != null) {
+      const baseRec = nachDatum[vorherigerTag(rec.d)];
+      if (baseRec && baseRec.h != null) {
+        const baseline = baseRec.h, peak = rec.h;
+        ereignisse.push({
+          datum: rec.d, aktivitaet: rec.a2, quelle: 'a2', tm: rec.tm || null,
+          baseline, peak, anstieg: peak-baseline,
+          erholungsTage: sucheErholung(nachDatum, rec.d, baseline)
+        });
+      }
+    }
   });
-  return ereignisse;
+  return ereignisse.sort((x,y)=>x.datum.localeCompare(y.datum));
 }
 
 function renderTrainingseffekt() {
@@ -1760,7 +1855,7 @@ function berechneMedizinischeHinweise(gemessene) {
   }
 
   // 2) Trinkmenge an Trainingstagen
-  const hydHinweis = baueTrainingHydrationHinweis(gemessene);
+  const hydHinweis = baueTrainingHydrationHinweis();
   if (hydHinweis) hinweise.push('💧 ' + hydHinweis);
 
   // 3) Zusammenhang mit Schlafqualität — nur wenn beide Extreme mit ausreichend Messungen vorliegen
@@ -1936,9 +2031,9 @@ function importJSON(input) {
 
 async function exportCSV() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
-  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität;km;Intensität;Trinkmenge;Schlaf;Ernährung;Notiz\n';
+  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität (heute);Weitere Aktivität (Vortag);km;Intensität;Trinkmenge;Schlaf;Ernährung;Notiz\n';
   const dez = v => v==null ? '' : (typeof v==='number' ? String(v).replace('.',',') : v);
-  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',e.a||'',dez(e.km),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',e.a||'',e.a2||'',dez(e.km),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'}));
   a.download = 'sport-gicht-'+heuteLokal()+'.csv';
@@ -1950,7 +2045,7 @@ async function exportCSV() {
 // Nutzt exakt dieselben Berechnungsfunktionen wie die Anzeige im Analyse-Tab, damit App und
 // Claude-Export niemals unterschiedliche Zahlen zeigen können.
 function formatKategorieListeText(gemessene, feld, titel) {
-  const stats = gruppenStatistik(gemessene, feld);
+  const stats = feld === 'a' ? gruppenStatistikAktivitaet() : gruppenStatistik(gemessene, feld);
   if (!stats.length) return `### ${titel}\nKeine Daten.\n\n`;
   let t = `### ${titel}\n`;
   stats.forEach(s => { t += `- ${s.kategorie}: Ø ${s.avg.toFixed(2)} mg/dl (n=${s.n}, Min ${s.min.toFixed(1)}, Max ${s.max.toFixed(1)}, Spannweite ${(s.max-s.min).toFixed(2)})\n`; });
@@ -1969,7 +2064,7 @@ function baueAnalyseExportText(gemessene) {
   t += formatKategorieListeText(gemessene, 'a', 'Erweiterte Aktivitätsanalyse');
 
   t += formatKategorieListeText(gemessene, 'tm', 'Trinkmengenanalyse');
-  const hyd = baueTrainingHydrationHinweis(gemessene);
+  const hyd = baueTrainingHydrationHinweis();
   t += (hyd || 'Noch zu wenig Trainingstage mit unterschiedlicher Trinkmenge dokumentiert, um einen abschwächenden Effekt zu prüfen.') + '\n\n';
 
   t += formatKategorieListeText(gemessene, 'sl', 'Schlafanalyse');
@@ -2030,8 +2125,8 @@ function exportClaude() {
   let txt = `# PROJEKT SPORT & GICHT — AUSWERTUNGSDATEN\nExportiert: ${new Date().toLocaleDateString('de-DE')}\n\n`;
   txt += `## Zusammenfassung\n- Einträge: ${sortiert.length}\n- Zeitraum: ${sortiert[0].d} bis ${sortiert[sortiert.length-1].d}\n`;
   txt += zusammenfassungZeile + `- Medikament: Allopurinol 150 mg täglich\n\n`;
-  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität | km | Intensität | Trinkmenge | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|-----------|----|------------|------------|--------|-----------|------\n`;
-  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.a||'—'} | ${e.km!=null?e.km:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
+  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität (heute) | Weitere Aktivität (Vortag) | km | Intensität | Trinkmenge | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|--------------------|-----------------------------|----|------------|------------|--------|-----------|------\n`;
+  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.a||'—'} | ${e.a2||'—'} | ${e.km!=null?e.km:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
   txt += `\n`;
   if (vals.length) txt += baueAnalyseExportText(gemessene);
   txt += `## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
