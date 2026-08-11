@@ -100,6 +100,26 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
 .fg input,.fg select,.fg textarea{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;width:100%;}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--a);}
 .fg textarea{resize:vertical;min-height:60px;}
+.akt-details{background:var(--surf2);border:1px solid var(--border);border-radius:8px;}
+.akt-details summary{padding:10px;font-size:14px;color:var(--text);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.akt-details summary::-webkit-details-marker{display:none;}
+.akt-details summary::after{content:'▾';color:var(--muted);font-size:12px;flex-shrink:0;}
+.akt-details[open] summary::after{content:'▴';}
+.akt-details summary.placeholder{color:var(--muted);}
+.akt-summary-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.akt-checklist{padding:4px 10px 8px;border-top:1px solid var(--border);display:flex;flex-direction:column;}
+.akt-check-row{display:flex;align-items:center;gap:12px;padding:10px 4px;font-size:22px;font-weight:800;}
+.akt-check-row input{
+  appearance:none;-webkit-appearance:none;
+  width:24px;height:24px;flex-shrink:0;
+  border-radius:50%;border:2px solid var(--border);background:var(--surf2);
+  cursor:pointer;position:relative;transition:all .15s;
+}
+.akt-check-row input:checked{background:var(--a);border-color:var(--a);}
+.akt-check-row input:checked::after{
+  content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  color:#fff;font-size:14px;font-weight:800;
+}
 .fg-full{grid-column:1/-1;}
 .btn-save{width:100%;padding:14px;border-radius:var(--r);background:var(--good);border:none;color:#0d1117;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:4px;}
 .btn-save:active{opacity:.8;}
@@ -337,18 +357,29 @@ select.modal-input{cursor:pointer;}
         <div class="fg"><label>RR systolisch</label><input type="number" id="ps" placeholder="125"></div>
         <div class="fg"><label>RR diastolisch</label><input type="number" id="pdi" placeholder="75"></div>
         <div class="fg"><label>Puls (bpm)</label><input type="number" id="pp" placeholder="62"></div>
-        <div class="fg"><label>Aktivität heute</label>
-          <select id="pak" onchange="toggleKmFeld()">
-            <option value="">— wählen —</option>
-            <option>Ruhetag</option><option>Spaziergang</option><option>Fahrradfahren</option><option>Schwimmen</option><option>Wandern</option><option>Gartenarbeit</option>
-            <option>Training Einheit A</option><option>Training Einheit B</option>
-            <option>Trainingsnachwirkung</option><option>Sonstiges</option>
-          </select>
+        <div class="fg"><label>Aktivität heute (Mehrfachauswahl)</label>
+          <details class="akt-details" id="pak-details">
+            <summary id="pak-summary" class="placeholder"><span class="akt-summary-text">— wählen —</span></summary>
+            <div class="akt-checklist" id="pak-checks">
+              <label class="akt-check-row"><input type="checkbox" value="Ruhetag" onchange="aktualisierePakSummary()"> Ruhetag</label>
+              <label class="akt-check-row"><input type="checkbox" value="Spaziergang" onchange="aktualisierePakSummary()"> Spaziergang</label>
+              <label class="akt-check-row"><input type="checkbox" value="Fahrradfahren" onchange="aktualisierePakSummary()"> Fahrradfahren</label>
+              <label class="akt-check-row"><input type="checkbox" value="Schwimmen" onchange="aktualisierePakSummary()"> Schwimmen</label>
+              <label class="akt-check-row"><input type="checkbox" value="Wandern" onchange="aktualisierePakSummary()"> Wandern</label>
+              <label class="akt-check-row"><input type="checkbox" value="Gartenarbeit" onchange="aktualisierePakSummary()"> Gartenarbeit</label>
+              <label class="akt-check-row"><input type="checkbox" value="Rehasport" onchange="aktualisierePakSummary()"> Rehasport</label>
+              <label class="akt-check-row"><input type="checkbox" value="Training Einheit A" onchange="aktualisierePakSummary()"> Training Einheit A</label>
+              <label class="akt-check-row"><input type="checkbox" value="Training Einheit B" onchange="aktualisierePakSummary()"> Training Einheit B</label>
+              <label class="akt-check-row"><input type="checkbox" value="Trainingsnachwirkung" onchange="aktualisierePakSummary()"> Trainingsnachwirkung</label>
+              <label class="akt-check-row"><input type="checkbox" value="Sonstiges" onchange="aktualisierePakSummary()"> Sonstiges</label>
+            </div>
+          </details>
         </div>
         <div class="fg"><label>Weitere Aktivität Vortag (optional)</label>
           <select id="pak2" onchange="toggleKmFeld()">
             <option value="">— keine —</option>
             <option>Ruhetag</option><option>Spaziergang</option><option>Fahrradfahren</option><option>Schwimmen</option><option>Wandern</option><option>Gartenarbeit</option>
+            <option>Rehasport</option>
             <option>Training Einheit A</option><option>Training Einheit B</option>
             <option>Trainingsnachwirkung</option><option>Sonstiges</option>
           </select>
@@ -586,7 +617,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-08-01 — v44 (Einmalige Migration ergänzt: bestehende a/a2-Daten aus v41/v42 werden beim ersten Laden automatisch korrekt getauscht, damit deine Historie unter der neuen v43-Bedeutung stimmt. Läuft nur einmal, per Flag abgesichert)';
+const BUILD_VERSION = '2026-08-01 — v50 (Aktivitäts-Auswahlliste: Schriftgröße exakt auf page-title-Niveau (22px, font-weight:800) angehoben — sieht jetzt wie das Wort "Verlauf" oben aus)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -1059,8 +1090,33 @@ function fd(d) {
 }
 function haColor(v) { return v<=6?'good':v<=7?'warn':'bad'; }
 
+// Aufklappbares Mehrfachauswahl-Feld für "Aktivität heute" — liest/setzt die Checkboxen und
+// hält den zugeklappten Zusammenfassungstext (summary) aktuell.
+function holeAktivitaetAuswahl() {
+  return [...document.querySelectorAll('#pak-checks input:checked')].map(c => c.value);
+}
+function setzeAktivitaetAuswahl(werte) {
+  const liste = alsAktivitaetsListe(werte);
+  document.querySelectorAll('#pak-checks input').forEach(c => { c.checked = liste.includes(c.value); });
+  document.getElementById('pak-details').open = false;
+  aktualisierePakSummary();
+}
+function aktualisierePakSummary() {
+  const gewaehlt = holeAktivitaetAuswahl();
+  const summary = document.getElementById('pak-summary');
+  summary.querySelector('.akt-summary-text').textContent = gewaehlt.length ? gewaehlt.join(', ') : '— wählen —';
+  summary.classList.toggle('placeholder', !gewaehlt.length);
+  toggleKmFeld();
+}
+// Normalisiert 'a' auf eine Liste — Altbestand (vor der Mehrfachauswahl) speicherte hier einen
+// einzelnen String statt eines Arrays. So funktionieren alte UND neue Einträge einheitlich,
+// ohne dass eine destruktive Migration nötig ist.
+function alsAktivitaetsListe(a) {
+  if (!a) return [];
+  return Array.isArray(a) ? a : [a];
+}
 function toggleKmFeld() {
-  const istWandern = document.getElementById('pak').value === 'Wandern' || document.getElementById('pak2').value === 'Wandern';
+  const istWandern = holeAktivitaetAuswahl().includes('Wandern') || document.getElementById('pak2').value === 'Wandern';
   document.getElementById('fg-km').classList.toggle('hidden', !istWandern);
   if (!istWandern) document.getElementById('pkm').value = '';
 }
@@ -1077,7 +1133,7 @@ async function saveEintrag() {
     s: document.getElementById('ps').value || '',
     di: document.getElementById('pdi').value || '',
     p: document.getElementById('pp').value || '',
-    a: document.getElementById('pak').value || '',
+    a: holeAktivitaetAuswahl(),
     a2: document.getElementById('pak2').value || '',
     ai: document.getElementById('pai').value || '',
     km: document.getElementById('pkm').value ? parseFloat(document.getElementById('pkm').value.replace(',','.')) : null,
@@ -1093,7 +1149,8 @@ async function saveEintrag() {
   const erfolgreich = saveData();
   // Felder leeren
   ['ph','ps','pdi','pp','pe','pn'].forEach(id=>document.getElementById(id).value='');
-  ['pak','pak2','pai','ptm','psl'].forEach(id=>document.getElementById(id).value='');
+  ['pak2','pai','ptm','psl'].forEach(id=>document.getElementById(id).value='');
+  setzeAktivitaetAuswahl([]);
   document.getElementById('pkm').value = '';
   toggleKmFeld();
   renderProto();
@@ -1111,7 +1168,7 @@ function editEintrag(d) {
   document.getElementById('ps').value = e.s||'';
   document.getElementById('pdi').value = e.di||'';
   document.getElementById('pp').value = e.p||'';
-  document.getElementById('pak').value = e.a||'';
+  setzeAktivitaetAuswahl(e.a);
   document.getElementById('pak2').value = e.a2||'';
   document.getElementById('pai').value = e.ai||'';
   document.getElementById('pkm').value = e.km!=null ? e.km : '';
@@ -1160,7 +1217,7 @@ function renderProto() {
       <div class="vrow-meta">
         ${e.s&&e.di?`<span class="vmeta">🫀 ${esc(e.s)}/${esc(e.di)}</span>`:''}
         ${e.p?`<span class="vmeta">💓 ${esc(e.p)} bpm</span>`:''}
-        ${e.a?`<span class="vmeta">🏃 ${esc(e.a)} (heute)${e.km!=null?' ('+e.km+' km)':''}${e.ai?' — '+esc(e.ai):''}</span>`:''}
+        ${alsAktivitaetsListe(e.a).length?`<span class="vmeta">🏃 ${esc(alsAktivitaetsListe(e.a).join(', '))} (heute)${e.km!=null?' ('+e.km+' km)':''}${e.ai?' — '+esc(e.ai):''}</span>`:''}
         ${e.a2?`<span class="vmeta">➕ ${esc(e.a2)} (Vortag)</span>`:''}
         ${e.tm?`<span class="vmeta">💧 ${esc(e.tm)}</span>`:''}
         ${e.sl?`<span class="vmeta">😴 ${esc(e.sl)}</span>`:''}
@@ -1503,10 +1560,12 @@ function gruppenStatistik(gemessene, feld) {
 }
 
 // Aktivität hat zwei Felder pro Tag — aber mit UNTERSCHIEDLICHEM Zeitbezug, keine einfache Verdopplung:
-// - 'a' (Aktivität heute) beschreibt den Tag DER Messung selbst → ihre physiologische Wirkung
-//   zeigt sich erst im Harnsäurewert des FOLGETAGS, nicht im eigenen h.
-// - 'a2' (weitere Aktivität Vortag) beschreibt den Tag VOR der Messung → gehört zum eigenen h
-//   dieses Eintrags.
+// - 'a' (Aktivität heute) ist eine LISTE (Mehrfachauswahl) und beschreibt den Tag DER Messung
+//   selbst → jede darin enthaltene Aktivität wirkt physiologisch erst auf den Harnsäurewert des
+//   FOLGETAGS, nicht auf das eigene h. Bei mehreren Aktivitäten am selben Tag (z.B. Rehasport +
+//   Gartenarbeit + Fahrradfahren) bekommt JEDE davon denselben Folgetags-Wert zugerechnet.
+// - 'a2' (weitere Aktivität Vortag) ist ein einzelner Wert und beschreibt den Tag VOR der
+//   Messung → gehört zum eigenen h dieses Eintrags.
 // Braucht deshalb Zugriff auf die komplette DATA (nicht nur 'gemessene'), um für a den
 // passenden Folgetags-Wert nachzuschlagen — auch wenn der Tag mit a selbst nicht gemessen wurde.
 function gruppenStatistikAktivitaet() {
@@ -1514,9 +1573,12 @@ function gruppenStatistikAktivitaet() {
   DATA.forEach(e => { nachDatum[e.d] = e; });
   return sammleKategorienWerte(DATA, e => {
     const paare = [];
-    if (e.a) {
+    const heuteListe = alsAktivitaetsListe(e.a);
+    if (heuteListe.length) {
       const folge = nachDatum[naechsterTag(e.d)];
-      if (folge && folge.h != null) paare.push({ kategorie: e.a, wert: folge.h });
+      if (folge && folge.h != null) {
+        heuteListe.forEach(akt => paare.push({ kategorie: akt, wert: folge.h }));
+      }
     }
     if (e.a2 && e.h != null) paare.push({ kategorie: e.a2, wert: e.h });
     return paare;
@@ -1694,13 +1756,14 @@ function berechneTrainingsereignisse() {
   const ereignisse = [];
 
   sortiert.forEach(rec => {
-    // Fall 1: 'a' (Aktivität heute) beschreibt den aktuellen Tag → der FOLGETAG ist der Spitzenwert
-    if (istEchtesTraining(rec.a) && rec.h != null) {
+    // Fall 1: 'a' (Aktivität heute, Liste) beschreibt den aktuellen Tag → der FOLGETAG ist der Spitzenwert
+    const heutigesTraining = alsAktivitaetsListe(rec.a).find(istEchtesTraining);
+    if (heutigesTraining && rec.h != null) {
       const peakRec = nachDatum[naechsterTag(rec.d)];
       if (peakRec && peakRec.h != null) {
         const baseline = rec.h, peak = peakRec.h;
         ereignisse.push({
-          datum: peakRec.d, aktivitaet: rec.a, quelle: 'a', tm: peakRec.tm || null,
+          datum: peakRec.d, aktivitaet: heutigesTraining, quelle: 'a', tm: peakRec.tm || null,
           baseline, peak, anstieg: peak-baseline,
           erholungsTage: sucheErholung(nachDatum, peakRec.d, baseline)
         });
@@ -2033,7 +2096,7 @@ async function exportCSV() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
   const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität (heute);Weitere Aktivität (Vortag);km;Intensität;Trinkmenge;Schlaf;Ernährung;Notiz\n';
   const dez = v => v==null ? '' : (typeof v==='number' ? String(v).replace('.',',') : v);
-  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',e.a||'',e.a2||'',dez(e.km),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',alsAktivitaetsListe(e.a).join(', '),e.a2||'',dez(e.km),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'}));
   a.download = 'sport-gicht-'+heuteLokal()+'.csv';
@@ -2126,7 +2189,7 @@ function exportClaude() {
   txt += `## Zusammenfassung\n- Einträge: ${sortiert.length}\n- Zeitraum: ${sortiert[0].d} bis ${sortiert[sortiert.length-1].d}\n`;
   txt += zusammenfassungZeile + `- Medikament: Allopurinol 150 mg täglich\n\n`;
   txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität (heute) | Weitere Aktivität (Vortag) | km | Intensität | Trinkmenge | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|--------------------|-----------------------------|----|------------|------------|--------|-----------|------\n`;
-  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.a||'—'} | ${e.a2||'—'} | ${e.km!=null?e.km:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
+  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.a2||'—'} | ${e.km!=null?e.km:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
   txt += `\n`;
   if (vals.length) txt += baueAnalyseExportText(gemessene);
   txt += `## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
