@@ -69,7 +69,8 @@ main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
 .uchk.checked-a{background:var(--a);border-color:var(--a);color:#fff;}
 .uchk.checked-b{background:var(--b);border-color:var(--b);color:#fff;}
 .uinfo{flex:1;min-width:0;}
-.unum{font-size:10px;color:var(--muted);margin-bottom:2px;}
+.unum{font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;}
+.unum-idx{font-size:10px;font-weight:400;color:var(--muted);}
 .uname{font-size:15px;font-weight:700;margin-bottom:6px;}
 .ubadges{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .gbadge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:6px;background:var(--surf);border:1px solid var(--muted);color:var(--text);cursor:pointer;}
@@ -385,6 +386,7 @@ select.modal-input{cursor:pointer;}
           </select>
         </div>
         <div class="fg hidden" id="fg-km"><label>Strecke (km)</label><input type="number" id="pkm" step="0.1" placeholder="8.5"></div>
+        <div class="fg hidden" id="fg-hm"><label>Höhenmeter (optional)</label><input type="number" id="phm" step="10" placeholder="350"></div>
         <div class="fg"><label>Intensität Vortag</label>
           <select id="pai">
             <option value="">— wählen —</option>
@@ -508,6 +510,10 @@ select.modal-input{cursor:pointer;}
     <div id="aw-aktivitaet"><div class="empty-state">Noch keine gemessenen Werte vorhanden.</div></div>
   </div>
   <div class="card">
+    <div class="card-title">Aktive Ausdauer-Statistik</div>
+    <div id="aw-ausdauer"><div class="empty-state">Noch keine km-Angaben vorhanden (bei „Wandern" erfassbar).</div></div>
+  </div>
+  <div class="card">
     <div class="card-title">Trinkmengenanalyse</div>
     <div id="aw-trink"><div class="empty-state">Noch keine Daten zur Trinkmenge vorhanden.</div></div>
   </div>
@@ -617,7 +623,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-08-01 — v50 (Aktivitäts-Auswahlliste: Schriftgröße exakt auf page-title-Niveau (22px, font-weight:800) angehoben — sieht jetzt wie das Wort "Verlauf" oben aus)';
+const BUILD_VERSION = '2026-08-14 — v51 (Einheit B: Rückenstrecker Gerät 20→10, "Hinten und überkreuzen" umbenannt in "Arme nach hinten und überkreuzen" (Gerät 19→29, 5 kg statt KG) — löst dabei auch eine bestehende Gerät-19-Dopplung. Neu: Höhenmeter-Feld + Karte "Aktive Ausdauer-Statistik" (Touren, Gesamt km, Ø km/Tour, Gesamt Höhenmeter). Übungsnamen im Trainingsplan optisch verstärkt (font-weight:800, 15px, weiß statt grau/10px) — angeglichen an die obere Ansicht)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -849,12 +855,12 @@ const EINHEITEN = {
   ],
   b: [
     {name:'Cardio Aufwärmen', gerat:'', gew:'—', saetze:'—', wdh:"10'", pause:'—', hint:'Fahrrad/Laufband', done:false},
-    {name:'Rückenstrecker', gerat:'20', gew:'5 kg', saetze:2, wdh:12, pause:'120', hint:'Größte Gruppe — längere Pause', done:false},
+    {name:'Rückenstrecker', gerat:'10', gew:'5 kg', saetze:2, wdh:12, pause:'120', hint:'Größte Gruppe — längere Pause', done:false},
     {name:'Beinbeuger liegend/Rolle', gerat:'5 · Rolle 5 · Arm 3', gew:'45 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
     {name:'Bauch-Beine', gerat:'18', gew:'70–80 kg', saetze:2, wdh:12, pause:'90', hint:'S1:70 / S2:80 kg', done:false},
     {name:'Beine', gerat:'6', gew:'82,5 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
     {name:'Beine heben seitlich', gerat:'19', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
-    {name:'Hinten und überkreuzen', gerat:'19', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
+    {name:'Arme nach hinten und überkreuzen', gerat:'29', gew:'5 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
   ]
 };
 
@@ -955,7 +961,7 @@ function renderEinheit(u) {
     return `<div class="ucard${ex.done?' done-card':''}">
       <button class="uchk${ex.done?' checked-'+u:''}" onclick="toggleDone('${u}',${i})">${ex.done?'✓':''}</button>
       <div class="uinfo">
-        <div class="unum">${ex.saetze!=='—'?'Übung '+(i)+' ·':''} ${ex.name}</div>
+        <div class="unum">${ex.saetze!=='—'?`<span class="unum-idx">Übung ${i} ·</span> `:''}${ex.name}</div>
         <div class="ubadges">${gb}${wb2}${xb}${pb}</div>
         ${ex.hint&&ex.hint!=='—'?`<div class="hint">${ex.hint}</div>`:''}
       </div>
@@ -1118,7 +1124,8 @@ function alsAktivitaetsListe(a) {
 function toggleKmFeld() {
   const istWandern = holeAktivitaetAuswahl().includes('Wandern') || document.getElementById('pak2').value === 'Wandern';
   document.getElementById('fg-km').classList.toggle('hidden', !istWandern);
-  if (!istWandern) document.getElementById('pkm').value = '';
+  document.getElementById('fg-hm').classList.toggle('hidden', !istWandern);
+  if (!istWandern) { document.getElementById('pkm').value = ''; document.getElementById('phm').value = ''; }
 }
 async function saveEintrag() {
   const d = document.getElementById('pd').value;
@@ -1137,6 +1144,7 @@ async function saveEintrag() {
     a2: document.getElementById('pak2').value || '',
     ai: document.getElementById('pai').value || '',
     km: document.getElementById('pkm').value ? parseFloat(document.getElementById('pkm').value.replace(',','.')) : null,
+    hm: document.getElementById('phm').value ? parseInt(document.getElementById('phm').value) : null,
     tm: document.getElementById('ptm').value || '',
     sl: document.getElementById('psl').value || '',
     e: document.getElementById('pe').value || '',
@@ -1152,6 +1160,7 @@ async function saveEintrag() {
   ['pak2','pai','ptm','psl'].forEach(id=>document.getElementById(id).value='');
   setzeAktivitaetAuswahl([]);
   document.getElementById('pkm').value = '';
+  document.getElementById('phm').value = '';
   toggleKmFeld();
   renderProto();
   if (!erfolgreich) { await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus. Bitte Sicherung exportieren, sobald möglich.', 'Fehler beim Speichern'); return; }
@@ -1172,6 +1181,7 @@ function editEintrag(d) {
   document.getElementById('pak2').value = e.a2||'';
   document.getElementById('pai').value = e.ai||'';
   document.getElementById('pkm').value = e.km!=null ? e.km : '';
+  document.getElementById('phm').value = e.hm!=null ? e.hm : '';
   toggleKmFeld();
   document.getElementById('ptm').value = e.tm||'';
   document.getElementById('psl').value = e.sl||'';
@@ -1217,7 +1227,7 @@ function renderProto() {
       <div class="vrow-meta">
         ${e.s&&e.di?`<span class="vmeta">🫀 ${esc(e.s)}/${esc(e.di)}</span>`:''}
         ${e.p?`<span class="vmeta">💓 ${esc(e.p)} bpm</span>`:''}
-        ${alsAktivitaetsListe(e.a).length?`<span class="vmeta">🏃 ${esc(alsAktivitaetsListe(e.a).join(', '))} (heute)${e.km!=null?' ('+e.km+' km)':''}${e.ai?' — '+esc(e.ai):''}</span>`:''}
+        ${alsAktivitaetsListe(e.a).length?`<span class="vmeta">🏃 ${esc(alsAktivitaetsListe(e.a).join(', '))} (heute)${e.km!=null?' ('+e.km+' km'+(e.hm!=null?' / '+e.hm+' Hm':'')+')':''}${e.ai?' — '+esc(e.ai):''}</span>`:''}
         ${e.a2?`<span class="vmeta">➕ ${esc(e.a2)} (Vortag)</span>`:''}
         ${e.tm?`<span class="vmeta">💧 ${esc(e.tm)}</span>`:''}
         ${e.sl?`<span class="vmeta">😴 ${esc(e.sl)}</span>`:''}
@@ -1449,11 +1459,14 @@ function renderAnalyse() {
   const erwstatEl = document.getElementById('aw-erwstat');
   const zielEl = document.getElementById('aw-zielbereich');
   const hinweiseEl = document.getElementById('aw-hinweise');
-  const alleLeeren = () => { fak.innerHTML=''; aktEl.innerHTML=''; muster.innerHTML=''; erk.innerHTML=''; trinkEl.innerHTML=''; schlafEl.innerHTML=''; intensEl.innerHTML=''; teEl.innerHTML=''; trendEl.innerHTML=''; erwstatEl.innerHTML=''; zielEl.innerHTML=''; hinweiseEl.innerHTML=''; };
+  const ausdauerEl = document.getElementById('aw-ausdauer');
+  const alleLeeren = () => { fak.innerHTML=''; aktEl.innerHTML=''; muster.innerHTML=''; erk.innerHTML=''; trinkEl.innerHTML=''; schlafEl.innerHTML=''; intensEl.innerHTML=''; teEl.innerHTML=''; trendEl.innerHTML=''; erwstatEl.innerHTML=''; zielEl.innerHTML=''; hinweiseEl.innerHTML=''; ausdauerEl.innerHTML=''; };
   if (!DATA.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine Daten.</div>'; alleLeeren(); return; }
 
+  renderAusdauerStatistik(); // unabhängig von gemessenen Harnsäurewerten — braucht nur km-Angaben
+
   const gemessene = DATA.filter(e=>e.h!=null);
-  if (!gemessene.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine gemessenen Werte (nur Aktivitätseinträge ohne Harnsäure vorhanden).</div>'; alleLeeren(); return; }
+  if (!gemessene.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine gemessenen Werte (nur Aktivitätseinträge ohne Harnsäure vorhanden).</div>'; fak.innerHTML=''; aktEl.innerHTML=''; muster.innerHTML=''; erk.innerHTML=''; trinkEl.innerHTML=''; schlafEl.innerHTML=''; intensEl.innerHTML=''; teEl.innerHTML=''; trendEl.innerHTML=''; erwstatEl.innerHTML=''; zielEl.innerHTML=''; hinweiseEl.innerHTML=''; return; }
 
   const vals = gemessene.map(e=>e.h);
   const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
@@ -1624,6 +1637,38 @@ function renderAktivitaetsanalyse(gemessene, gesamtAvg) {
   if (!el) return;
   const html = baueKategorieRanglisteHTML(gemessene, 'a', gesamtAvg);
   el.innerHTML = html || '<div class="empty-state">Keine Aktivitätsdaten.</div>';
+}
+
+// ══ AKTIVE AUSDAUER-STATISTIK ══
+// Nutzt ALLE DATA-Einträge mit km-Angabe, nicht nur 'gemessene' — eine Wanderung ist auch
+// relevant, wenn an dem Tag zufällig keine Harnsäure gemessen wurde.
+function berechneAusdauerStatistik() {
+  const touren = DATA.filter(e => e.km != null);
+  const gesamtKm = touren.reduce((a,e)=>a+e.km, 0);
+  const anzahl = touren.length;
+  const hmTouren = touren.filter(e => e.hm != null);
+  const gesamtHm = hmTouren.reduce((a,e)=>a+e.hm, 0);
+  return { anzahl, gesamtKm, oKm: anzahl ? gesamtKm/anzahl : 0, gesamtHm, anzahlHm: hmTouren.length, oHm: hmTouren.length ? gesamtHm/hmTouren.length : 0 };
+}
+
+function renderAusdauerStatistik() {
+  const el = document.getElementById('aw-ausdauer');
+  if (!el) return;
+  const s = berechneAusdauerStatistik();
+  if (!s.anzahl) { el.innerHTML = '<div class="empty-state">Noch keine km-Angaben vorhanden (bei „Wandern" erfassbar).</div>'; return; }
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv">${s.anzahl}</div><div class="sl">Touren</div></div>
+      <div class="sbox"><div class="sv">${s.gesamtKm.toFixed(1)}</div><div class="sl">Gesamt km</div></div>
+      <div class="sbox"><div class="sv">${s.oKm.toFixed(1)}</div><div class="sl">Ø km/Tour</div></div>
+    </div>
+    ${s.anzahlHm ? `
+    <div class="stats-row mt-4">
+      <div class="sbox"><div class="sv">${s.gesamtHm}</div><div class="sl">Gesamt Höhenmeter</div></div>
+      <div class="sbox"><div class="sv">${Math.round(s.oHm)}</div><div class="sl">Ø Hm/Tour</div></div>
+      <div class="sbox"><div class="sv">${s.anzahlHm}/${s.anzahl}</div><div class="sl">Touren mit Hm-Angabe</div></div>
+    </div>` : '<div class="fs-11-muted mt-4">Noch keine Höhenmeter erfasst.</div>'}
+  `;
 }
 
 // ══ TRINKMENGENANALYSE ══
@@ -2094,9 +2139,9 @@ function importJSON(input) {
 
 async function exportCSV() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
-  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität (heute);Weitere Aktivität (Vortag);km;Intensität;Trinkmenge;Schlaf;Ernährung;Notiz\n';
+  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität (heute);Weitere Aktivität (Vortag);km;Höhenmeter;Intensität;Trinkmenge;Schlaf;Ernährung;Notiz\n';
   const dez = v => v==null ? '' : (typeof v==='number' ? String(v).replace('.',',') : v);
-  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',alsAktivitaetsListe(e.a).join(', '),e.a2||'',dez(e.km),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',alsAktivitaetsListe(e.a).join(', '),e.a2||'',dez(e.km),dez(e.hm),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'}));
   a.download = 'sport-gicht-'+heuteLokal()+'.csv';
@@ -2125,6 +2170,15 @@ function baueAnalyseExportText(gemessene) {
     : 'Noch zu wenig Daten für einen Faktor-Vergleich.\n\n';
 
   t += formatKategorieListeText(gemessene, 'a', 'Erweiterte Aktivitätsanalyse');
+
+  t += '### Aktive Ausdauer-Statistik\n';
+  const ausd = berechneAusdauerStatistik();
+  if (ausd.anzahl) {
+    t += `Touren: ${ausd.anzahl} · Gesamt km: ${ausd.gesamtKm.toFixed(1)} · Ø km/Tour: ${ausd.oKm.toFixed(1)}`;
+    t += ausd.anzahlHm ? ` · Gesamt Höhenmeter: ${ausd.gesamtHm} (${ausd.anzahlHm}/${ausd.anzahl} Touren mit Hm-Angabe)\n\n` : ' · Noch keine Höhenmeter erfasst.\n\n';
+  } else {
+    t += 'Noch keine km-Angaben vorhanden.\n\n';
+  }
 
   t += formatKategorieListeText(gemessene, 'tm', 'Trinkmengenanalyse');
   const hyd = baueTrainingHydrationHinweis();
@@ -2188,8 +2242,8 @@ function exportClaude() {
   let txt = `# PROJEKT SPORT & GICHT — AUSWERTUNGSDATEN\nExportiert: ${new Date().toLocaleDateString('de-DE')}\n\n`;
   txt += `## Zusammenfassung\n- Einträge: ${sortiert.length}\n- Zeitraum: ${sortiert[0].d} bis ${sortiert[sortiert.length-1].d}\n`;
   txt += zusammenfassungZeile + `- Medikament: Allopurinol 150 mg täglich\n\n`;
-  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität (heute) | Weitere Aktivität (Vortag) | km | Intensität | Trinkmenge | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|--------------------|-----------------------------|----|------------|------------|--------|-----------|------\n`;
-  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.a2||'—'} | ${e.km!=null?e.km:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
+  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität (heute) | Weitere Aktivität (Vortag) | km | Höhenmeter | Intensität | Trinkmenge | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|--------------------|-----------------------------|----|------------|------------|------------|--------|-----------|------\n`;
+  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.a2||'—'} | ${e.km!=null?e.km:'—'} | ${e.hm!=null?e.hm:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
   txt += `\n`;
   if (vals.length) txt += baueAnalyseExportText(gemessene);
   txt += `## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
