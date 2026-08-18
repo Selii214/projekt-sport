@@ -16,7 +16,7 @@
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;padding-bottom:calc(var(--tab-h) + 16px);}
 
 /* ── BOTTOM NAV ── */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);background:var(--surf);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);background:var(--surf);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:calc(env(safe-area-inset-bottom) + 8px);}
 .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--muted);font-family:var(--font);font-size:10px;font-weight:600;cursor:pointer;transition:color .15s;padding:6px 2px;}
 .bnav-btn .icon{font-size:20px;line-height:1;}
 .bnav-btn.active{color:var(--a);}
@@ -623,7 +623,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-08-14 — v51 (Einheit B: Rückenstrecker Gerät 20→10, "Hinten und überkreuzen" umbenannt in "Arme nach hinten und überkreuzen" (Gerät 19→29, 5 kg statt KG) — löst dabei auch eine bestehende Gerät-19-Dopplung. Neu: Höhenmeter-Feld + Karte "Aktive Ausdauer-Statistik" (Touren, Gesamt km, Ø km/Tour, Gesamt Höhenmeter). Übungsnamen im Trainingsplan optisch verstärkt (font-weight:800, 15px, weiß statt grau/10px) — angeglichen an die obere Ansicht)';
+const BUILD_VERSION = '2026-08-17 — v53 (Navigationsleiste: echte Ursache behoben — Brave-eigene Werkzeugleiste verdeckte sie auch auf der echten GitHub-Pages-URL, nicht nur bei lokalen Dateien. Neue JS-Korrektur über visualViewport verschiebt die Leiste automatisch um genau den verdeckten Betrag nach oben, reagiert auch auf Größenänderungen)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -2282,6 +2282,26 @@ renderEinheit('b');
 renderProto();
 renderBkStats();
 renderCheck();
+
+// ══ NAVIGATIONSLEISTE ÜBER BROWSER-EIGENER UI POSITIONIEREN ══
+// Manche mobile Browser (z.B. Brave) zeigen eine eigene Werkzeugleiste am unteren Bildschirmrand.
+// window.innerHeight umfasst die volle Layout-Höhe (inkl. des von dieser Werkzeugleiste verdeckten
+// Bereichs), während window.visualViewport.height nur den TATSÄCHLICH sichtbaren Bereich angibt.
+// Die Differenz wird als Versatz auf die fest positionierte Navigationsleiste angewendet, damit sie
+// nicht unter der Browser-eigenen UI verschwindet.
+function justiereBottomNav() {
+  const nav = document.querySelector('.bottom-nav');
+  if (!nav || !window.visualViewport) return;
+  const verdeckt = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+  nav.style.transform = verdeckt > 0 ? `translateY(-${verdeckt}px)` : '';
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', justiereBottomNav);
+  window.visualViewport.addEventListener('scroll', justiereBottomNav);
+}
+window.addEventListener('load', justiereBottomNav);
+window.addEventListener('pageshow', justiereBottomNav);
+justiereBottomNav();
 </script>
 </body>
 </html>
