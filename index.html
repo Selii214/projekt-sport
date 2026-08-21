@@ -385,8 +385,10 @@ select.modal-input{cursor:pointer;}
             <option>Trainingsnachwirkung</option><option>Sonstiges</option>
           </select>
         </div>
-        <div class="fg hidden" id="fg-km"><label>Strecke (km)</label><input type="number" id="pkm" step="0.1" placeholder="8.5"></div>
-        <div class="fg hidden" id="fg-hm"><label>Höhenmeter (optional)</label><input type="number" id="phm" step="10" placeholder="350"></div>
+        <div class="fg hidden" id="fg-km"><label>Strecke heute (km)</label><input type="number" id="pkm" step="0.1" placeholder="8.5"></div>
+        <div class="fg hidden" id="fg-hm"><label>Höhenmeter heute (optional)</label><input type="number" id="phm" step="10" placeholder="350"></div>
+        <div class="fg hidden" id="fg-km2"><label>Strecke Vortag (km)</label><input type="number" id="pkm2" step="0.1" placeholder="8.5"></div>
+        <div class="fg hidden" id="fg-hm2"><label>Höhenmeter Vortag (optional)</label><input type="number" id="phm2" step="10" placeholder="350"></div>
         <div class="fg"><label>Intensität Vortag</label>
           <select id="pai">
             <option value="">— wählen —</option>
@@ -623,7 +625,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-08-17 — v53 (Navigationsleiste: echte Ursache behoben — Brave-eigene Werkzeugleiste verdeckte sie auch auf der echten GitHub-Pages-URL, nicht nur bei lokalen Dateien. Neue JS-Korrektur über visualViewport verschiebt die Leiste automatisch um genau den verdeckten Betrag nach oben, reagiert auch auf Größenänderungen)';
+const BUILD_VERSION = '2026-08-21 — v54 (Strecke/Höhenmeter jetzt getrennt für "heute" und "Vortag" erfassbar (km2/hm2) — löst den Fall "gestern UND heute gewandert" sauber auf, statt beide Strecken in einem Feld zu vermischen. Ausdauer-Statistik zählt beide als getrennte Touren)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -1122,10 +1124,14 @@ function alsAktivitaetsListe(a) {
   return Array.isArray(a) ? a : [a];
 }
 function toggleKmFeld() {
-  const istWandern = holeAktivitaetAuswahl().includes('Wandern') || document.getElementById('pak2').value === 'Wandern';
-  document.getElementById('fg-km').classList.toggle('hidden', !istWandern);
-  document.getElementById('fg-hm').classList.toggle('hidden', !istWandern);
-  if (!istWandern) { document.getElementById('pkm').value = ''; document.getElementById('phm').value = ''; }
+  const heuteWandern = holeAktivitaetAuswahl().includes('Wandern');
+  const vortagWandern = document.getElementById('pak2').value === 'Wandern';
+  document.getElementById('fg-km').classList.toggle('hidden', !heuteWandern);
+  document.getElementById('fg-hm').classList.toggle('hidden', !heuteWandern);
+  if (!heuteWandern) { document.getElementById('pkm').value = ''; document.getElementById('phm').value = ''; }
+  document.getElementById('fg-km2').classList.toggle('hidden', !vortagWandern);
+  document.getElementById('fg-hm2').classList.toggle('hidden', !vortagWandern);
+  if (!vortagWandern) { document.getElementById('pkm2').value = ''; document.getElementById('phm2').value = ''; }
 }
 async function saveEintrag() {
   const d = document.getElementById('pd').value;
@@ -1145,6 +1151,8 @@ async function saveEintrag() {
     ai: document.getElementById('pai').value || '',
     km: document.getElementById('pkm').value ? parseFloat(document.getElementById('pkm').value.replace(',','.')) : null,
     hm: document.getElementById('phm').value ? parseInt(document.getElementById('phm').value) : null,
+    km2: document.getElementById('pkm2').value ? parseFloat(document.getElementById('pkm2').value.replace(',','.')) : null,
+    hm2: document.getElementById('phm2').value ? parseInt(document.getElementById('phm2').value) : null,
     tm: document.getElementById('ptm').value || '',
     sl: document.getElementById('psl').value || '',
     e: document.getElementById('pe').value || '',
@@ -1161,6 +1169,8 @@ async function saveEintrag() {
   setzeAktivitaetAuswahl([]);
   document.getElementById('pkm').value = '';
   document.getElementById('phm').value = '';
+  document.getElementById('pkm2').value = '';
+  document.getElementById('phm2').value = '';
   toggleKmFeld();
   renderProto();
   if (!erfolgreich) { await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus. Bitte Sicherung exportieren, sobald möglich.', 'Fehler beim Speichern'); return; }
@@ -1182,6 +1192,8 @@ function editEintrag(d) {
   document.getElementById('pai').value = e.ai||'';
   document.getElementById('pkm').value = e.km!=null ? e.km : '';
   document.getElementById('phm').value = e.hm!=null ? e.hm : '';
+  document.getElementById('pkm2').value = e.km2!=null ? e.km2 : '';
+  document.getElementById('phm2').value = e.hm2!=null ? e.hm2 : '';
   toggleKmFeld();
   document.getElementById('ptm').value = e.tm||'';
   document.getElementById('psl').value = e.sl||'';
@@ -1228,7 +1240,7 @@ function renderProto() {
         ${e.s&&e.di?`<span class="vmeta">🫀 ${esc(e.s)}/${esc(e.di)}</span>`:''}
         ${e.p?`<span class="vmeta">💓 ${esc(e.p)} bpm</span>`:''}
         ${alsAktivitaetsListe(e.a).length?`<span class="vmeta">🏃 ${esc(alsAktivitaetsListe(e.a).join(', '))} (heute)${e.km!=null?' ('+e.km+' km'+(e.hm!=null?' / '+e.hm+' Hm':'')+')':''}${e.ai?' — '+esc(e.ai):''}</span>`:''}
-        ${e.a2?`<span class="vmeta">➕ ${esc(e.a2)} (Vortag)</span>`:''}
+        ${e.a2?`<span class="vmeta">➕ ${esc(e.a2)} (Vortag)${e.km2!=null?' ('+e.km2+' km'+(e.hm2!=null?' / '+e.hm2+' Hm':'')+')':''}</span>`:''}
         ${e.tm?`<span class="vmeta">💧 ${esc(e.tm)}</span>`:''}
         ${e.sl?`<span class="vmeta">😴 ${esc(e.sl)}</span>`:''}
         ${e.e?`<span class="vmeta">🍽 ${esc(e.e)}</span>`:''}
@@ -1642,12 +1654,18 @@ function renderAktivitaetsanalyse(gemessene, gesamtAvg) {
 // ══ AKTIVE AUSDAUER-STATISTIK ══
 // Nutzt ALLE DATA-Einträge mit km-Angabe, nicht nur 'gemessene' — eine Wanderung ist auch
 // relevant, wenn an dem Tag zufällig keine Harnsäure gemessen wurde.
+// km/hm (heute) und km2/hm2 (Vortag) beschreiben zwei UNTERSCHIEDLICHE Touren an zwei
+// unterschiedlichen Tagen (z.B. gestern UND heute gewandert) — beide zählen daher separat.
 function berechneAusdauerStatistik() {
-  const touren = DATA.filter(e => e.km != null);
-  const gesamtKm = touren.reduce((a,e)=>a+e.km, 0);
+  const touren = [];
+  DATA.forEach(e => {
+    if (e.km != null) touren.push({ km: e.km, hm: e.hm });
+    if (e.km2 != null) touren.push({ km: e.km2, hm: e.hm2 });
+  });
+  const gesamtKm = touren.reduce((a,t)=>a+t.km, 0);
   const anzahl = touren.length;
-  const hmTouren = touren.filter(e => e.hm != null);
-  const gesamtHm = hmTouren.reduce((a,e)=>a+e.hm, 0);
+  const hmTouren = touren.filter(t => t.hm != null);
+  const gesamtHm = hmTouren.reduce((a,t)=>a+t.hm, 0);
   return { anzahl, gesamtKm, oKm: anzahl ? gesamtKm/anzahl : 0, gesamtHm, anzahlHm: hmTouren.length, oHm: hmTouren.length ? gesamtHm/hmTouren.length : 0 };
 }
 
@@ -2139,9 +2157,9 @@ function importJSON(input) {
 
 async function exportCSV() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
-  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität (heute);Weitere Aktivität (Vortag);km;Höhenmeter;Intensität;Trinkmenge;Schlaf;Ernährung;Notiz\n';
+  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität (heute);km heute;Höhenmeter heute;Weitere Aktivität (Vortag);km Vortag;Höhenmeter Vortag;Intensität;Trinkmenge;Schlaf;Ernährung;Notiz\n';
   const dez = v => v==null ? '' : (typeof v==='number' ? String(v).replace('.',',') : v);
-  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',alsAktivitaetsListe(e.a).join(', '),e.a2||'',dez(e.km),dez(e.hm),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',alsAktivitaetsListe(e.a).join(', '),dez(e.km),dez(e.hm),e.a2||'',dez(e.km2),dez(e.hm2),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'}));
   a.download = 'sport-gicht-'+heuteLokal()+'.csv';
@@ -2242,8 +2260,8 @@ function exportClaude() {
   let txt = `# PROJEKT SPORT & GICHT — AUSWERTUNGSDATEN\nExportiert: ${new Date().toLocaleDateString('de-DE')}\n\n`;
   txt += `## Zusammenfassung\n- Einträge: ${sortiert.length}\n- Zeitraum: ${sortiert[0].d} bis ${sortiert[sortiert.length-1].d}\n`;
   txt += zusammenfassungZeile + `- Medikament: Allopurinol 150 mg täglich\n\n`;
-  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität (heute) | Weitere Aktivität (Vortag) | km | Höhenmeter | Intensität | Trinkmenge | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|--------------------|-----------------------------|----|------------|------------|------------|--------|-----------|------\n`;
-  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.a2||'—'} | ${e.km!=null?e.km:'—'} | ${e.hm!=null?e.hm:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
+  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität (heute) | km heute | Höhenmeter heute | Weitere Aktivität (Vortag) | km Vortag | Höhenmeter Vortag | Intensität | Trinkmenge | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|--------------------|----------|-------------------|-----------------------------|-----------|--------------------|------------|------------|--------|-----------|------\n`;
+  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.km!=null?e.km:'—'} | ${e.hm!=null?e.hm:'—'} | ${e.a2||'—'} | ${e.km2!=null?e.km2:'—'} | ${e.hm2!=null?e.hm2:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
   txt += `\n`;
   if (vals.length) txt += baueAnalyseExportText(gemessene);
   txt += `## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
