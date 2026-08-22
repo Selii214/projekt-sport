@@ -389,6 +389,7 @@ select.modal-input{cursor:pointer;}
         <div class="fg hidden" id="fg-hm"><label>Höhenmeter heute (optional)</label><input type="number" id="phm" step="10" placeholder="350"></div>
         <div class="fg hidden" id="fg-km2"><label>Strecke Vortag (km)</label><input type="number" id="pkm2" step="0.1" placeholder="8.5"></div>
         <div class="fg hidden" id="fg-hm2"><label>Höhenmeter Vortag (optional)</label><input type="number" id="phm2" step="10" placeholder="350"></div>
+        <div class="fg-full hidden warn-strip" id="aktivitaet-warnhinweis">⚠️ Ist das dieselbe Aktivität — z.B. eine Wanderung, die du nur beim falschen Feld eingetragen hast? Dann bitte nur <strong>einmal</strong> erfassen (heute <em>oder</em> Vortag), sonst zählt sie doppelt in der Statistik. Waren es zwei echte, unterschiedliche Male (z.B. gestern UND heute gewandert), ist die Doppel-Auswahl genau richtig.</div>
         <div class="fg"><label>Intensität Vortag</label>
           <select id="pai">
             <option value="">— wählen —</option>
@@ -625,7 +626,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-08-21 — v54 (Strecke/Höhenmeter jetzt getrennt für "heute" und "Vortag" erfassbar (km2/hm2) — löst den Fall "gestern UND heute gewandert" sauber auf, statt beide Strecken in einem Feld zu vermischen. Ausdauer-Statistik zählt beide als getrennte Touren)';
+const BUILD_VERSION = '2026-08-21 — v55 (Neuer Warnhinweis: erscheint automatisch, wenn dieselbe Aktivität sowohl bei "heute" als auch bei "Vortag" ausgewählt ist — Erinnerung, das nur bei zwei echten, unterschiedlichen Malen so zu belassen, sonst zählt sie doppelt in der Statistik)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -1132,6 +1133,17 @@ function toggleKmFeld() {
   document.getElementById('fg-km2').classList.toggle('hidden', !vortagWandern);
   document.getElementById('fg-hm2').classList.toggle('hidden', !vortagWandern);
   if (!vortagWandern) { document.getElementById('pkm2').value = ''; document.getElementById('phm2').value = ''; }
+  pruefeAktivitaetUeberschneidung();
+}
+// Warnt, wenn dieselbe Aktivität (z.B. "Wandern") sowohl bei "heute" als auch bei "Vortag"
+// ausgewählt ist — das ist entweder beabsichtigt (zwei echte, unterschiedliche Male) oder ein
+// Versehen (dieselbe Aktivität doppelt erfasst, verfälscht dann die Ausdauer-/Aktivitätsstatistik).
+function pruefeAktivitaetUeberschneidung() {
+  const el = document.getElementById('aktivitaet-warnhinweis');
+  if (!el) return;
+  const vortag = document.getElementById('pak2').value;
+  const ueberschneidung = !!vortag && holeAktivitaetAuswahl().includes(vortag);
+  el.classList.toggle('hidden', !ueberschneidung);
 }
 async function saveEintrag() {
   const d = document.getElementById('pd').value;
