@@ -632,7 +632,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-08-21 — v56 (Neues Feld "Intensität heute" (aiH) ergänzt — bisher gab es nur "Intensität Vortag". Wirkt wie bei Aktivität auf den Folgetags-h, nicht das eigene h. Trainingsintensitäts-Analyse führt jetzt beide korrekt zusammen. Nebenbei einen Anzeige-Fehler im Verlauf behoben: Vortag-Intensität stand fälschlich an der Heute-Zeile)';
+const BUILD_VERSION = '2026-08-25 — v57 (km/Höhenmeter-Felder erscheinen jetzt auch bei "Fahrradfahren", nicht mehr nur bei "Wandern" — gilt für heute und Vortag)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -1131,14 +1131,15 @@ function alsAktivitaetsListe(a) {
   return Array.isArray(a) ? a : [a];
 }
 function toggleKmFeld() {
-  const heuteWandern = holeAktivitaetAuswahl().includes('Wandern');
-  const vortagWandern = document.getElementById('pak2').value === 'Wandern';
-  document.getElementById('fg-km').classList.toggle('hidden', !heuteWandern);
-  document.getElementById('fg-hm').classList.toggle('hidden', !heuteWandern);
-  if (!heuteWandern) { document.getElementById('pkm').value = ''; document.getElementById('phm').value = ''; }
-  document.getElementById('fg-km2').classList.toggle('hidden', !vortagWandern);
-  document.getElementById('fg-hm2').classList.toggle('hidden', !vortagWandern);
-  if (!vortagWandern) { document.getElementById('pkm2').value = ''; document.getElementById('phm2').value = ''; }
+  const KM_AKTIVITAETEN = ['Wandern', 'Fahrradfahren'];
+  const heuteKmAktiv = holeAktivitaetAuswahl().some(a => KM_AKTIVITAETEN.includes(a));
+  const vortagKmAktiv = KM_AKTIVITAETEN.includes(document.getElementById('pak2').value);
+  document.getElementById('fg-km').classList.toggle('hidden', !heuteKmAktiv);
+  document.getElementById('fg-hm').classList.toggle('hidden', !heuteKmAktiv);
+  if (!heuteKmAktiv) { document.getElementById('pkm').value = ''; document.getElementById('phm').value = ''; }
+  document.getElementById('fg-km2').classList.toggle('hidden', !vortagKmAktiv);
+  document.getElementById('fg-hm2').classList.toggle('hidden', !vortagKmAktiv);
+  if (!vortagKmAktiv) { document.getElementById('pkm2').value = ''; document.getElementById('phm2').value = ''; }
   pruefeAktivitaetUeberschneidung();
 }
 // Warnt, wenn dieselbe Aktivität (z.B. "Wandern") sowohl bei "heute" als auch bei "Vortag"
