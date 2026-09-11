@@ -639,7 +639,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-08-26 — v58 (Neues Feld "Trinkmenge heute" (tmH) ergänzt — bisher gab es nur "Trinkmenge Vortag". Wirkt wie bei Aktivität/Intensität auf den Folgetags-h. Trinkmengenanalyse führt beide zusammen; Trainingseffekt-Erkennung bevorzugt jetzt die Trinkmenge, die direkt am Trainingstag erfasst wurde, mit Fallback auf den alternativen Eingabeweg)';
+const BUILD_VERSION = '2026-09-02 — v59 (Harnsäure-Wert geht nicht mehr verloren: wenn du für einen bereits vorhandenen Tag nur nachträglich die Aktivität einträgst und das Harnsäure-Feld leer lässt, bleibt der schon gespeicherte Wert erhalten statt überschrieben zu werden. Trägst du bewusst einen neuen Wert ein, wird weiterhin normal überschrieben)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -1187,7 +1187,14 @@ async function saveEintrag() {
     n: document.getElementById('pn').value || ''
   };
   const idx = DATA.findIndex(x=>x.d===d);
-  if (idx>=0) { if(!await modalConfirm('Eintrag für '+fd(d)+' existiert. Überschreiben?', 'Eintrag existiert bereits')) return; DATA[idx]=e; }
+  if (idx>=0) {
+    if(!await modalConfirm('Eintrag für '+fd(d)+' existiert. Überschreiben?', 'Eintrag existiert bereits')) return;
+    // Harnsäure-Wert nicht versehentlich löschen: Formular leer gelassen (z.B. weil nur die
+    // Aktivität nachgetragen wird), aber der bestehende Eintrag hatte schon einen Wert →
+    // vorhandenen Wert übernehmen statt mit "leer" zu überschreiben.
+    if (e.h == null && DATA[idx].h != null) e.h = DATA[idx].h;
+    DATA[idx] = e;
+  }
   else DATA.push(e);
   DATA.sort((a,b)=>a.d.localeCompare(b.d));
   const erfolgreich = saveData();
