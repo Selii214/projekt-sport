@@ -416,12 +416,19 @@ select.modal-input{cursor:pointer;}
             <option>3–3,5 L</option><option>über 3,5 L</option>
           </select>
         </div>
+        <div class="fg"><label>Schlaf heute</label>
+          <select id="pslH">
+            <option value="">— wählen —</option>
+            <option>Gut</option><option>Mäßig</option><option>Schlecht</option>
+          </select>
+        </div>
         <div class="fg"><label>Schlaf Vortag</label>
           <select id="psl">
             <option value="">— wählen —</option>
             <option>Gut</option><option>Mäßig</option><option>Schlecht</option>
           </select>
         </div>
+        <div class="fg fg-full"><label>Ernährung heute</label><textarea id="peH" placeholder="z.B. Quark, Apfel, Pizza..."></textarea></div>
         <div class="fg fg-full"><label>Ernährung Vortag</label><textarea id="pe" placeholder="z.B. Quark, Apfel, Pizza..."></textarea></div>
         <div class="fg fg-full"><label>Notiz</label><textarea id="pn" placeholder="z.B. Stress, schlechter Schlaf..."></textarea></div>
       </div>
@@ -639,7 +646,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-09-02 — v59 (Harnsäure-Wert geht nicht mehr verloren: wenn du für einen bereits vorhandenen Tag nur nachträglich die Aktivität einträgst und das Harnsäure-Feld leer lässt, bleibt der schon gespeicherte Wert erhalten statt überschrieben zu werden. Trägst du bewusst einen neuen Wert ein, wird weiterhin normal überschrieben)';
+const BUILD_VERSION = '2026-09-02 — v60 (Neue Felder "Schlaf heute" (slH) und "Ernährung heute" (eH) ergänzt — bisher gab es nur die Vortag-Varianten. Schlaf heute wirkt wie bei Aktivität/Intensität/Trinkmenge auf den Folgetags-h; Schlafanalyse und medizinische Hinweise führen beide zusammen. Ernährung heute ist reiner Freitext ohne Statistik-Auswertung)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -1183,7 +1190,9 @@ async function saveEintrag() {
     tm: document.getElementById('ptm').value || '',
     tmH: document.getElementById('ptmH').value || '',
     sl: document.getElementById('psl').value || '',
+    slH: document.getElementById('pslH').value || '',
     e: document.getElementById('pe').value || '',
+    eH: document.getElementById('peH').value || '',
     n: document.getElementById('pn').value || ''
   };
   const idx = DATA.findIndex(x=>x.d===d);
@@ -1199,8 +1208,8 @@ async function saveEintrag() {
   DATA.sort((a,b)=>a.d.localeCompare(b.d));
   const erfolgreich = saveData();
   // Felder leeren
-  ['ph','ps','pdi','pp','pe','pn'].forEach(id=>document.getElementById(id).value='');
-  ['pak2','pai','paiH','ptm','ptmH','psl'].forEach(id=>document.getElementById(id).value='');
+  ['ph','ps','pdi','pp','pe','peH','pn'].forEach(id=>document.getElementById(id).value='');
+  ['pak2','pai','paiH','ptm','ptmH','psl','pslH'].forEach(id=>document.getElementById(id).value='');
   setzeAktivitaetAuswahl([]);
   document.getElementById('pkm').value = '';
   document.getElementById('phm').value = '';
@@ -1234,7 +1243,9 @@ function editEintrag(d) {
   document.getElementById('ptm').value = e.tm||'';
   document.getElementById('ptmH').value = e.tmH||'';
   document.getElementById('psl').value = e.sl||'';
+  document.getElementById('pslH').value = e.slH||'';
   document.getElementById('pe').value = e.e||'';
+  document.getElementById('peH').value = e.eH||'';
   document.getElementById('pn').value = e.n||'';
   switchVtab('proto');
   document.getElementById('vt-proto').scrollIntoView({behavior:'smooth'});
@@ -1280,8 +1291,10 @@ function renderProto() {
         ${e.a2?`<span class="vmeta">➕ ${esc(e.a2)} (Vortag)${e.km2!=null?' ('+e.km2+' km'+(e.hm2!=null?' / '+e.hm2+' Hm':'')+')':''}${e.ai?' — '+esc(e.ai):''}</span>`:''}
         ${e.tmH?`<span class="vmeta">💧 ${esc(e.tmH)} (heute)</span>`:''}
         ${e.tm?`<span class="vmeta">💧 ${esc(e.tm)} (Vortag)</span>`:''}
-        ${e.sl?`<span class="vmeta">😴 ${esc(e.sl)}</span>`:''}
-        ${e.e?`<span class="vmeta">🍽 ${esc(e.e)}</span>`:''}
+        ${e.slH?`<span class="vmeta">😴 ${esc(e.slH)} (heute)</span>`:''}
+        ${e.sl?`<span class="vmeta">😴 ${esc(e.sl)} (Vortag)</span>`:''}
+        ${e.eH?`<span class="vmeta">🍽 ${esc(e.eH)} (heute)</span>`:''}
+        ${e.e?`<span class="vmeta">🍽 ${esc(e.e)} (Vortag)</span>`:''}
         ${e.n?`<span class="vmeta">📝 ${esc(e.n)}</span>`:''}
       </div>
       <div class="vrow-del">
@@ -1686,6 +1699,24 @@ function gruppenStatistikTrinkmenge() {
   });
 }
 
+// Schlaf hat dasselbe Zeitbezug-Problem wie Trinkmenge/Intensität, mit derselben historischen
+// Altlast: 'sl' ("Schlaf Vortag") gab es schon vor der a/a2-Umstellung und wurde dabei NICHT
+// mitgetauscht — 'sl' bedeutet weiterhin Vortag (gehört zum eigenen h), während das neue 'slH'
+// ("Schlaf heute") den aktuellen Tag beschreibt und auf den Folgetags-h wirkt.
+function gruppenStatistikSchlaf() {
+  const nachDatum = {};
+  DATA.forEach(e => { nachDatum[e.d] = e; });
+  return sammleKategorienWerte(DATA, e => {
+    const paare = [];
+    if (e.slH) {
+      const folge = nachDatum[naechsterTag(e.d)];
+      if (folge && folge.h != null) paare.push({ kategorie: e.slH, wert: folge.h });
+    }
+    if (e.sl && e.h != null) paare.push({ kategorie: e.sl, wert: e.h });
+    return paare;
+  });
+}
+
 // ══ ERWEITERTE AKTIVITÄTSANALYSE ══
 // Vollständige Aufschlüsselung je Aktivität (u.a. Training A/B, Schwimmen, Spaziergänge,
 // Gartenarbeit, Ruhetage, Sonstiges — abhängig davon, was tatsächlich protokolliert wurde).
@@ -1694,7 +1725,7 @@ function gruppenStatistikTrinkmenge() {
 // baueKategorieRanglisteHTML() ist die gemeinsame Basis für Aktivität, Trinkmenge, Schlaf und
 // Trainingsintensität — eine Änderung an der Berechnung wirkt sich automatisch auf alle vier aus.
 function baueKategorieRanglisteHTML(gemessene, feld, gesamtAvg) {
-  const stats = feld === 'a' ? gruppenStatistikAktivitaet() : feld === 'ai' ? gruppenStatistikIntensitaet() : feld === 'tm' ? gruppenStatistikTrinkmenge() : gruppenStatistik(gemessene, feld); // bereits aufsteigend nach Ø sortiert
+  const stats = feld === 'a' ? gruppenStatistikAktivitaet() : feld === 'ai' ? gruppenStatistikIntensitaet() : feld === 'tm' ? gruppenStatistikTrinkmenge() : feld === 'sl' ? gruppenStatistikSchlaf() : gruppenStatistik(gemessene, feld); // bereits aufsteigend nach Ø sortiert
   if (!stats.length) return null;
   return stats.map(s => {
     const spannweite = s.max - s.min;
@@ -1828,7 +1859,7 @@ function berechneErkenntnisse(gemessene) {
   ];
   const ergebnisse = [];
   faktoren.forEach(f => {
-    const stats = f.feld === 'a' ? gruppenStatistikAktivitaet() : f.feld === 'ai' ? gruppenStatistikIntensitaet() : f.feld === 'tm' ? gruppenStatistikTrinkmenge() : gruppenStatistik(gemessene, f.feld);
+    const stats = f.feld === 'a' ? gruppenStatistikAktivitaet() : f.feld === 'ai' ? gruppenStatistikIntensitaet() : f.feld === 'tm' ? gruppenStatistikTrinkmenge() : f.feld === 'sl' ? gruppenStatistikSchlaf() : gruppenStatistik(gemessene, f.feld);
     if (stats.length < 2) return; // ein Ranking braucht mindestens 2 unterschiedliche Kategorien mit Daten
     const beste = stats[0];
     const schlechteste = stats[stats.length-1];
@@ -2065,7 +2096,7 @@ function berechneMedizinischeHinweise(gemessene) {
   if (hydHinweis) hinweise.push('💧 ' + hydHinweis);
 
   // 3) Zusammenhang mit Schlafqualität — nur wenn beide Extreme mit ausreichend Messungen vorliegen
-  const schlafStats = gruppenStatistik(gemessene, 'sl');
+  const schlafStats = gruppenStatistikSchlaf();
   const gut = schlafStats.find(s=>s.kategorie==='Gut');
   const schlecht = schlafStats.find(s=>s.kategorie==='Schlecht');
   if (gut && schlecht && gut.n>=2 && schlecht.n>=2) {
@@ -2237,9 +2268,9 @@ function importJSON(input) {
 
 async function exportCSV() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
-  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität (heute);km heute;Höhenmeter heute;Intensität heute;Trinkmenge heute;Weitere Aktivität (Vortag);km Vortag;Höhenmeter Vortag;Intensität Vortag;Trinkmenge Vortag;Schlaf;Ernährung;Notiz\n';
+  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität (heute);km heute;Höhenmeter heute;Intensität heute;Trinkmenge heute;Schlaf heute;Ernährung heute;Weitere Aktivität (Vortag);km Vortag;Höhenmeter Vortag;Intensität Vortag;Trinkmenge Vortag;Schlaf Vortag;Ernährung Vortag;Notiz\n';
   const dez = v => v==null ? '' : (typeof v==='number' ? String(v).replace('.',',') : v);
-  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',alsAktivitaetsListe(e.a).join(', '),dez(e.km),dez(e.hm),e.aiH||'',e.tmH||'',e.a2||'',dez(e.km2),dez(e.hm2),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',alsAktivitaetsListe(e.a).join(', '),dez(e.km),dez(e.hm),e.aiH||'',e.tmH||'',e.slH||'',e.eH||'',e.a2||'',dez(e.km2),dez(e.hm2),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'}));
   a.download = 'sport-gicht-'+heuteLokal()+'.csv';
@@ -2251,7 +2282,7 @@ async function exportCSV() {
 // Nutzt exakt dieselben Berechnungsfunktionen wie die Anzeige im Analyse-Tab, damit App und
 // Claude-Export niemals unterschiedliche Zahlen zeigen können.
 function formatKategorieListeText(gemessene, feld, titel) {
-  const stats = feld === 'a' ? gruppenStatistikAktivitaet() : feld === 'ai' ? gruppenStatistikIntensitaet() : feld === 'tm' ? gruppenStatistikTrinkmenge() : gruppenStatistik(gemessene, feld);
+  const stats = feld === 'a' ? gruppenStatistikAktivitaet() : feld === 'ai' ? gruppenStatistikIntensitaet() : feld === 'tm' ? gruppenStatistikTrinkmenge() : feld === 'sl' ? gruppenStatistikSchlaf() : gruppenStatistik(gemessene, feld);
   if (!stats.length) return `### ${titel}\nKeine Daten.\n\n`;
   let t = `### ${titel}\n`;
   stats.forEach(s => { t += `- ${s.kategorie}: Ø ${s.avg.toFixed(2)} mg/dl (n=${s.n}, Min ${s.min.toFixed(1)}, Max ${s.max.toFixed(1)}, Spannweite ${(s.max-s.min).toFixed(2)})\n`; });
@@ -2340,8 +2371,8 @@ function exportClaude() {
   let txt = `# PROJEKT SPORT & GICHT — AUSWERTUNGSDATEN\nExportiert: ${new Date().toLocaleDateString('de-DE')}\n\n`;
   txt += `## Zusammenfassung\n- Einträge: ${sortiert.length}\n- Zeitraum: ${sortiert[0].d} bis ${sortiert[sortiert.length-1].d}\n`;
   txt += zusammenfassungZeile + `- Medikament: Allopurinol 150 mg täglich\n\n`;
-  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität (heute) | km heute | Höhenmeter heute | Intensität heute | Trinkmenge heute | Weitere Aktivität (Vortag) | km Vortag | Höhenmeter Vortag | Intensität Vortag | Trinkmenge Vortag | Schlaf | Ernährung | Notiz\n------|-----------|-----|------|--------------------|----------|-------------------|--------------------|--------------------|-----------------------------|-----------|--------------------|---------------------|---------------------|--------|-----------|------\n`;
-  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.km!=null?e.km:'—'} | ${e.hm!=null?e.hm:'—'} | ${e.aiH||'—'} | ${e.tmH||'—'} | ${e.a2||'—'} | ${e.km2!=null?e.km2:'—'} | ${e.hm2!=null?e.hm2:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
+  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität (heute) | km heute | Höhenmeter heute | Intensität heute | Trinkmenge heute | Schlaf heute | Ernährung heute | Weitere Aktivität (Vortag) | km Vortag | Höhenmeter Vortag | Intensität Vortag | Trinkmenge Vortag | Schlaf Vortag | Ernährung Vortag | Notiz\n------|-----------|-----|------|--------------------|----------|-------------------|--------------------|--------------------|--------------|------------------|-----------------------------|-----------|--------------------|---------------------|---------------------|----------------|-------------------|------\n`;
+  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.km!=null?e.km:'—'} | ${e.hm!=null?e.hm:'—'} | ${e.aiH||'—'} | ${e.tmH||'—'} | ${e.slH||'—'} | ${e.eH||'—'} | ${e.a2||'—'} | ${e.km2!=null?e.km2:'—'} | ${e.hm2!=null?e.hm2:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
   txt += `\n`;
   if (vals.length) txt += baueAnalyseExportText(gemessene);
   txt += `## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
