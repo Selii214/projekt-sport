@@ -358,6 +358,7 @@ select.modal-input{cursor:pointer;}
         <div class="fg"><label>RR systolisch</label><input type="number" id="ps" placeholder="125"></div>
         <div class="fg"><label>RR diastolisch</label><input type="number" id="pdi" placeholder="75"></div>
         <div class="fg"><label>Puls (bpm)</label><input type="number" id="pp" placeholder="62"></div>
+        <div class="fg"><label>Körpergewicht (kg)</label><input type="number" id="pkg" step="0.1" placeholder="91.4"></div>
         <div class="fg"><label>Aktivität heute (Mehrfachauswahl)</label>
           <details class="akt-details" id="pak-details">
             <summary id="pak-summary" class="placeholder"><span class="akt-summary-text">— wählen —</span></summary>
@@ -467,6 +468,8 @@ select.modal-input{cursor:pointer;}
 
   <div class="warn-strip">⚠️ Kein Training bei akutem Gichtanfall. Bei Gelenkschmerzen Training abbrechen.</div>
 
+  <div class="tip-box" id="check-status">…</div>
+
   <div class="card">
     <div class="card-title">Vor dem Training</div>
     <div class="check-list">
@@ -535,6 +538,10 @@ select.modal-input{cursor:pointer;}
   <div class="card">
     <div class="card-title">Aktive Ausdauer-Statistik</div>
     <div id="aw-ausdauer"><div class="empty-state">Noch keine km-Angaben vorhanden (bei „Wandern" erfassbar).</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Körpergewicht-Trend</div>
+    <div id="aw-gewicht"><div class="empty-state">Noch keine Körpergewicht-Angaben vorhanden.</div></div>
   </div>
   <div class="card">
     <div class="card-title">Trinkmengenanalyse</div>
@@ -646,7 +653,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-09-02 — v60 (Neue Felder "Schlaf heute" (slH) und "Ernährung heute" (eH) ergänzt — bisher gab es nur die Vortag-Varianten. Schlaf heute wirkt wie bei Aktivität/Intensität/Trinkmenge auf den Folgetags-h; Schlafanalyse und medizinische Hinweise führen beide zusammen. Ernährung heute ist reiner Freitext ohne Statistik-Auswertung)';
+const BUILD_VERSION = '2026-09-02 — v61 (Neu: Feld "Körpergewicht (kg)" im Eintrag + Karte "Körpergewicht-Trend" in der Analyse (Wochenrate erst ab 14 Tagen Spanne, um irreführende Hochrechnungen zu vermeiden); in Verlauf, CSV- und Claude-Export enthalten. Gicht-Check: Statuszeile "für heute bereits gespeichert (Uhrzeit)" bzw. Warnung, wenn nicht oder wenn die Haken von einem früheren Tag stammen; Rückfrage beim erneuten Speichern am selben Tag)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -762,6 +769,7 @@ function showTab(id, btnId) {
   document.getElementById(btnId).classList.add('active');
   if (id === 's-analyse') renderAnalyse();
   if (id === 's-sicherung') renderBkStats();
+  if (id === 's-check') renderCheckStatus(); // Datum kann sich seit dem letzten Öffnen geändert haben
 }
 
 // ══ DATEN ══
@@ -1077,11 +1085,29 @@ function toggleCheck(i) {
   safeSet('sg-check', checkState);
   renderCheck();
 }
+// Wann wurde der Gicht-Check zuletzt per "Speichern" gesichert? { datum:'YYYY-MM-DD', zeit:'HH:MM' }.
+// Die Haken selbst haben kein Datum (sie werden bei jedem Antippen sofort abgelegt) — erst dieser
+// Speicherstand macht erkennbar, ob der aktuelle Stand zu HEUTE gehört oder von einem früheren Tag ist.
+function holeCheckSpeicherstand() {
+  const s = safeParse('sg-check-gespeichert', null);
+  return (s && typeof s.datum === 'string' && typeof s.zeit === 'string') ? s : null;
+}
+function uhrzeitLokal() {
+  const dt = new Date();
+  return String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+}
 async function saveCheck() {
+  const heute = heuteLokal();
+  const stand = holeCheckSpeicherstand();
+  if (stand && stand.datum === heute) {
+    if (!await modalConfirm('Der Gicht-Check wurde für heute schon um '+stand.zeit+' Uhr gespeichert. Erneut speichern und den Stand überschreiben?', 'Heute schon gespeichert')) return;
+  }
   if (!safeSet('sg-check', checkState)) {
     await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus.', 'Fehler beim Speichern');
     return;
   }
+  safeSet('sg-check-gespeichert', { datum: heute, zeit: uhrzeitLokal() });
+  renderCheck();
   await modalAlert('Gicht-Check gespeichert!', 'Gespeichert');
 }
 function resetCheck() {
@@ -1096,6 +1122,22 @@ function renderCheck() {
     if (!ci) continue;
     if (checkState[i]) { ci.classList.add('checked'); cc.textContent='✓'; }
     else { ci.classList.remove('checked'); cc.textContent=''; }
+  }
+  renderCheckStatus();
+}
+function renderCheckStatus() {
+  const el = document.getElementById('check-status');
+  if (!el) return;
+  const stand = holeCheckSpeicherstand();
+  const anzahlHaken = Object.values(checkState).filter(Boolean).length;
+  if (stand && stand.datum === heuteLokal()) {
+    el.textContent = '✅ Für heute bereits gespeichert ('+stand.zeit+' Uhr)';
+  } else if (anzahlHaken > 0 && stand) {
+    el.textContent = '⚠️ Für heute noch nicht gespeichert — die Haken stammen vermutlich vom '+fd(stand.datum)+'.';
+  } else if (anzahlHaken > 0) {
+    el.textContent = '⚠️ Für heute noch nicht gespeichert.';
+  } else {
+    el.textContent = 'Für heute noch nichts abgehakt oder gespeichert.';
   }
 }
 
@@ -1179,6 +1221,7 @@ async function saveEintrag() {
     s: document.getElementById('ps').value || '',
     di: document.getElementById('pdi').value || '',
     p: document.getElementById('pp').value || '',
+    kg: document.getElementById('pkg').value ? parseFloat(document.getElementById('pkg').value.replace(',','.')) : null,
     a: holeAktivitaetAuswahl(),
     a2: document.getElementById('pak2').value || '',
     ai: document.getElementById('pai').value || '',
@@ -1208,7 +1251,7 @@ async function saveEintrag() {
   DATA.sort((a,b)=>a.d.localeCompare(b.d));
   const erfolgreich = saveData();
   // Felder leeren
-  ['ph','ps','pdi','pp','pe','peH','pn'].forEach(id=>document.getElementById(id).value='');
+  ['ph','ps','pdi','pp','pkg','pe','peH','pn'].forEach(id=>document.getElementById(id).value='');
   ['pak2','pai','paiH','ptm','ptmH','psl','pslH'].forEach(id=>document.getElementById(id).value='');
   setzeAktivitaetAuswahl([]);
   document.getElementById('pkm').value = '';
@@ -1231,6 +1274,7 @@ function editEintrag(d) {
   document.getElementById('ps').value = e.s||'';
   document.getElementById('pdi').value = e.di||'';
   document.getElementById('pp').value = e.p||'';
+  document.getElementById('pkg').value = e.kg!=null ? e.kg : '';
   setzeAktivitaetAuswahl(e.a);
   document.getElementById('pak2').value = e.a2||'';
   document.getElementById('pai').value = e.ai||'';
@@ -1287,6 +1331,7 @@ function renderProto() {
       <div class="vrow-meta">
         ${e.s&&e.di?`<span class="vmeta">🫀 ${esc(e.s)}/${esc(e.di)}</span>`:''}
         ${e.p?`<span class="vmeta">💓 ${esc(e.p)} bpm</span>`:''}
+        ${e.kg!=null?`<span class="vmeta">⚖️ ${e.kg} kg</span>`:''}
         ${alsAktivitaetsListe(e.a).length?`<span class="vmeta">🏃 ${esc(alsAktivitaetsListe(e.a).join(', '))} (heute)${e.km!=null?' ('+e.km+' km'+(e.hm!=null?' / '+e.hm+' Hm':'')+')':''}${e.aiH?' — '+esc(e.aiH):''}</span>`:''}
         ${e.a2?`<span class="vmeta">➕ ${esc(e.a2)} (Vortag)${e.km2!=null?' ('+e.km2+' km'+(e.hm2!=null?' / '+e.hm2+' Hm':'')+')':''}${e.ai?' — '+esc(e.ai):''}</span>`:''}
         ${e.tmH?`<span class="vmeta">💧 ${esc(e.tmH)} (heute)</span>`:''}
@@ -1523,10 +1568,12 @@ function renderAnalyse() {
   const zielEl = document.getElementById('aw-zielbereich');
   const hinweiseEl = document.getElementById('aw-hinweise');
   const ausdauerEl = document.getElementById('aw-ausdauer');
-  const alleLeeren = () => { fak.innerHTML=''; aktEl.innerHTML=''; muster.innerHTML=''; erk.innerHTML=''; trinkEl.innerHTML=''; schlafEl.innerHTML=''; intensEl.innerHTML=''; teEl.innerHTML=''; trendEl.innerHTML=''; erwstatEl.innerHTML=''; zielEl.innerHTML=''; hinweiseEl.innerHTML=''; ausdauerEl.innerHTML=''; };
+  const gewichtEl = document.getElementById('aw-gewicht');
+  const alleLeeren = () => { fak.innerHTML=''; aktEl.innerHTML=''; muster.innerHTML=''; erk.innerHTML=''; trinkEl.innerHTML=''; schlafEl.innerHTML=''; intensEl.innerHTML=''; teEl.innerHTML=''; trendEl.innerHTML=''; erwstatEl.innerHTML=''; zielEl.innerHTML=''; hinweiseEl.innerHTML=''; ausdauerEl.innerHTML=''; gewichtEl.innerHTML=''; };
   if (!DATA.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine Daten.</div>'; alleLeeren(); return; }
 
   renderAusdauerStatistik(); // unabhängig von gemessenen Harnsäurewerten — braucht nur km-Angaben
+  renderGewichtsTrend(); // unabhängig von gemessenen Harnsäurewerten — braucht nur kg-Angaben
 
   const gemessene = DATA.filter(e=>e.h!=null);
   if (!gemessene.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine gemessenen Werte (nur Aktivitätseinträge ohne Harnsäure vorhanden).</div>'; fak.innerHTML=''; aktEl.innerHTML=''; muster.innerHTML=''; erk.innerHTML=''; trinkEl.innerHTML=''; schlafEl.innerHTML=''; intensEl.innerHTML=''; teEl.innerHTML=''; trendEl.innerHTML=''; erwstatEl.innerHTML=''; zielEl.innerHTML=''; hinweiseEl.innerHTML=''; return; }
@@ -1795,6 +1842,44 @@ function renderAusdauerStatistik() {
     </div>` : '<div class="fs-11-muted mt-4">Noch keine Höhenmeter erfasst.</div>'}
   `;
 }
+
+// ══ KÖRPERGEWICHT-TREND ══
+// Nutzt ALLE DATA-Einträge mit kg-Angabe, unabhängig von Harnsäure-Messung.
+function berechneGewichtsverlauf() {
+  const eintraege = DATA.filter(e => e.kg != null).sort((a,b)=>a.d.localeCompare(b.d));
+  if (!eintraege.length) return { anzahl: 0 };
+  const erstes = eintraege[0], letztes = eintraege[eintraege.length-1];
+  const tage = (new Date(letztes.d) - new Date(erstes.d)) / 86400000;
+  const veraenderung = letztes.kg - erstes.kg;
+  return {
+    anzahl: eintraege.length, aktuell: letztes.kg, aktuellDatum: letztes.d,
+    erstes: erstes.kg, erstesDatum: erstes.d, veraenderung, tage,
+    // Wochenrate erst ab 14 Tagen Spanne: kurzfristige Schwankungen (Wasser, Mahlzeiten) würden
+    // sonst als dramatische Wochenänderung hochgerechnet und wären irreführend.
+    proWoche: tage >= 14 ? veraenderung / (tage/7) : null
+  };
+}
+
+function renderGewichtsTrend() {
+  const el = document.getElementById('aw-gewicht');
+  if (!el) return;
+  const g = berechneGewichtsverlauf();
+  if (!g.anzahl) { el.innerHTML = '<div class="empty-state">Noch keine Körpergewicht-Angaben vorhanden.</div>'; return; }
+  if (g.anzahl === 1) {
+    el.innerHTML = `<div class="stats-row"><div class="sbox"><div class="sv">${g.aktuell} kg</div><div class="sl">Letzte Messung (${fd(g.aktuellDatum)})</div></div></div><div class="fs-11-muted mt-4">Noch zu wenig Messungen für einen Trend (mind. 2 nötig).</div>`;
+    return;
+  }
+  const richtung = Math.abs(g.veraenderung) < 0.1 ? 'trend-flat' : (g.veraenderung < 0 ? 'trend-down' : 'trend-up');
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv">${g.aktuell} kg</div><div class="sl">Aktuell (${fd(g.aktuellDatum)})</div></div>
+      <div class="sbox"><div class="sv">${g.erstes} kg</div><div class="sl">Start (${fd(g.erstesDatum)})</div></div>
+      <div class="sbox"><div class="sv ${richtung}">${g.veraenderung>=0?'+':''}${g.veraenderung.toFixed(1)} kg</div><div class="sl">Veränderung gesamt</div></div>
+    </div>
+    ${g.proWoche!=null ? `<div class="fs-11-muted mt-4">Ø ${g.proWoche>=0?'+':''}${g.proWoche.toFixed(2)} kg/Woche über ${Math.round(g.tage)} Tage (${g.anzahl} Messungen)</div>` : `<div class="fs-11-muted mt-4">Zeitraum (${Math.round(g.tage)} Tage) noch zu kurz für eine aussagekräftige Wochenrate — mind. 14 Tage nötig.</div>`}
+  `;
+}
+
 
 // ══ TRINKMENGENANALYSE ══
 function renderTrinkmengenanalyse(gemessene, gesamtAvg) {
@@ -2268,9 +2353,9 @@ function importJSON(input) {
 
 async function exportCSV() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
-  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Aktivität (heute);km heute;Höhenmeter heute;Intensität heute;Trinkmenge heute;Schlaf heute;Ernährung heute;Weitere Aktivität (Vortag);km Vortag;Höhenmeter Vortag;Intensität Vortag;Trinkmenge Vortag;Schlaf Vortag;Ernährung Vortag;Notiz\n';
+  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Körpergewicht;Aktivität (heute);km heute;Höhenmeter heute;Intensität heute;Trinkmenge heute;Schlaf heute;Ernährung heute;Weitere Aktivität (Vortag);km Vortag;Höhenmeter Vortag;Intensität Vortag;Trinkmenge Vortag;Schlaf Vortag;Ernährung Vortag;Notiz\n';
   const dez = v => v==null ? '' : (typeof v==='number' ? String(v).replace('.',',') : v);
-  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',alsAktivitaetsListe(e.a).join(', '),dez(e.km),dez(e.hm),e.aiH||'',e.tmH||'',e.slH||'',e.eH||'',e.a2||'',dez(e.km2),dez(e.hm2),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',dez(e.kg),alsAktivitaetsListe(e.a).join(', '),dez(e.km),dez(e.hm),e.aiH||'',e.tmH||'',e.slH||'',e.eH||'',e.a2||'',dez(e.km2),dez(e.hm2),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'}));
   a.download = 'sport-gicht-'+heuteLokal()+'.csv';
@@ -2307,6 +2392,17 @@ function baueAnalyseExportText(gemessene) {
     t += ausd.anzahlHm ? ` · Gesamt Höhenmeter: ${ausd.gesamtHm} (${ausd.anzahlHm}/${ausd.anzahl} Touren mit Hm-Angabe)\n\n` : ' · Noch keine Höhenmeter erfasst.\n\n';
   } else {
     t += 'Noch keine km-Angaben vorhanden.\n\n';
+  }
+
+  t += '### Körpergewicht-Trend\n';
+  const gw = berechneGewichtsverlauf();
+  if (gw.anzahl >= 2) {
+    t += `Aktuell: ${gw.aktuell} kg (${gw.aktuellDatum}) · Start: ${gw.erstes} kg (${gw.erstesDatum}) · Veränderung: ${gw.veraenderung>=0?'+':''}${gw.veraenderung.toFixed(1)} kg über ${Math.round(gw.tage)} Tage (${gw.anzahl} Messungen)`;
+    t += gw.proWoche!=null ? ` · Ø ${gw.proWoche>=0?'+':''}${gw.proWoche.toFixed(2)} kg/Woche\n\n` : ' · Zeitraum noch zu kurz für eine aussagekräftige Wochenrate (mind. 14 Tage).\n\n';
+  } else if (gw.anzahl === 1) {
+    t += `Erst 1 Messung vorhanden: ${gw.aktuell} kg (${gw.aktuellDatum}) — noch kein Trend berechenbar.\n\n`;
+  } else {
+    t += 'Noch keine Körpergewicht-Angaben vorhanden.\n\n';
   }
 
   t += formatKategorieListeText(gemessene, 'tm', 'Trinkmengenanalyse');
@@ -2371,8 +2467,8 @@ function exportClaude() {
   let txt = `# PROJEKT SPORT & GICHT — AUSWERTUNGSDATEN\nExportiert: ${new Date().toLocaleDateString('de-DE')}\n\n`;
   txt += `## Zusammenfassung\n- Einträge: ${sortiert.length}\n- Zeitraum: ${sortiert[0].d} bis ${sortiert[sortiert.length-1].d}\n`;
   txt += zusammenfassungZeile + `- Medikament: Allopurinol 150 mg täglich\n\n`;
-  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Aktivität (heute) | km heute | Höhenmeter heute | Intensität heute | Trinkmenge heute | Schlaf heute | Ernährung heute | Weitere Aktivität (Vortag) | km Vortag | Höhenmeter Vortag | Intensität Vortag | Trinkmenge Vortag | Schlaf Vortag | Ernährung Vortag | Notiz\n------|-----------|-----|------|--------------------|----------|-------------------|--------------------|--------------------|--------------|------------------|-----------------------------|-----------|--------------------|---------------------|---------------------|----------------|-------------------|------\n`;
-  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.km!=null?e.km:'—'} | ${e.hm!=null?e.hm:'—'} | ${e.aiH||'—'} | ${e.tmH||'—'} | ${e.slH||'—'} | ${e.eH||'—'} | ${e.a2||'—'} | ${e.km2!=null?e.km2:'—'} | ${e.hm2!=null?e.hm2:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
+  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Körpergewicht | Aktivität (heute) | km heute | Höhenmeter heute | Intensität heute | Trinkmenge heute | Schlaf heute | Ernährung heute | Weitere Aktivität (Vortag) | km Vortag | Höhenmeter Vortag | Intensität Vortag | Trinkmenge Vortag | Schlaf Vortag | Ernährung Vortag | Notiz\n------|-----------|-----|------|---------------|--------------------|----------|-------------------|--------------------|--------------------|--------------|------------------|-----------------------------|-----------|--------------------|---------------------|---------------------|----------------|-------------------|------\n`;
+  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.kg!=null?e.kg:'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.km!=null?e.km:'—'} | ${e.hm!=null?e.hm:'—'} | ${e.aiH||'—'} | ${e.tmH||'—'} | ${e.slH||'—'} | ${e.eH||'—'} | ${e.a2||'—'} | ${e.km2!=null?e.km2:'—'} | ${e.hm2!=null?e.hm2:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
   txt += `\n`;
   if (vals.length) txt += baueAnalyseExportText(gemessene);
   txt += `## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
