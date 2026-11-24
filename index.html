@@ -653,7 +653,7 @@ select.modal-input{cursor:pointer;}
 
 <script>
 // Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
-const BUILD_VERSION = '2026-09-02 — v61 (Neu: Feld "Körpergewicht (kg)" im Eintrag + Karte "Körpergewicht-Trend" in der Analyse (Wochenrate erst ab 14 Tagen Spanne, um irreführende Hochrechnungen zu vermeiden); in Verlauf, CSV- und Claude-Export enthalten. Gicht-Check: Statuszeile "für heute bereits gespeichert (Uhrzeit)" bzw. Warnung, wenn nicht oder wenn die Haken von einem früheren Tag stammen; Rückfrage beim erneuten Speichern am selben Tag)';
+const BUILD_VERSION = '2026-11-19 — v64 (Claude-Auswertung geprüft und ergänzt: Freitext mit Zeilenumbruch oder "|" zerriss die Tagesprotokoll-Tabelle (z.B. 18.07.) — jetzt bereinigt, kaputte Ersatzzeichen entfernt. Neu im Export: Trainingslog (Einheit, Intensität, Check-Ergebnis), Entwicklung der Trainingsgewichte je Übung und die Nierenwerte — bisher fehlten diese Daten komplett)';
 document.getElementById('build-info').textContent = BUILD_VERSION;
 renderLastImport();
 
@@ -1072,9 +1072,17 @@ async function logTraining(u) {
   uebungen.forEach(e => { if(e.gew==='—'||e.gew==='KG') return; GWLOG.push({datum,unit:u,name:e.name,gew:e.gew}); });
   saveGWLOG();
   if (!erfolgreich) { await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus.', 'Fehler beim Speichern'); return; }
-  await modalAlert('Einheit '+u.toUpperCase()+' vom '+datum+' gespeichert!', 'Gespeichert');
+  // Haken sofort zurücksetzen, VOR dem Bestätigungs-Dialog: sonst bleiben sie stehen, wenn der Dialog
+  // nicht mit OK geschlossen wird (App-Wechsel, Neuladen). Nur im Erfolgsfall (siehe return oben).
+  // Das Check-Ergebnis steckt jetzt im Trainingseintrag → für diesen Tag als gespeichert vermerken.
+  // Nur wenn überhaupt Haken gesetzt waren, und nur wenn dadurch kein neuerer Stand überschrieben wird.
+  const bisherigerStand = holeCheckSpeicherstand();
+  if (checkErfuellt > 0 && (!bisherigerStand || datum >= bisherigerStand.datum)) {
+    safeSet('sg-check-gespeichert', { datum, zeit: uhrzeitLokal(), quelle: 'Einheit '+u.toUpperCase() });
+  }
   resetEinheit(u);
   resetCheck();
+  await modalAlert('Einheit '+u.toUpperCase()+' vom '+datum+' gespeichert!', 'Gespeichert');
 }
 
 // ══ CHECK ══
@@ -1100,7 +1108,7 @@ async function saveCheck() {
   const heute = heuteLokal();
   const stand = holeCheckSpeicherstand();
   if (stand && stand.datum === heute) {
-    if (!await modalConfirm('Der Gicht-Check wurde für heute schon um '+stand.zeit+' Uhr gespeichert. Erneut speichern und den Stand überschreiben?', 'Heute schon gespeichert')) return;
+    if (!await modalConfirm('Der Gicht-Check wurde für heute schon '+(stand.quelle ? 'mit '+stand.quelle+' ' : '')+'um '+stand.zeit+' Uhr gespeichert. Erneut speichern und den Stand überschreiben?', 'Heute schon gespeichert')) return;
   }
   if (!safeSet('sg-check', checkState)) {
     await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus.', 'Fehler beim Speichern');
@@ -1131,7 +1139,9 @@ function renderCheckStatus() {
   const stand = holeCheckSpeicherstand();
   const anzahlHaken = Object.values(checkState).filter(Boolean).length;
   if (stand && stand.datum === heuteLokal()) {
-    el.textContent = '✅ Für heute bereits gespeichert ('+stand.zeit+' Uhr)';
+    el.textContent = stand.quelle
+      ? '✅ Für heute bereits gespeichert — mit '+stand.quelle+' ('+stand.zeit+' Uhr)'
+      : '✅ Für heute bereits gespeichert ('+stand.zeit+' Uhr)';
   } else if (anzahlHaken > 0 && stand) {
     el.textContent = '⚠️ Für heute noch nicht gespeichert — die Haken stammen vermutlich vom '+fd(stand.datum)+'.';
   } else if (anzahlHaken > 0) {
@@ -2374,6 +2384,16 @@ function formatKategorieListeText(gemessene, feld, titel) {
   return t + '\n';
 }
 
+// Freitext für den Claude-Export aufbereiten: Zeilenumbrüche würden die Markdown-Tabelle zerreißen,
+// "|" ist der Spaltentrenner, und U+FFFD sind kaputte Ersatzzeichen aus der ursprünglichen Eingabe.
+function bereinigeExportText(s) {
+  return String(s == null ? '' : s)
+    .replace(/\ufffd/g, '')
+    .replace(/\s*[\r\n]+\s*/g, '; ')
+    .replace(/\|/g, '/')
+    .replace(/^[;\s]+|[;\s]+$/g, '');
+}
+
 function baueAnalyseExportText(gemessene) {
   let t = '';
 
@@ -2455,6 +2475,55 @@ function baueAnalyseExportText(gemessene) {
   return t;
 }
 
+// Datenquellen außerhalb der Tagesprotokolle, die für die Auswertung relevant sind: Trainingslog,
+// Entwicklung der Trainingsgewichte und Nierenwerte. Unabhängig von Harnsäure-Messwerten.
+function baueZusatzdatenExportText() {
+  let t = '';
+
+  t += '## Trainingseinheiten (Trainingslog)\n';
+  const tl = [...TLOG].sort((a,b)=>(a.datum+' '+(a.zeit||'')).localeCompare(b.datum+' '+(b.zeit||'')));
+  if (tl.length) {
+    t += 'Datum | Zeit | Einheit | Intensität | Harnsäure (bei Speicherung angegeben) | Gicht-Check erfüllt | Übungen\n------|------|---------|------------|---------------------------------------|---------------------|--------\n';
+    tl.forEach(x => {
+      t += `${x.datum} | ${x.zeit||'—'} | ${x.unit ? String(x.unit).toUpperCase() : '—'} | ${x.intensitaet||'—'} | ${x.hs!=null?x.hs:'—'} | ${x.checkGesamt ? x.checkErfuellt+'/'+x.checkGesamt : '—'} | ${(x.uebungen||[]).length}\n`;
+    });
+  } else {
+    t += 'Noch keine Trainingseinheiten gespeichert.\n';
+  }
+  t += '\n';
+
+  // Gewicht je Übung nur bei Änderung festhalten → kompakte Entwicklung statt 80 Einzelzeilen
+  t += '### Trainingsgewichte (Entwicklung je Übung)\n';
+  const verlauf = new Map();
+  [...GWLOG].sort((a,b)=>a.datum.localeCompare(b.datum)).forEach(x => {
+    const einheit = x.unit ? String(x.unit).toUpperCase() : '?';
+    const key = einheit + ' ' + x.name;
+    if (!verlauf.has(key)) verlauf.set(key, { einheit, name: x.name, schritte: [] });
+    const s = verlauf.get(key).schritte;
+    if (!s.length || s[s.length-1].gew !== x.gew) s.push({ datum: x.datum, gew: x.gew });
+  });
+  if (verlauf.size) {
+    [...verlauf.keys()].sort().forEach(k => {
+      const v = verlauf.get(k);
+      t += `- ${v.name} (Einheit ${v.einheit}): ` + v.schritte.map(s => `${s.gew} (ab ${s.datum})`).join(' → ') + '\n';
+    });
+  } else {
+    t += 'Noch keine Trainingsgewichte protokolliert.\n';
+  }
+  t += '\n';
+
+  t += '## Nierenwerte\n';
+  const nl = [...NLOG].sort((a,b)=>a.datum.localeCompare(b.datum));
+  if (nl.length) {
+    t += 'Datum | Kreatinin (mg/dl) | eGFR | Notiz\n------|-------------------|------|------\n';
+    nl.forEach(x => { t += `${x.datum} | ${x.krea!=null?x.krea:'—'} | ${x.gfr!=null?x.gfr:'—'} | ${bereinigeExportText(x.notiz)||'—'}\n`; });
+  } else {
+    t += 'Noch keine Nierenwerte erfasst.\n';
+  }
+  t += '\n';
+  return t;
+}
+
 function exportClaude() {
   if (!DATA.length) { showLog('Keine Daten.', false); return; }
   // Eigene, unabhängige Sortierung — verlässt sich nicht darauf, dass DATA an anderer Stelle im Code sortiert gehalten wird
@@ -2468,9 +2537,10 @@ function exportClaude() {
   txt += `## Zusammenfassung\n- Einträge: ${sortiert.length}\n- Zeitraum: ${sortiert[0].d} bis ${sortiert[sortiert.length-1].d}\n`;
   txt += zusammenfassungZeile + `- Medikament: Allopurinol 150 mg täglich\n\n`;
   txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Körpergewicht | Aktivität (heute) | km heute | Höhenmeter heute | Intensität heute | Trinkmenge heute | Schlaf heute | Ernährung heute | Weitere Aktivität (Vortag) | km Vortag | Höhenmeter Vortag | Intensität Vortag | Trinkmenge Vortag | Schlaf Vortag | Ernährung Vortag | Notiz\n------|-----------|-----|------|---------------|--------------------|----------|-------------------|--------------------|--------------------|--------------|------------------|-----------------------------|-----------|--------------------|---------------------|---------------------|----------------|-------------------|------\n`;
-  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.kg!=null?e.kg:'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.km!=null?e.km:'—'} | ${e.hm!=null?e.hm:'—'} | ${e.aiH||'—'} | ${e.tmH||'—'} | ${e.slH||'—'} | ${e.eH||'—'} | ${e.a2||'—'} | ${e.km2!=null?e.km2:'—'} | ${e.hm2!=null?e.hm2:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${e.e||'—'} | ${e.n||'—'}\n`; });
+  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.kg!=null?e.kg:'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.km!=null?e.km:'—'} | ${e.hm!=null?e.hm:'—'} | ${e.aiH||'—'} | ${e.tmH||'—'} | ${e.slH||'—'} | ${bereinigeExportText(e.eH)||'—'} | ${e.a2||'—'} | ${e.km2!=null?e.km2:'—'} | ${e.hm2!=null?e.hm2:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${bereinigeExportText(e.e)||'—'} | ${bereinigeExportText(e.n)||'—'}\n`; });
   txt += `\n`;
   if (vals.length) txt += baueAnalyseExportText(gemessene);
+  txt += baueZusatzdatenExportText();
   txt += `## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
   const clipboardVerfuegbar = navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
   const herunterladenAlsDatei = () => {
