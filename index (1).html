@@ -1,0 +1,2603 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Projekt Sport & Gicht</title>
+<style>
+:root {
+  --bg:#0d1117;--surf:#161b22;--surf2:#21262d;--border:#30363d;
+  --a:#58a6ff;--b:#bc8cff;--good:#3fb950;--warn:#d29922;--bad:#f85149;
+  --text:#e6edf3;--muted:#8b949e;--dim:#484f58;--r:12px;
+  --font:'Segoe UI',system-ui,sans-serif;
+  --tab-h:60px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;padding-bottom:calc(var(--tab-h) + 16px);}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);background:var(--surf);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:calc(env(safe-area-inset-bottom) + 8px);}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--muted);font-family:var(--font);font-size:10px;font-weight:600;cursor:pointer;transition:color .15s;padding:6px 2px;}
+.bnav-btn .icon{font-size:20px;line-height:1;}
+.bnav-btn.active{color:var(--a);}
+.bnav-btn.active .icon{filter:drop-shadow(0 0 6px var(--a));}
+
+/* ── BRAND ── */
+.brand{padding:16px 16px 0;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+.brand span{color:var(--a);}
+
+/* ── SECTIONS ── */
+main{max-width:600px;margin:0 auto;padding:0 14px 16px;}
+.section{display:none;padding-top:16px;}.section.active{display:block;}
+.page-title{font-size:22px;font-weight:800;margin-bottom:4px;}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}
+
+/* ── CARDS ── */
+.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px;}
+
+/* ── PLAN ── */
+.einheit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.ecard{border-radius:var(--r);padding:14px;cursor:pointer;border:2px solid var(--border);background:var(--surf2);transition:all .2s;}
+.ecard.active-a{border-color:var(--a);background:rgba(88,166,255,.1);}
+.ecard.active-b{border-color:var(--b);background:rgba(188,140,255,.1);}
+.etag{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.ecard.active-a .etag{color:var(--a);}.ecard.active-b .etag{color:var(--b);}
+.ename{font-size:13px;font-weight:700;color:var(--text);}
+.emeta{font-size:11px;color:var(--muted);margin-top:3px;}
+
+.info-strip{display:flex;gap:0;border-radius:var(--r);overflow:hidden;margin-bottom:14px;border:1px solid var(--border);}
+.iitem{flex:1;padding:10px 8px;text-align:center;background:var(--surf2);}
+.iitem+.iitem{border-left:1px solid var(--border);}
+.ilabel{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.ival{font-size:15px;font-weight:800;margin-top:2px;}
+
+.prog-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.prog-label{font-size:13px;font-weight:600;}
+.prog-count{font-size:20px;font-weight:800;}
+.prog-bar{height:6px;background:var(--surf2);border-radius:3px;margin-bottom:14px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;transition:width .3s;}
+.fill-a{background:var(--a);}.fill-b{background:var(--b);}
+
+.btn-reset{font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surf2);color:var(--muted);cursor:pointer;font-family:var(--font);}
+.btn-reset:active{background:var(--border);}
+
+/* Übungskarten */
+.ucard{background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;transition:all .2s;display:flex;gap:12px;align-items:flex-start;}
+.ucard.done-card{opacity:.55;border-color:var(--dim);}
+.uchk{width:26px;height:26px;border-radius:8px;border:2px solid var(--border);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;margin-top:1px;}
+.uchk.checked-a{background:var(--a);border-color:var(--a);color:#fff;}
+.uchk.checked-b{background:var(--b);border-color:var(--b);color:#fff;}
+.uinfo{flex:1;min-width:0;}
+.unum{font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;}
+.unum-idx{font-size:10px;font-weight:400;color:var(--muted);}
+.uname{font-size:15px;font-weight:700;margin-bottom:6px;}
+.ubadges{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.gbadge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:6px;background:var(--surf);border:1px solid var(--muted);color:var(--text);cursor:pointer;}
+.gbadge:active{background:var(--border);}
+.wbadge{font-size:14px;font-weight:800;padding:3px 10px;border-radius:6px;cursor:pointer;}
+.wa{background:rgba(88,166,255,.15);color:var(--a);border:1px solid rgba(88,166,255,.3);}
+.wb{background:rgba(188,140,255,.15);color:var(--b);border:1px solid rgba(188,140,255,.3);}
+.xbadge{font-size:12px;color:var(--muted);padding:3px 0;}
+.pbadge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:6px;}
+.p90{background:rgba(88,166,255,.12);color:var(--a);}
+.p120{background:rgba(210,153,34,.12);color:var(--warn);}
+.hint{font-size:11px;color:var(--muted);font-style:italic;margin-top:4px;}
+
+.btn-log{width:100%;padding:14px;border-radius:var(--r);border:none;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:4px;transition:all .2s;}
+.btn-log-a{background:var(--a);color:#0d1117;}
+.btn-log-b{background:var(--b);color:#0d1117;}
+.btn-log:disabled{opacity:.4;cursor:default;}
+
+/* ── VERLAUF ── */
+.verlauf-tabs{display:flex;gap:0;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);margin-bottom:14px;}
+.vtab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;background:var(--surf2);color:var(--muted);border:none;font-family:var(--font);transition:all .15s;}
+.vtab.active{background:var(--a);color:#0d1117;}
+
+/* Protokoll-Formular */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.fg input,.fg select,.fg textarea{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;width:100%;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--a);}
+.fg textarea{resize:vertical;min-height:60px;}
+.akt-details{background:var(--surf2);border:1px solid var(--border);border-radius:8px;}
+.akt-details summary{padding:10px;font-size:14px;color:var(--text);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.akt-details summary::-webkit-details-marker{display:none;}
+.akt-details summary::after{content:'▾';color:var(--muted);font-size:12px;flex-shrink:0;}
+.akt-details[open] summary::after{content:'▴';}
+.akt-details summary.placeholder{color:var(--muted);}
+.akt-summary-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.akt-checklist{padding:4px 10px 8px;border-top:1px solid var(--border);display:flex;flex-direction:column;}
+.akt-check-row{display:flex;align-items:center;gap:12px;padding:10px 4px;font-size:22px;font-weight:800;}
+.akt-check-row input{
+  appearance:none;-webkit-appearance:none;
+  width:24px;height:24px;flex-shrink:0;
+  border-radius:50%;border:2px solid var(--border);background:var(--surf2);
+  cursor:pointer;position:relative;transition:all .15s;
+}
+.akt-check-row input:checked{background:var(--a);border-color:var(--a);}
+.akt-check-row input:checked::after{
+  content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  color:#fff;font-size:14px;font-weight:800;
+}
+.fg-full{grid-column:1/-1;}
+.btn-save{width:100%;padding:14px;border-radius:var(--r);background:var(--good);border:none;color:#0d1117;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:4px;}
+.btn-save:active{opacity:.8;}
+
+/* Verlauf-Tabelle */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.sbox{background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;}
+.sv{font-size:22px;font-weight:800;}
+.sl{font-size:10px;color:var(--muted);margin-top:2px;}
+.sv-sub{font-size:13px;font-weight:700;margin-top:1px;}
+.sv.good{color:var(--good);}.sv.warn{color:var(--warn);}.sv.bad{color:var(--bad);}
+.sv-sub.good{color:var(--good);}.sv-sub.warn{color:var(--warn);}
+
+.vlist{display:flex;flex-direction:column;gap:8px;}
+.vrow{background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);padding:12px;}
+.vrow-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.vdate{font-size:13px;font-weight:700;}
+.vha{font-size:18px;font-weight:800;}
+.vha.good{color:var(--good);}.vha.warn{color:var(--warn);}.vha.bad{color:var(--bad);}
+.vrow-meta{display:flex;flex-wrap:wrap;gap:6px;}
+.vmeta{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--surf);border:1px solid var(--border);color:var(--muted);}
+.vrow-del{text-align:right;margin-top:8px;}
+.btn-del{font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);color:var(--bad);cursor:pointer;font-family:var(--font);}
+
+/* Training-Verlauf */
+.trow{background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px;}
+.trow-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.tunit{font-size:12px;font-weight:700;}
+.tunit-a{color:var(--a);}.tunit-b{color:var(--b);}
+.tha{font-size:16px;font-weight:800;}
+.tdate{font-size:12px;color:var(--muted);}
+.tueb{font-size:12px;color:var(--muted);margin-top:4px;}
+
+/* ── ANALYSE ── */
+.chart-wrap{width:100%;overflow-x:auto;padding:8px 0;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;}
+
+/* ── SICHERUNG ── */
+.bk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.bk-btn{background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;text-align:left;transition:all .15s;font-family:var(--font);color:var(--text);}
+.bk-btn:active{border-color:var(--a);}
+.bk-icon{font-size:24px;margin-bottom:8px;}
+.bk-title{font-size:13px;font-weight:700;margin-bottom:4px;}
+.bk-sub{font-size:11px;color:var(--muted);}
+.bk-full{grid-column:1/-1;}
+.log-box{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:8px;display:none;}
+.log-ok{background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.3);color:var(--good);}
+.log-err{background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.3);color:var(--bad);}
+.info-box{font-size:12px;color:var(--muted);line-height:1.6;padding:12px;background:var(--surf2);border-radius:8px;border:1px solid var(--border);}
+
+/* ── CHECK ── */
+.check-list{display:flex;flex-direction:column;gap:8px;}
+.check-item{display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--surf2);border-radius:var(--r);border:1px solid var(--border);cursor:pointer;transition:all .2s;}
+.check-item.checked{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.4);}
+.check-item.checked .check-title{color:var(--good);}
+.check-item.checked .check-icon{opacity:.6;}
+.check-chk{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px;transition:all .15s;}
+.check-item.checked .check-chk{background:var(--good);border-color:var(--good);color:#0d1117;}
+.check-icon{font-size:20px;flex-shrink:0;}
+.check-text{font-size:13px;line-height:1.5;}
+.check-title{font-weight:700;margin-bottom:2px;}
+.check-desc{color:var(--muted);}
+.warn-strip{background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.3);border-radius:var(--r);padding:14px;margin-bottom:12px;font-size:13px;color:var(--warn);line-height:1.6;}
+
+/* ── UTILITY (ersetzt Inline-Styles) ── */
+.hidden{display:none;}
+.flex-center-gap8{display:flex;align-items:center;gap:8px;}
+.flex-gap8{display:flex;gap:8px;}
+.add-row{display:flex;gap:8px;margin-top:12px;}
+.add-select{flex:1;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:var(--font);}
+.add-btn{background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;cursor:pointer;}
+.mt-12{margin-top:12px;}
+.mt-4{margin-top:4px;}
+.opacity-60{opacity:.6;}
+.px-8{padding:2px 8px;}
+.build-info{font-size:12px;color:var(--muted);margin:-8px 0 12px;}
+.btn-edit-blue{background:rgba(88,166,255,.1);border-color:rgba(88,166,255,.3);color:var(--a);margin-right:6px;}
+.btn-edit-neutral{background:var(--surf2);border-color:var(--border);color:var(--text);}
+.svg-chart{width:100%;overflow:visible;}
+.stat-row-line{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.fs-13{font-size:13px;}
+.stat-value{font-size:15px;font-weight:800;}
+.tip-box{padding:10px;background:var(--surf2);border-radius:8px;margin-bottom:8px;font-size:13px;}
+.erk-block{padding:12px;background:var(--surf2);border-radius:8px;margin-bottom:10px;}
+.erk-faktor{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;}
+.erk-line{font-size:13px;margin-bottom:4px;line-height:1.4;}
+.erk-line.erk-good strong{color:var(--good);}
+.erk-line.erk-bad strong{color:var(--bad);}
+.erk-line.erk-diff{color:var(--muted);font-size:12px;margin-top:2px;}
+.fs-11-muted{font-size:11px;color:var(--muted);}
+.akt-card{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;}
+.akt-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:8px;}
+.akt-name{font-size:14px;font-weight:700;}
+.akt-avg{font-size:17px;font-weight:800;white-space:nowrap;}
+.akt-avg.good{color:var(--good);}.akt-avg.warn{color:var(--warn);}.akt-avg.bad{color:var(--bad);}
+.akt-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--muted);}
+.akt-dev{font-weight:700;}
+.akt-dev.pos{color:var(--bad);}.akt-dev.neg{color:var(--good);}.akt-dev.neutral{color:var(--muted);}
+.te-card{background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;}
+.te-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;font-weight:700;}
+.te-vals{font-size:13px;color:var(--muted);margin-bottom:4px;}
+.te-vals strong{color:var(--text);}
+.trend-up{color:var(--bad);}.trend-down{color:var(--good);}.trend-flat{color:var(--muted);}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:1000;}
+.modal-overlay.open{display:flex;}
+.modal-overlay.has-input{align-items:center;}
+.modal-box{background:var(--surf);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));width:100%;max-width:480px;max-height:80vh;overflow-y:auto;animation:modalUp .18s ease-out;}
+.modal-overlay.has-input .modal-box{border-radius:16px;margin:16px;}
+@media (min-width:520px){.modal-overlay{align-items:center;}.modal-box{border-radius:16px;margin:20px;}}
+@keyframes modalUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-title{font-size:16px;font-weight:800;margin-bottom:8px;color:var(--text);}
+.modal-message{font-size:14px;color:var(--muted);line-height:1.6;white-space:pre-wrap;margin-bottom:14px;}
+.modal-input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px;font-family:var(--font);font-size:15px;margin-bottom:14px;box-sizing:border-box;}
+.modal-input:focus{outline:none;border-color:var(--a);}
+select.modal-input{cursor:pointer;}
+.modal-input option{background:var(--surf2);color:var(--text);}
+.modal-buttons{display:flex;gap:10px;}
+.modal-btn{flex:1;padding:13px;border-radius:10px;border:none;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;}
+.modal-btn-cancel{background:var(--surf2);color:var(--muted);border:1px solid var(--border);}
+.modal-btn-ok{background:var(--a);color:#0d1117;}
+.modal-btn-danger{background:var(--bad);color:#fff;}
+
+/* ── Ausgelagerte, wiederkehrende Inline-Styles ── */
+.arrow-col{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
+.mini-btn{background:var(--surf);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 6px;line-height:1;}
+.mini-btn-danger{border-color:var(--bad);color:var(--bad);}
+</style>
+</head>
+<body>
+
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <div id="modal-title" class="modal-title"></div>
+    <div id="modal-message" class="modal-message"></div>
+    <input id="modal-input" class="modal-input hidden">
+    <select id="modal-select" class="modal-input hidden"></select>
+    <div id="modal-buttons" class="modal-buttons"></div>
+  </div>
+</div>
+
+<div class="brand">PROJEKT <span>SPORT</span> & GICHT</div>
+
+<main>
+
+<!-- ══ PLAN ══ -->
+<section id="s-plan" class="section active">
+  <div class="page-title">Trainingsplan</div>
+  <div class="page-sub">2× wöchentlich · Muskelerhalt</div>
+  <div class="build-info" id="heute-anzeige"></div>
+
+  <div class="einheit-grid">
+    <div class="ecard active-a" id="ecard-a" onclick="switchEinheit('a')">
+      <div class="etag">Trainingstag A</div>
+      <div class="ename">Einheit A</div>
+      <div class="emeta">Oberkörper · ~80 Min.</div>
+    </div>
+    <div class="ecard" id="ecard-b" onclick="switchEinheit('b')">
+      <div class="etag">Trainingstag B</div>
+      <div class="ename">Einheit B</div>
+      <div class="emeta">Unterkörper · ~75 Min.</div>
+    </div>
+  </div>
+
+  <div id="plan-a">
+    <div class="info-strip">
+      <div class="iitem"><div class="ilabel">Tag</div><div class="ival" id="tag-a">Freitag</div></div>
+      <div class="iitem"><div class="ilabel">Sätze</div><div class="ival">2/Übung</div></div>
+      <div class="iitem"><div class="ilabel">Wdh.</div><div class="ival">12/Satz</div></div>
+      <div class="iitem"><div class="ilabel">Pause</div><div class="ival">90 Sek.</div></div>
+    </div>
+    <div class="card">
+      <div class="prog-row">
+        <span class="prog-label">Fortschritt Einheit A</span>
+        <div class="flex-center-gap8">
+          <span class="prog-count" id="prog-a">0/9</span>
+          <button class="btn-reset" onclick="resetEinheit('a')">↺</button>
+        </div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill fill-a" id="fill-a" style="width:0%"></div></div>
+      <div id="list-a"></div>
+      <div class="add-row">
+        <select id="add-sel-a" class="add-select"></select>
+        <button onclick="addFromOther('a')" class="add-btn">+ Hinzufügen</button>
+      </div>
+      <button class="btn-log btn-log-a mt-12" id="btn-log-a" onclick="logTraining('a')">✅ Training speichern</button>
+    </div>
+  </div>
+
+  <div id="plan-b" class="hidden">
+    <div class="info-strip">
+      <div class="iitem"><div class="ilabel">Tag</div><div class="ival" id="tag-b">Samstag</div></div>
+      <div class="iitem"><div class="ilabel">Sätze</div><div class="ival">2/Übung</div></div>
+      <div class="iitem"><div class="ilabel">Wdh.</div><div class="ival">12/Satz</div></div>
+      <div class="iitem"><div class="ilabel">Pause</div><div class="ival">90 Sek.</div></div>
+    </div>
+    <div class="card">
+      <div class="prog-row">
+        <span class="prog-label">Fortschritt Einheit B</span>
+        <div class="flex-center-gap8">
+          <span class="prog-count" id="prog-b">0/7</span>
+          <button class="btn-reset" onclick="resetEinheit('b')">↺</button>
+        </div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill fill-b" id="fill-b" style="width:0%"></div></div>
+      <div id="list-b"></div>
+      <div class="add-row">
+        <select id="add-sel-b" class="add-select"></select>
+        <button onclick="addFromOther('b')" class="add-btn">+ Hinzufügen</button>
+      </div>
+      <button class="btn-log btn-log-b mt-12" id="btn-log-b" onclick="logTraining('b')">✅ Training speichern</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══ VERLAUF ══ -->
+<section id="s-verlauf" class="section">
+  <div class="page-title">Verlauf</div>
+  <div class="page-sub">Protokoll & Training</div>
+
+  <div class="verlauf-tabs">
+    <button class="vtab active" id="vtab-proto" onclick="switchVtab('proto')">📋 Protokoll</button>
+    <button class="vtab" id="vtab-training" onclick="switchVtab('training')">🏋️ Training</button>
+    <button class="vtab" id="vtab-niere" onclick="switchVtab('niere')">🩺 Niere</button>
+  </div>
+
+  <!-- Protokoll-Unter-Tab -->
+  <div id="vt-proto">
+    <div class="card">
+      <div class="card-title">Neuer Eintrag</div>
+      <div class="form-grid">
+        <div class="fg"><label>Datum</label><input type="date" id="pd"></div>
+        <div class="fg"><label>Harnsäure (mg/dl)</label><input type="number" id="ph" step="0.1" min="3" max="12" placeholder="5.8"></div>
+        <div class="fg"><label>RR systolisch</label><input type="number" id="ps" placeholder="125"></div>
+        <div class="fg"><label>RR diastolisch</label><input type="number" id="pdi" placeholder="75"></div>
+        <div class="fg"><label>Puls (bpm)</label><input type="number" id="pp" placeholder="62"></div>
+        <div class="fg"><label>Körpergewicht (kg)</label><input type="number" id="pkg" step="0.1" placeholder="91.4"></div>
+        <div class="fg"><label>Aktivität heute (Mehrfachauswahl)</label>
+          <details class="akt-details" id="pak-details">
+            <summary id="pak-summary" class="placeholder"><span class="akt-summary-text">— wählen —</span></summary>
+            <div class="akt-checklist" id="pak-checks">
+              <label class="akt-check-row"><input type="checkbox" value="Ruhetag" onchange="aktualisierePakSummary()"> Ruhetag</label>
+              <label class="akt-check-row"><input type="checkbox" value="Aktiver Ruhetag" onchange="aktualisierePakSummary()"> Aktiver Ruhetag</label>
+              <label class="akt-check-row"><input type="checkbox" value="Spaziergang" onchange="aktualisierePakSummary()"> Spaziergang</label>
+              <label class="akt-check-row"><input type="checkbox" value="Fahrradfahren" onchange="aktualisierePakSummary()"> Fahrradfahren</label>
+              <label class="akt-check-row"><input type="checkbox" value="Schwimmen" onchange="aktualisierePakSummary()"> Schwimmen</label>
+              <label class="akt-check-row"><input type="checkbox" value="Wandern" onchange="aktualisierePakSummary()"> Wandern</label>
+              <label class="akt-check-row"><input type="checkbox" value="Gartenarbeit" onchange="aktualisierePakSummary()"> Gartenarbeit</label>
+              <label class="akt-check-row"><input type="checkbox" value="Rehasport" onchange="aktualisierePakSummary()"> Rehasport</label>
+              <label class="akt-check-row"><input type="checkbox" value="Training Einheit A" onchange="aktualisierePakSummary()"> Training Einheit A</label>
+              <label class="akt-check-row"><input type="checkbox" value="Training Einheit B" onchange="aktualisierePakSummary()"> Training Einheit B</label>
+              <label class="akt-check-row"><input type="checkbox" value="Trainingsnachwirkung" onchange="aktualisierePakSummary()"> Trainingsnachwirkung</label>
+              <label class="akt-check-row"><input type="checkbox" value="Sonstiges" onchange="aktualisierePakSummary()"> Sonstiges</label>
+            </div>
+          </details>
+        </div>
+        <div class="fg"><label>Weitere Aktivität Vortag (optional)</label>
+          <select id="pak2" onchange="toggleKmFeld()">
+            <option value="">— keine —</option>
+            <option>Ruhetag</option><option>Aktiver Ruhetag</option><option>Spaziergang</option><option>Fahrradfahren</option><option>Schwimmen</option><option>Wandern</option><option>Gartenarbeit</option>
+            <option>Rehasport</option>
+            <option>Training Einheit A</option><option>Training Einheit B</option>
+            <option>Trainingsnachwirkung</option><option>Sonstiges</option>
+          </select>
+        </div>
+        <div class="fg hidden" id="fg-km"><label>Strecke heute (km)</label><input type="number" id="pkm" step="0.1" placeholder="8.5"></div>
+        <div class="fg hidden" id="fg-hm"><label>Höhenmeter heute (optional)</label><input type="number" id="phm" step="10" placeholder="350"></div>
+        <div class="fg hidden" id="fg-km2"><label>Strecke Vortag (km)</label><input type="number" id="pkm2" step="0.1" placeholder="8.5"></div>
+        <div class="fg hidden" id="fg-hm2"><label>Höhenmeter Vortag (optional)</label><input type="number" id="phm2" step="10" placeholder="350"></div>
+        <div class="fg-full hidden warn-strip" id="aktivitaet-warnhinweis">⚠️ Ist das dieselbe Aktivität — z.B. eine Wanderung, die du nur beim falschen Feld eingetragen hast? Dann bitte nur <strong>einmal</strong> erfassen (heute <em>oder</em> Vortag), sonst zählt sie doppelt in der Statistik. Waren es zwei echte, unterschiedliche Male (z.B. gestern UND heute gewandert), ist die Doppel-Auswahl genau richtig.</div>
+        <div class="fg"><label>Intensität heute</label>
+          <select id="paiH">
+            <option value="">— wählen —</option>
+            <option>Leicht</option><option>Mittel</option><option>Schwer</option>
+          </select>
+        </div>
+        <div class="fg"><label>Intensität Vortag</label>
+          <select id="pai">
+            <option value="">— wählen —</option>
+            <option>Leicht</option><option>Mittel</option><option>Schwer</option>
+          </select>
+        </div>
+        <div class="fg"><label>Trinkmenge heute</label>
+          <select id="ptmH">
+            <option value="">— wählen —</option>
+            <option>unter 1,5 L</option><option>1,5–2 L</option><option>2–3 L</option>
+            <option>3–3,5 L</option><option>über 3,5 L</option>
+          </select>
+        </div>
+        <div class="fg"><label>Trinkmenge Vortag</label>
+          <select id="ptm">
+            <option value="">— wählen —</option>
+            <option>unter 1,5 L</option><option>1,5–2 L</option><option>2–3 L</option>
+            <option>3–3,5 L</option><option>über 3,5 L</option>
+          </select>
+        </div>
+        <div class="fg"><label>Schlaf heute</label>
+          <select id="pslH">
+            <option value="">— wählen —</option>
+            <option>Gut</option><option>Mäßig</option><option>Schlecht</option>
+          </select>
+        </div>
+        <div class="fg"><label>Schlaf Vortag</label>
+          <select id="psl">
+            <option value="">— wählen —</option>
+            <option>Gut</option><option>Mäßig</option><option>Schlecht</option>
+          </select>
+        </div>
+        <div class="fg fg-full"><label>Ernährung heute</label><textarea id="peH" placeholder="z.B. Quark, Apfel, Pizza..."></textarea></div>
+        <div class="fg fg-full"><label>Ernährung Vortag</label><textarea id="pe" placeholder="z.B. Quark, Apfel, Pizza..."></textarea></div>
+        <div class="fg fg-full"><label>Notiz</label><textarea id="pn" placeholder="z.B. Stress, schlechter Schlaf..."></textarea></div>
+      </div>
+      <button class="btn-save" onclick="saveEintrag()">💾 Eintrag speichern</button>
+    </div>
+
+    <div class="stats-row hidden" id="stats-row">
+      <div class="sbox"><div class="sv" id="s-avg">—</div><div class="sl">Ø mg/dl</div></div>
+      <div class="sbox"><div class="sv good" id="s-best">—</div><div class="sl">Bestwert</div></div>
+      <div class="sbox"><div class="sv" id="s-ziel">—</div><div class="sv-sub" id="s-ziel-prozent"></div><div class="sl">Im Ziel</div></div>
+    </div>
+
+    <div id="proto-list"></div>
+  </div>
+
+  <!-- Training-Unter-Tab -->
+  <div id="vt-training" class="hidden">
+    <div id="training-list"></div>
+  </div>
+
+  <!-- Niere-Unter-Tab -->
+  <div id="vt-niere" class="hidden">
+    <div class="fg"><label>Datum</label><input type="date" id="nid"></div>
+    <div class="fg"><label>Kreatinin (mg/dl)</label><input type="number" id="nik" step="0.01" placeholder="1,40"></div>
+    <div class="fg"><label>GFR (ml/min/1,73m²)</label><input type="number" id="nig" step="1" placeholder="53"></div>
+    <div class="fg"><label>Notiz</label><input type="text" id="nin" placeholder="z.B. Laborwert vom Nephrologen"></div>
+    <button class="btn-save" onclick="saveNieren()">💾 Nierenwert speichern</button>
+    <div id="niere-list" class="mt-12"></div>
+  </div>
+</section>
+
+<!-- ══ CHECK ══ -->
+<section id="s-check" class="section">
+  <div class="page-title">Gicht-Check</div>
+  <div class="page-sub">Trainingstag-Checkliste</div>
+
+  <div class="warn-strip">⚠️ Kein Training bei akutem Gichtanfall. Bei Gelenkschmerzen Training abbrechen.</div>
+
+  <div class="tip-box" id="check-status">…</div>
+
+  <div class="card">
+    <div class="card-title">Vor dem Training</div>
+    <div class="check-list">
+      <div class="check-item" id="ci0" onclick="toggleCheck(0)"><div class="check-chk" id="cc0"></div><div class="check-icon">💧</div><div class="check-text"><div class="check-title">500 ml trinken</div><div class="check-desc">Vor dem Training, zusätzlich zum Tagesbedarf.</div></div></div>
+      <div class="check-item" id="ci1" onclick="toggleCheck(1)"><div class="check-chk" id="cc1"></div><div class="check-icon">🍬</div><div class="check-text"><div class="check-title">Kein Zucker/Fructose</div><div class="check-desc">Heute kein Eis, Honig, Knopers, Sirupfrüchte.</div></div></div>
+      <div class="check-item" id="ci2" onclick="toggleCheck(2)"><div class="check-chk" id="cc2"></div><div class="check-icon">⏱️</div><div class="check-text"><div class="check-title">Dauer max. 80 Min.</div><div class="check-desc">Lange oder sehr intensive Belastungen können die Harnsäure erhöhen, insbesondere bei Flüssigkeitsmangel.</div></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Während des Trainings</div>
+    <div class="check-list">
+      <div class="check-item" id="ci3" onclick="toggleCheck(3)"><div class="check-chk" id="cc3"></div><div class="check-icon">💧</div><div class="check-text"><div class="check-title">300 ml alle 20–30 Min.</div><div class="check-desc">Dehydration hemmt Harnsäureausscheidung.</div></div></div>
+      <div class="check-item" id="ci4" onclick="toggleCheck(4)"><div class="check-chk" id="cc4"></div><div class="check-icon">⏸️</div><div class="check-text"><div class="check-title">Pausen einhalten</div><div class="check-desc">Min. 90 Sek., schwere Übungen 2 Min.</div></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Nach dem Training</div>
+    <div class="check-list">
+      <div class="check-item" id="ci5" onclick="toggleCheck(5)"><div class="check-chk" id="cc5"></div><div class="check-icon">💧</div><div class="check-text"><div class="check-title">500 ml + Tagesziel ≥ 3,5 L</div><div class="check-desc">Gesamttrinkmenge Trainingstag mind. 3,5–4 L.</div></div></div>
+      <div class="check-item" id="ci6" onclick="toggleCheck(6)"><div class="check-chk" id="cc6"></div><div class="check-icon">📏</div><div class="check-text"><div class="check-title">Morgen nüchtern messen</div><div class="check-desc">Harnsäure am Folgetag morgens messen und eintragen.</div></div></div>
+    </div>
+    <button class="btn-save mt-12" onclick="saveCheck()">💾 Gicht-Check speichern</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Dein Trainingseffekt (dokumentiert)</div>
+    <div class="check-list">
+      <div class="check-item"><div class="check-icon">✅</div><div class="check-text"><div class="check-title">&gt;3,5 L → kein Anstieg</div><div class="check-desc">30.06.: Training + &gt;3,5 L → 5,5 mg/dl (±0)</div></div></div>
+      <div class="check-item"><div class="check-icon">⚠️</div><div class="check-text"><div class="check-title">3–3,5 L → +0,4 mg/dl</div><div class="check-desc">27.06.: Training + 3–3,5 L → 6,2 mg/dl</div></div></div>
+      <div class="check-item"><div class="check-icon">🚨</div><div class="check-text"><div class="check-title">&lt;2 L + 3h → +1,9 mg/dl</div><div class="check-desc">21.06.: 3h Training + 1,5–2 L → 7,6 mg/dl</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ANALYSE ══ -->
+<section id="s-analyse" class="section">
+  <div class="page-title">Analyse</div>
+  <div class="page-sub">Harnsäure-Auswertung</div>
+  <div id="aw-stats" class="stats-row hidden"></div>
+  <div class="card">
+    <div class="card-title">Harnsäure-Verlauf</div>
+    <div class="chart-wrap" id="aw-chart"><div class="empty-state">Noch keine Daten vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Erweiterte Statistik</div>
+    <div id="aw-erwstat"><div class="empty-state">Noch keine gemessenen Werte vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Zielbereichsanalyse</div>
+    <div id="aw-zielbereich"><div class="empty-state">Noch keine gemessenen Werte vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Langfristige Trendanalyse</div>
+    <div id="aw-trend"><div class="empty-state">Mind. 4 gemessene Werte nötig.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Ø nach Einflussfaktor</div>
+    <div id="aw-fak"><div class="empty-state">Noch keine Daten vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Erweiterte Aktivitätsanalyse</div>
+    <div id="aw-aktivitaet"><div class="empty-state">Noch keine gemessenen Werte vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Aktive Ausdauer-Statistik</div>
+    <div id="aw-ausdauer"><div class="empty-state">Noch keine km-Angaben vorhanden (bei „Wandern" erfassbar).</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Körpergewicht-Trend</div>
+    <div id="aw-gewicht"><div class="empty-state">Noch keine Körpergewicht-Angaben vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Trinkmengenanalyse</div>
+    <div id="aw-trink"><div class="empty-state">Noch keine Daten zur Trinkmenge vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Schlafanalyse</div>
+    <div id="aw-schlaf"><div class="empty-state">Noch keine Daten zum Schlaf vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Trainingsintensität</div>
+    <div id="aw-intens"><div class="empty-state">Noch keine Intensitätsdaten vorhanden.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Trainingseffekt (Anstieg &amp; Erholung)</div>
+    <div id="aw-traineffekt"><div class="empty-state">Noch keine auswertbaren Trainingsereignisse.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Automatische Musteranalyse</div>
+    <div id="aw-muster"><div class="empty-state">Mind. 5 Einträge nötig.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Persönliche Erkenntnisse</div>
+    <div id="aw-erkenntnisse"><div class="empty-state">Mind. 5 gemessene Werte nötig.</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Automatische medizinische Hinweise</div>
+    <div id="aw-hinweise"><div class="empty-state">Noch nicht genug Daten für belegte Hinweise.</div></div>
+    <div class="info-box mt-4">Diese Hinweise sind rein datenbasierte Beobachtungen (Korrelation), kein medizinischer Rat. Sie ersetzen keine ärztliche Einschätzung — insbesondere zu Allopurinol-Dosierung liegt die Entscheidung ausschließlich beim behandelnden Arzt.</div>
+  </div>
+</section>
+
+<!-- ══ SICHERUNG ══ -->
+<section id="s-sicherung" class="section">
+  <div class="page-title">Sicherung</div>
+  <div class="page-sub">Export, Import & Auswertung</div>
+  <div class="build-info">📄 Code-Stand: <span id="build-info">wird geladen...</span></div>
+  <div class="build-info" id="last-import-info"></div>
+
+  <div class="card">
+    <div class="card-title">Datensicherung</div>
+    <div class="bk-grid">
+      <button class="bk-btn" onclick="exportJSON()">
+        <div class="bk-icon">📦</div>
+        <div class="bk-title">Vollsicherung (JSON)</div>
+        <div class="bk-sub">Alle Daten exportieren</div>
+      </button>
+      <label class="bk-btn">
+        <div class="bk-icon">📂</div>
+        <div class="bk-title">Sicherung laden</div>
+        <div class="bk-sub">JSON-Datei importieren</div>
+        <input type="file" accept=".json" class="hidden" onchange="importJSON(this)">
+      </label>
+    </div>
+    <div id="bk-log" class="log-box"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Auswertungsexport</div>
+    <div class="bk-grid">
+      <button class="bk-btn" onclick="exportCSV()">
+        <div class="bk-icon">📊</div>
+        <div class="bk-title">CSV-Export</div>
+        <div class="bk-sub">Für Excel/Sheets</div>
+      </button>
+      <button class="bk-btn" onclick="exportClaude()">
+        <div class="bk-icon">🤖</div>
+        <div class="bk-title">Claude-Auswertung</div>
+        <div class="bk-sub">Text für Analyse</div>
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Datenlage</div>
+    <div class="stats-row" id="bk-stats"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Info</div>
+    <div class="info-box">
+      <strong>Empfehlung:</strong> Wöchentliche JSON-Vollsicherung anlegen.<br><br>
+      <strong>Import:</strong> Bestehende Daten werden zusammengeführt, nicht überschrieben.<br><br>
+      <strong>Claude-Auswertung:</strong> Text kopieren → neues Gespräch mit Claude → einfügen und analysieren lassen.
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="bnav-btn active" id="btn-plan" onclick="showTab('s-plan','btn-plan')">
+    <span class="icon">📋</span>Plan
+  </button>
+  <button class="bnav-btn" id="btn-verlauf" onclick="showTab('s-verlauf','btn-verlauf')">
+    <span class="icon">📅</span>Verlauf
+  </button>
+  <button class="bnav-btn" id="btn-check" onclick="showTab('s-check','btn-check')">
+    <span class="icon">✅</span>Check
+  </button>
+  <button class="bnav-btn" id="btn-analyse" onclick="showTab('s-analyse','btn-analyse')">
+    <span class="icon">📈</span>Analyse
+  </button>
+  <button class="bnav-btn" id="btn-sicherung" onclick="showTab('s-sicherung','btn-sicherung')">
+    <span class="icon">💾</span>Sicherung
+  </button>
+</nav>
+
+<script>
+// Code-Stand — bei jeder Änderung durch Claude manuell hochzählen/aktualisieren
+const BUILD_VERSION = '2026-11-19 — v66 (Neue Aktivität "Aktiver Ruhetag" für Tage mit normaler Bewegung ohne gezieltes Training — passt zwischen "Ruhetag" (fast nichts gemacht) und echten Aktivitäten. In "Aktivität heute" und "Weitere Aktivität Vortag" wählbar, wird in der Aktivitätsanalyse automatisch als eigene Kategorie ausgewertet)';
+document.getElementById('build-info').textContent = BUILD_VERSION;
+renderLastImport();
+
+// ══ MODAL (ersetzt alert/confirm/prompt) ══
+function modalClose(overlay, esc) {
+  overlay.classList.remove('open');
+  overlay.classList.remove('has-input');
+  overlay.onclick = null;
+  document.removeEventListener('keydown', esc);
+}
+function modalAlert(message, title) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('modal-overlay');
+    document.getElementById('modal-title').textContent = title || 'Hinweis';
+    document.getElementById('modal-message').textContent = message || '';
+    const input = document.getElementById('modal-input'); input.style.display = 'none';
+    const btns = document.getElementById('modal-buttons');
+    btns.innerHTML = '';
+    const ok = document.createElement('button');
+    ok.className = 'modal-btn modal-btn-ok'; ok.textContent = 'OK';
+    const esc = e => { if (e.key==='Escape'||e.key==='Enter') { finish(); } };
+    function finish() { modalClose(overlay, esc); resolve(); }
+    ok.onclick = finish;
+    btns.appendChild(ok);
+    overlay.onclick = e => { if (e.target===overlay) finish(); };
+    overlay.classList.add('open');
+    document.addEventListener('keydown', esc);
+    ok.focus();
+  });
+}
+function modalConfirm(message, title, danger, okLabel, cancelLabel) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('modal-overlay');
+    document.getElementById('modal-title').textContent = title || 'Bestätigen';
+    document.getElementById('modal-message').textContent = message || '';
+    const input = document.getElementById('modal-input'); input.style.display = 'none';
+    const btns = document.getElementById('modal-buttons');
+    btns.innerHTML = '';
+    const cancel = document.createElement('button');
+    cancel.className = 'modal-btn modal-btn-cancel'; cancel.textContent = cancelLabel || 'Abbrechen';
+    const ok = document.createElement('button');
+    ok.className = 'modal-btn ' + (danger ? 'modal-btn-danger' : 'modal-btn-ok'); ok.textContent = okLabel || 'OK';
+    const esc = e => { if (e.key==='Escape') finish(false); if (e.key==='Enter') finish(true); };
+    function finish(v) { modalClose(overlay, esc); resolve(v); }
+    cancel.onclick = () => finish(false);
+    ok.onclick = () => finish(true);
+    btns.appendChild(cancel); btns.appendChild(ok);
+    overlay.onclick = e => { if (e.target===overlay) finish(false); };
+    overlay.classList.add('open');
+    document.addEventListener('keydown', esc);
+    ok.focus();
+  });
+}
+function modalPrompt(message, defaultValue, title) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('modal-overlay');
+    document.getElementById('modal-title').textContent = title || 'Eingabe';
+    document.getElementById('modal-message').textContent = message || '';
+    const input = document.getElementById('modal-input');
+    input.style.display = 'block'; input.value = defaultValue!=null ? defaultValue : '';
+    const btns = document.getElementById('modal-buttons');
+    btns.innerHTML = '';
+    const cancel = document.createElement('button');
+    cancel.className = 'modal-btn modal-btn-cancel'; cancel.textContent = 'Abbrechen';
+    const ok = document.createElement('button');
+    ok.className = 'modal-btn modal-btn-ok'; ok.textContent = 'OK';
+    const esc = e => { if (e.key==='Escape') finish(null); if (e.key==='Enter') finish(input.value); };
+    function finish(v) { modalClose(overlay, esc); resolve(v); }
+    cancel.onclick = () => finish(null);
+    ok.onclick = () => finish(input.value);
+    btns.appendChild(cancel); btns.appendChild(ok);
+    overlay.onclick = e => { if (e.target===overlay) finish(null); };
+    overlay.classList.add('open');
+    overlay.classList.add('has-input');
+    document.addEventListener('keydown', esc);
+    setTimeout(()=>{input.focus(); input.select();}, 50);
+  });
+}
+// options: Array von {label, value}. Gibt den gewählten value zurück, oder null bei Abbrechen.
+function modalSelect(message, options, title, placeholder) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('modal-overlay');
+    document.getElementById('modal-title').textContent = title || 'Auswählen';
+    document.getElementById('modal-message').textContent = message || '';
+    document.getElementById('modal-input').style.display = 'none';
+    const sel = document.getElementById('modal-select');
+    sel.style.display = 'block';
+    sel.innerHTML = '<option value="">'+(placeholder||'— bitte wählen —')+'</option>' +
+      options.map((o,i)=>'<option value="'+i+'">'+o.label.replace(/</g,'&lt;')+'</option>').join('');
+    sel.value = '';
+    const btns = document.getElementById('modal-buttons');
+    btns.innerHTML = '';
+    const cancel = document.createElement('button');
+    cancel.className = 'modal-btn modal-btn-cancel'; cancel.textContent = 'Abbrechen';
+    const ok = document.createElement('button');
+    ok.className = 'modal-btn modal-btn-ok'; ok.textContent = 'OK';
+    const esc = e => { if (e.key==='Escape') finish(null); };
+    function finish(v) { sel.style.display='none'; modalClose(overlay, esc); resolve(v); }
+    cancel.onclick = () => finish(null);
+    ok.onclick = () => { const i = sel.value===''?null:parseInt(sel.value,10); finish(i===null?null:options[i].value); };
+    btns.appendChild(cancel); btns.appendChild(ok);
+    overlay.onclick = e => { if (e.target===overlay) finish(null); };
+    overlay.classList.add('open');
+    overlay.classList.add('has-input');
+    document.addEventListener('keydown', esc);
+  });
+}
+// ══ NAV ══
+function showTab(id, btnId) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById(btnId).classList.add('active');
+  if (id === 's-analyse') renderAnalyse();
+  if (id === 's-sicherung') renderBkStats();
+  if (id === 's-check') renderCheckStatus(); // Datum kann sich seit dem letzten Öffnen geändert haben
+}
+
+// ══ DATEN ══
+// Geschütztes Auslesen von localStorage: verhindert, dass beschädigtes JSON
+// (z.B. durch abgebrochenes Schreiben oder manuelle Manipulation) die gesamte
+// App am Start hindert. Bei Fehler wird der übergebene Fallback verwendet.
+function safeParse(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null || raw === undefined) return fallback;
+    const parsed = JSON.parse(raw);
+    // Zusätzliche Typ-Prüfung: gültiges JSON kann trotzdem den falschen Typ haben
+    // (z.B. "null" oder eine Zahl statt des erwarteten Arrays/Objekts)
+    if (fallback !== null) {
+      const erwartetArray = Array.isArray(fallback);
+      const typOk = erwartetArray ? Array.isArray(parsed) : (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed));
+      if (!typOk) { console.warn('Unerwarteter Datentyp für "'+key+'" — Fallback wird verwendet.'); return fallback; }
+    }
+    return parsed;
+  } catch(e) {
+    console.warn('Beschädigte Daten für "'+key+'" — Fallback wird verwendet.', e);
+    return fallback;
+  }
+}
+// Geschriebenes Speichern: fängt z.B. vollen Speicher (QuotaExceededError) oder
+// private Browsermodi ab, in denen localStorage.setItem() eine Exception werfen kann.
+// Gibt true/false zurück, damit Aufrufer bei Bedarf den Nutzer informieren können.
+function safeSet(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch(e) {
+    console.error('Speichern fehlgeschlagen für "'+key+'" — evtl. Speicher voll oder privater Modus.', e);
+    return false;
+  }
+}
+let DATA = safeParse('sg-proto', []);
+// ══ EINMALIGE MIGRATION (v43) ══
+// Bis v42 galt: 'a' = Aktivität Vortag, 'a2' = weitere Aktivität heute.
+// Seit v43 gilt genau umgekehrt: 'a' = Aktivität heute, 'a2' = weitere Aktivität Vortag.
+// Ohne diese Migration würden alle bereits gespeicherten Aktivitäten (auch die komplette
+// Historie seit 14.06.2026, die immer nur 'a' im alten Sinn "Vortag" genutzt hat) plötzlich
+// falsch interpretiert. Tauscht daher einmalig a<->a2 in allen Einträgen und markiert das
+// per Flag, damit nicht bei jedem Laden erneut (und damit wieder falsch) getauscht wird.
+(function migriereAA2Tausch() {
+  const FLAG = 'sg-a-a2-getauscht-v43';
+  if (localStorage.getItem(FLAG) === '1') return; // bereits migriert
+  let geaendert = false;
+  DATA.forEach(e => {
+    if (e.a || e.a2) {
+      const alt_a = e.a || '';
+      e.a = e.a2 || '';
+      e.a2 = alt_a;
+      geaendert = true;
+    }
+  });
+  if (geaendert) safeSet('sg-proto', DATA);
+  localStorage.setItem(FLAG, '1');
+})();
+let TLOG = safeParse('sg-tlog', []);
+function genId() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)+'-'+Math.random().toString(36).slice(2,10); }
+// Escaped Nutzertext vor dem Einfügen in innerHTML (verhindert kaputte Darstellung bei Sonderzeichen wie & < > sowie versehentliche HTML/Skript-Injektion)
+function esc(str) {
+  if (str===null || str===undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// Liefert das heutige Datum in lokaler Zeit als JJJJ-MM-TT — bewusst NICHT toISOString()
+// verwenden, da das intern in UTC rechnet und in Zeitzonen östlich von UTC (z.B. Deutschland)
+// kurz nach Mitternacht fälschlich noch den Vortag liefern würde.
+function heuteLokal() {
+  const dt = new Date();
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
+// CKD-Einordnung nach KDIGO-Klassifikation, rein informativ — ersetzt keine ärztliche Einschätzung
+function ckdInfo(gfr) {
+  if (gfr>=90) return {stufe:'G1', label:'Normal/leicht erhöht', klasse:'good'};
+  if (gfr>=60) return {stufe:'G2', label:'Leicht eingeschränkt', klasse:'good'};
+  if (gfr>=45) return {stufe:'G3a', label:'Leicht-moderat eingeschränkt', klasse:'warn'};
+  if (gfr>=30) return {stufe:'G3b', label:'Moderat-stark eingeschränkt', klasse:'warn'};
+  if (gfr>=15) return {stufe:'G4', label:'Stark eingeschränkt', klasse:'bad'};
+  return {stufe:'G5', label:'Nierenversagen', klasse:'bad'};
+}
+function istGueltigesDatum(str) {
+  if (typeof str!=='string' || !DATE_RE.test(str)) return false;
+  const [y,m,d] = str.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return dt.getFullYear()===y && dt.getMonth()===m-1 && dt.getDate()===d;
+}
+// Migration: bestehende Trainingseinträge ohne ID erhalten eine
+let tlogMigriert = false;
+TLOG.forEach(t => { if (!t.id) { t.id = genId(); tlogMigriert = true; } });
+if (tlogMigriert) safeSet('sg-tlog', TLOG);
+let GWLOG = safeParse('sg-gwlog', []);
+let NLOG = safeParse('sg-nlog', []);
+
+function saveData() { return safeSet('sg-proto', DATA); }
+function saveTLOG() { return safeSet('sg-tlog', TLOG); }
+function saveGWLOG() { return safeSet('sg-gwlog', GWLOG); }
+function saveNLOG() { return safeSet('sg-nlog', NLOG); }
+
+// ══ TRAININGSPLAN ══
+const EINHEITEN = {
+  a: [
+    {name:'Cardio Aufwärmen', gerat:'', gew:'—', saetze:'—', wdh:"10'", pause:'—', hint:'Fahrrad/Laufband', done:false},
+    {name:'Rotator', gerat:'2', gew:'45 kg', saetze:2, wdh:12, pause:'90', hint:'Schulter-Vorbereitung — immer zuerst', done:false},
+    {name:'Arme/Brust gerade', gerat:'17', gew:'45 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
+    {name:'Arme/Brust nach hinten', gerat:'17', gew:'50–55 kg', saetze:2, wdh:12, pause:'90', hint:'S1:50 / S2:55 kg', done:false},
+    {name:'Brustpresse Sitz', gerat:'11', gew:'65 kg', saetze:2, wdh:12, pause:'90', hint:'Am Limit — Form vor Gewicht', done:false},
+    {name:'Butterfly Arme/Sitz', gerat:'49', gew:'40 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
+    {name:'Pulldown Sitz unten', gerat:'26', gew:'55–65 kg', saetze:2, wdh:12, pause:'90', hint:'S1:55 / S2:65 kg', done:false},
+    {name:'Rücken Arm/Rolle', gerat:'1 · Rolle 3', gew:'85–95 kg', saetze:2, wdh:12, pause:'120', hint:'S1:85 / S2:95 kg', done:false},
+    {name:'Seitenhebemaschine', gerat:'66', gew:'40 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
+  ],
+  b: [
+    {name:'Cardio Aufwärmen', gerat:'', gew:'—', saetze:'—', wdh:"10'", pause:'—', hint:'Fahrrad/Laufband', done:false},
+    {name:'Rückenstrecker', gerat:'10', gew:'5 kg', saetze:2, wdh:12, pause:'120', hint:'Größte Gruppe — längere Pause', done:false},
+    {name:'Beinbeuger liegend/Rolle', gerat:'5 · Rolle 5 · Arm 3', gew:'45 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
+    {name:'Bauch-Beine', gerat:'18', gew:'70–80 kg', saetze:2, wdh:12, pause:'90', hint:'S1:70 / S2:80 kg', done:false},
+    {name:'Beine', gerat:'6', gew:'82,5 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
+    {name:'Beine heben seitlich', gerat:'19', gew:'KG', saetze:2, wdh:12, pause:'90', hint:'Körpergewicht', done:false},
+    {name:'Arme nach hinten und überkreuzen', gerat:'29', gew:'5 kg', saetze:2, wdh:12, pause:'90', hint:'—', done:false},
+  ]
+};
+
+
+// Eindeutige IDs für alle Übungen — dauerhaft in localStorage gespeichert,
+// damit sie auch bei künftigen Code-Änderungen (z. B. Namensänderung) stabil bleiben
+const uidMap = safeParse('sg-uid', {});
+['a','b'].forEach(u=>{
+  EINHEITEN[u].forEach((e,i)=>{
+    if (e.uid) return; // hinzugefügte Übungen (added:true) bringen ihre eigene UID bereits mit
+    const key = u+':'+e.name;
+    if (!uidMap[key]) uidMap[key] = u + '-' + e.name.toLowerCase().replace(/[^a-z0-9]+/gi,'-') + '-' + i;
+    e.uid = uidMap[key];
+  });
+});
+safeSet('sg-uid', uidMap);
+
+
+// Zusätzlich hinzugefügte Übungen (aus der jeweils anderen Einheit) laden
+const savedExtra = safeParse('sg-extra', {"a":[],"b":[]});
+['a','b'].forEach(u => { (savedExtra[u]||[]).forEach(ex => EINHEITEN[u].push(ex)); });
+function saveExtra() {
+  const s = {}; ['a','b'].forEach(u => s[u] = EINHEITEN[u].filter(e=>e.added));
+  safeSet('sg-extra', s);
+}
+
+// Übungsreihenfolge laden und anwenden (UID-basiert — stabil auch bei künftigen Namensänderungen)
+const savedOrder = safeParse('sg-order', {});
+['a','b'].forEach(u => {
+  if (savedOrder[u] && savedOrder[u].length) {
+    const byUid = {}; const byName = {};
+    EINHEITEN[u].forEach(e => { byUid[e.uid] = e; byName[e.name] = e; });
+    // Fallback auf Namen, falls eine alte (vor diesem Update gespeicherte) Reihenfolge noch Namen statt UIDs enthält
+    const geordnet = savedOrder[u].map(k => byUid[k] || byName[k]).filter(Boolean);
+    const rest = EINHEITEN[u].filter(e => !geordnet.includes(e));
+    EINHEITEN[u] = geordnet.concat(rest);
+  }
+});
+function saveOrder() {
+  const s = {}; ['a','b'].forEach(u => s[u] = EINHEITEN[u].map(e=>e.uid));
+  safeSet('sg-order', s);
+}
+
+// Gespeicherte Gewichte laden
+const savedW = safeParse('sg-weights', {});
+['a','b'].forEach(u => EINHEITEN[u].forEach((ex,i) => {
+  const k = ex.uid || (u+'-'+i);
+  if (savedW[k]) {
+    if (savedW[k].gew) ex.gew = savedW[k].gew;
+    if (typeof savedW[k].gerat === 'string') ex.gerat = savedW[k].gerat;
+  }
+}));
+
+// Done-Status laden
+const savedDone = safeParse('sg-done', {});
+['a','b'].forEach(u => { if (savedDone[u]) savedDone[u].forEach((d,i) => { if (EINHEITEN[u][i]) EINHEITEN[u][i].done = d; }); });
+
+function saveDone() {
+  const s = {}; ['a','b'].forEach(u => s[u] = EINHEITEN[u].map(e => e.done));
+  safeSet('sg-done', s);
+}
+function saveWeights() {
+  const w = {};
+  ['a','b'].forEach(u => EINHEITEN[u].forEach((e,i) => {
+    const k = e.uid || (u+'-'+i);
+    w[k] = {gew:e.gew, gerat:e.gerat};
+  }));
+  safeSet('sg-weights', w);
+}
+
+let aktEinheit = 'a';
+function switchEinheit(u) {
+  aktEinheit = u;
+  document.getElementById('plan-a').classList.toggle('hidden', u!=='a');
+  document.getElementById('plan-b').classList.toggle('hidden', u!=='b');
+  document.getElementById('ecard-a').className = 'ecard' + (u==='a' ? ' active-a' : '');
+  document.getElementById('ecard-b').className = 'ecard' + (u==='b' ? ' active-b' : '');
+}
+
+function renderEinheit(u) {
+  const list = document.getElementById('list-'+u);
+  const col = u==='a' ? 'wa' : 'wb';
+  const done = EINHEITEN[u].filter(e=>e.done).length;
+  const total = EINHEITEN[u].length;
+  document.getElementById('prog-'+u).textContent = done+'/'+total;
+  document.getElementById('fill-'+u).style.width = (done/total*100)+'%';
+  list.innerHTML = EINHEITEN[u].map((ex,i) => {
+    const pb = ex.pause==='90' ? '<span class="pbadge p90">90 Sek.</span>'
+              : ex.pause==='120' ? '<span class="pbadge p120">2 Min.</span>' : '';
+    const xb = ex.saetze!=='—' ? `<span class="xbadge">${ex.saetze}×${ex.wdh}</span>` : `<span class="xbadge">${ex.wdh}</span>`;
+    const gb = ex.gerat!==undefined ? `<span class="gbadge" onclick="editGerat('${u}',${i})">📍 ${esc(ex.gerat)||'+ Gerät'}</span>` : '';
+    const wb2 = ex.gew!=='—' ? `<span class="wbadge ${col}" onclick="editGew('${u}',${i})">${esc(ex.gew)}</span>` : '';
+    const arrows = `<div class="arrow-col">
+      <button onclick="moveUebung('${u}',${i},-1)" class="mini-btn" ${i===0?'disabled':''}>↑</button>
+      <button onclick="moveUebung('${u}',${i},1)" class="mini-btn" ${i===EINHEITEN[u].length-1?'disabled':''}>↓</button>
+      ${ex.added ? `<button onclick="removeUebung('${u}',${i})" class="mini-btn mini-btn-danger">🗑</button>` : ''}
+    </div>`;
+    return `<div class="ucard${ex.done?' done-card':''}">
+      <button class="uchk${ex.done?' checked-'+u:''}" onclick="toggleDone('${u}',${i})">${ex.done?'✓':''}</button>
+      <div class="uinfo">
+        <div class="unum">${ex.saetze!=='—'?`<span class="unum-idx">Übung ${i} ·</span> `:''}${ex.name}</div>
+        <div class="ubadges">${gb}${wb2}${xb}${pb}</div>
+        ${ex.hint&&ex.hint!=='—'?`<div class="hint">${ex.hint}</div>`:''}
+      </div>
+      ${arrows}
+    </div>`;
+  }).join('');
+  const other = u==='a' ? 'b' : 'a';
+  const sel = document.getElementById('add-sel-'+u);
+  const opts = EINHEITEN[other].map((ex,j) => ex.saetze==='—' ? '' : `<option value="${j}">${ex.name} (${ex.gew})</option>`).join('');
+  sel.innerHTML = '<option value="">— Übung aus Einheit '+other.toUpperCase()+' wählen —</option>' + opts;
+}
+
+function moveUebung(u, i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= EINHEITEN[u].length) return;
+  [EINHEITEN[u][i], EINHEITEN[u][j]] = [EINHEITEN[u][j], EINHEITEN[u][i]];
+  saveWeights();
+  saveOrder();
+  renderEinheit(u);
+}
+function toggleDone(u,i) { EINHEITEN[u][i].done=!EINHEITEN[u][i].done; saveDone(); renderEinheit(u); }
+function resetEinheit(u) { EINHEITEN[u].forEach(e=>e.done=false); saveDone(); renderEinheit(u); }
+async function removeUebung(u,i) {
+  if (!EINHEITEN[u][i].added) return;
+  if (!await modalConfirm('"'+EINHEITEN[u][i].name+'" aus Einheit '+u.toUpperCase()+' entfernen?', 'Übung entfernen', true)) return;
+  EINHEITEN[u].splice(i,1);
+  saveExtra(); saveWeights(); saveDone(); saveOrder(); renderEinheit(u);
+}
+function addFromOther(u) {
+  const other = u==='a' ? 'b' : 'a';
+  const sel = document.getElementById('add-sel-'+u);
+  const idx = parseInt(sel.value,10);
+  if (isNaN(idx)) return;
+  const src = EINHEITEN[other][idx];
+  if (!src || src.saetze==='—') return;
+  const kopie = Object.assign({}, src, {done:false, added:true, uid: genId()});
+  EINHEITEN[u].push(kopie);
+  saveExtra(); saveWeights(); saveDone(); saveOrder(); renderEinheit(u);
+  sel.value = '';
+}
+
+async function editGew(u,i) {
+  const v = await modalPrompt('Gewicht für "'+EINHEITEN[u][i].name+'":', EINHEITEN[u][i].gew, 'Gewicht ändern');
+  if (v===null) return; EINHEITEN[u][i].gew=v.trim()||EINHEITEN[u][i].gew; saveWeights(); renderEinheit(u);
+}
+async function editGerat(u,i) {
+  const v = await modalPrompt('Gerätenummer für "'+EINHEITEN[u][i].name+'":', EINHEITEN[u][i].gerat||'', 'Gerätenummer ändern');
+  if (v===null) return; EINHEITEN[u][i].gerat=v.trim(); saveWeights(); renderEinheit(u);
+}
+
+async function logTraining(u) {
+  const heute = heuteLokal();
+  const datumInput = await modalPrompt('Trainingsdatum (JJJJ-MM-TT):\nLeer lassen = heute.', heute, 'Training speichern');
+  if (datumInput===null) return;
+  const datum = datumInput.trim()||heute;
+  if (!istGueltigesDatum(datum)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT, z.B. 2026-07-09).', 'Ungültiges Datum'); return; }
+  if (TLOG.find(t => t.datum===datum && t.unit===u)) {
+    if (!await modalConfirm('Für dieses Datum existiert bereits eine gespeicherte Einheit.', 'Bereits vorhanden', false, 'Zusätzlich speichern', 'Abbrechen, nichts speichern')) return;
+  }
+  const hsInput = await modalPrompt('Harnsäure-Wert (mg/dl)?\nLeer lassen wenn noch nicht gemessen.', '', 'Harnsäure-Wert');
+  let hs = hsInput ? parseFloat(hsInput.replace(',','.')) : null;
+  if (hs!==null && !isNaN(hs) && (hs<=0 || hs>20)) {
+    if (!await modalConfirm('Der Harnsäure-Wert '+hs+' mg/dl wirkt ungewöhnlich.', 'Wert prüfen', false, 'Trotzdem übernehmen', 'Wert verwerfen, Training trotzdem speichern')) hs = null;
+  }
+  const intensitaet = await modalSelect(
+    'Wie intensiv war das Training?',
+    [{label:'Leicht', value:'Leicht'},{label:'Mittel', value:'Mittel'},{label:'Schwer', value:'Schwer'}],
+    'Intensität', '— keine Angabe —'
+  );
+  const uebungen = EINHEITEN[u].filter(e=>e.done).map(e=>({name:e.name, gew:e.gew}));
+  if (!uebungen.length) {
+    if (!await modalConfirm('Keine Übung ist als erledigt abgehakt.', 'Keine Übungen abgehakt', false, 'Trotzdem als leeres Training speichern', 'Abbrechen, zurück zum Abhaken')) return;
+  }
+  const checkErfuellt = Object.values(checkState).filter(Boolean).length;
+  TLOG.unshift({id:genId(), datum, zeit:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}), unit:u, uebungen, hs: isNaN(hs)?null:hs, intensitaet: intensitaet||'', checkErfuellt, checkGesamt: CHECK_TOTAL});
+  const erfolgreich = saveTLOG();
+  uebungen.forEach(e => { if(e.gew==='—'||e.gew==='KG') return; GWLOG.push({datum,unit:u,name:e.name,gew:e.gew}); });
+  saveGWLOG();
+  if (!erfolgreich) { await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus.', 'Fehler beim Speichern'); return; }
+  // Haken sofort zurücksetzen, VOR dem Bestätigungs-Dialog: sonst bleiben sie stehen, wenn der Dialog
+  // nicht mit OK geschlossen wird (App-Wechsel, Neuladen). Nur im Erfolgsfall (siehe return oben).
+  // Das Check-Ergebnis steckt jetzt im Trainingseintrag → für diesen Tag als gespeichert vermerken.
+  // Nur wenn überhaupt Haken gesetzt waren, und nur wenn dadurch kein neuerer Stand überschrieben wird.
+  const bisherigerStand = holeCheckSpeicherstand();
+  if (checkErfuellt > 0 && (!bisherigerStand || datum >= bisherigerStand.datum)) {
+    safeSet('sg-check-gespeichert', { datum, zeit: uhrzeitLokal(), quelle: 'Einheit '+u.toUpperCase() });
+  }
+  resetEinheit(u);
+  resetCheck();
+  await modalAlert('Einheit '+u.toUpperCase()+' vom '+datum+' gespeichert!', 'Gespeichert');
+}
+
+// ══ CHECK ══
+const CHECK_TOTAL = 7;
+let checkState = safeParse('sg-check', {});
+function toggleCheck(i) {
+  checkState[i] = !checkState[i];
+  safeSet('sg-check', checkState);
+  renderCheck();
+}
+// Wann wurde der Gicht-Check zuletzt per "Speichern" gesichert? { datum:'YYYY-MM-DD', zeit:'HH:MM' }.
+// Die Haken selbst haben kein Datum (sie werden bei jedem Antippen sofort abgelegt) — erst dieser
+// Speicherstand macht erkennbar, ob der aktuelle Stand zu HEUTE gehört oder von einem früheren Tag ist.
+function holeCheckSpeicherstand() {
+  const s = safeParse('sg-check-gespeichert', null);
+  return (s && typeof s.datum === 'string' && typeof s.zeit === 'string') ? s : null;
+}
+function uhrzeitLokal() {
+  const dt = new Date();
+  return String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+}
+async function saveCheck() {
+  const heute = heuteLokal();
+  const stand = holeCheckSpeicherstand();
+  if (stand && stand.datum === heute) {
+    if (!await modalConfirm('Der Gicht-Check wurde für heute schon '+(stand.quelle ? 'mit '+stand.quelle+' ' : '')+'um '+stand.zeit+' Uhr gespeichert. Erneut speichern und den Stand überschreiben?', 'Heute schon gespeichert')) return;
+  }
+  if (!safeSet('sg-check', checkState)) {
+    await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus.', 'Fehler beim Speichern');
+    return;
+  }
+  safeSet('sg-check-gespeichert', { datum: heute, zeit: uhrzeitLokal() });
+  renderCheck();
+  await modalAlert('Gicht-Check gespeichert!', 'Gespeichert');
+}
+function resetCheck() {
+  checkState = {};
+  safeSet('sg-check', {});
+  renderCheck();
+}
+function renderCheck() {
+  for (let i=0; i<=6; i++) {
+    const ci = document.getElementById('ci'+i);
+    const cc = document.getElementById('cc'+i);
+    if (!ci) continue;
+    if (checkState[i]) { ci.classList.add('checked'); cc.textContent='✓'; }
+    else { ci.classList.remove('checked'); cc.textContent=''; }
+  }
+  renderCheckStatus();
+}
+function renderCheckStatus() {
+  const el = document.getElementById('check-status');
+  if (!el) return;
+  const stand = holeCheckSpeicherstand();
+  const anzahlHaken = Object.values(checkState).filter(Boolean).length;
+  if (stand && stand.datum === heuteLokal()) {
+    el.textContent = stand.quelle
+      ? '✅ Für heute bereits gespeichert — mit '+stand.quelle+' ('+stand.zeit+' Uhr)'
+      : '✅ Für heute bereits gespeichert ('+stand.zeit+' Uhr)';
+  } else if (anzahlHaken > 0 && stand) {
+    el.textContent = '⚠️ Für heute noch nicht gespeichert — die Haken stammen vermutlich vom '+fd(stand.datum)+'.';
+  } else if (anzahlHaken > 0) {
+    el.textContent = '⚠️ Für heute noch nicht gespeichert.';
+  } else {
+    el.textContent = 'Für heute noch nichts abgehakt oder gespeichert.';
+  }
+}
+
+// ══ VERLAUF-UNTER-TABS ══
+function switchVtab(t) {
+  document.getElementById('vt-proto').classList.toggle('hidden', t!=='proto');
+  document.getElementById('vt-training').classList.toggle('hidden', t!=='training');
+  document.getElementById('vt-niere').classList.toggle('hidden', t!=='niere');
+  document.getElementById('vtab-proto').className = 'vtab'+(t==='proto'?' active':'');
+  document.getElementById('vtab-training').className = 'vtab'+(t==='training'?' active':'');
+  document.getElementById('vtab-niere').className = 'vtab'+(t==='niere'?' active':'');
+  if (t==='proto') renderProto();
+  if (t==='training') renderTraining();
+  if (t==='niere') renderNieren();
+}
+
+// ══ PROTOKOLL ══
+function fd(d) {
+  const [y,m,day] = d.split('-');
+  return ['So','Mo','Di','Mi','Do','Fr','Sa'][new Date(d).getDay()]+'. '+day+'.'+m+'.'+y.slice(2);
+}
+function haColor(v) { return v<=6?'good':v<=7?'warn':'bad'; }
+
+// Aufklappbares Mehrfachauswahl-Feld für "Aktivität heute" — liest/setzt die Checkboxen und
+// hält den zugeklappten Zusammenfassungstext (summary) aktuell.
+function holeAktivitaetAuswahl() {
+  return [...document.querySelectorAll('#pak-checks input:checked')].map(c => c.value);
+}
+function setzeAktivitaetAuswahl(werte) {
+  const liste = alsAktivitaetsListe(werte);
+  document.querySelectorAll('#pak-checks input').forEach(c => { c.checked = liste.includes(c.value); });
+  document.getElementById('pak-details').open = false;
+  aktualisierePakSummary();
+}
+function aktualisierePakSummary() {
+  const gewaehlt = holeAktivitaetAuswahl();
+  const summary = document.getElementById('pak-summary');
+  summary.querySelector('.akt-summary-text').textContent = gewaehlt.length ? gewaehlt.join(', ') : '— wählen —';
+  summary.classList.toggle('placeholder', !gewaehlt.length);
+  toggleKmFeld();
+}
+// Normalisiert 'a' auf eine Liste — Altbestand (vor der Mehrfachauswahl) speicherte hier einen
+// einzelnen String statt eines Arrays. So funktionieren alte UND neue Einträge einheitlich,
+// ohne dass eine destruktive Migration nötig ist.
+function alsAktivitaetsListe(a) {
+  if (!a) return [];
+  return Array.isArray(a) ? a : [a];
+}
+function toggleKmFeld() {
+  const KM_AKTIVITAETEN = ['Wandern', 'Fahrradfahren'];
+  const heuteKmAktiv = holeAktivitaetAuswahl().some(a => KM_AKTIVITAETEN.includes(a));
+  const vortagKmAktiv = KM_AKTIVITAETEN.includes(document.getElementById('pak2').value);
+  document.getElementById('fg-km').classList.toggle('hidden', !heuteKmAktiv);
+  document.getElementById('fg-hm').classList.toggle('hidden', !heuteKmAktiv);
+  if (!heuteKmAktiv) { document.getElementById('pkm').value = ''; document.getElementById('phm').value = ''; }
+  document.getElementById('fg-km2').classList.toggle('hidden', !vortagKmAktiv);
+  document.getElementById('fg-hm2').classList.toggle('hidden', !vortagKmAktiv);
+  if (!vortagKmAktiv) { document.getElementById('pkm2').value = ''; document.getElementById('phm2').value = ''; }
+  pruefeAktivitaetUeberschneidung();
+}
+// Warnt, wenn dieselbe Aktivität (z.B. "Wandern") sowohl bei "heute" als auch bei "Vortag"
+// ausgewählt ist — das ist entweder beabsichtigt (zwei echte, unterschiedliche Male) oder ein
+// Versehen (dieselbe Aktivität doppelt erfasst, verfälscht dann die Ausdauer-/Aktivitätsstatistik).
+function pruefeAktivitaetUeberschneidung() {
+  const el = document.getElementById('aktivitaet-warnhinweis');
+  if (!el) return;
+  const vortag = document.getElementById('pak2').value;
+  const ueberschneidung = !!vortag && holeAktivitaetAuswahl().includes(vortag);
+  el.classList.toggle('hidden', !ueberschneidung);
+}
+async function saveEintrag() {
+  const d = document.getElementById('pd').value;
+  const hInput = document.getElementById('ph').value;
+  const h = hInput.trim() ? parseFloat(hInput.replace(',','.')) : null;
+  if (!d) { await modalAlert('Datum ist ein Pflichtfeld.', 'Fehlende Angabe'); return; }
+  if (!istGueltigesDatum(d)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT, z.B. 2026-07-09).', 'Ungültiges Datum'); return; }
+  if (hInput.trim() && isNaN(h)) { await modalAlert('Der Harnsäure-Wert ist ungültig.', 'Ungültiger Wert'); return; }
+  if (h!==null && (h<=0 || h>20)) { if (!await modalConfirm('Der Harnsäure-Wert '+h+' mg/dl wirkt ungewöhnlich.', 'Wert prüfen', false, 'Trotzdem speichern', 'Abbrechen, nichts speichern')) return; }
+  const e = {
+    d, h,
+    s: document.getElementById('ps').value || '',
+    di: document.getElementById('pdi').value || '',
+    p: document.getElementById('pp').value || '',
+    kg: document.getElementById('pkg').value ? parseFloat(document.getElementById('pkg').value.replace(',','.')) : null,
+    a: holeAktivitaetAuswahl(),
+    a2: document.getElementById('pak2').value || '',
+    ai: document.getElementById('pai').value || '',
+    aiH: document.getElementById('paiH').value || '',
+    km: document.getElementById('pkm').value ? parseFloat(document.getElementById('pkm').value.replace(',','.')) : null,
+    hm: document.getElementById('phm').value ? parseInt(document.getElementById('phm').value) : null,
+    km2: document.getElementById('pkm2').value ? parseFloat(document.getElementById('pkm2').value.replace(',','.')) : null,
+    hm2: document.getElementById('phm2').value ? parseInt(document.getElementById('phm2').value) : null,
+    tm: document.getElementById('ptm').value || '',
+    tmH: document.getElementById('ptmH').value || '',
+    sl: document.getElementById('psl').value || '',
+    slH: document.getElementById('pslH').value || '',
+    e: document.getElementById('pe').value || '',
+    eH: document.getElementById('peH').value || '',
+    n: document.getElementById('pn').value || ''
+  };
+  const idx = DATA.findIndex(x=>x.d===d);
+  if (idx>=0) {
+    if(!await modalConfirm('Eintrag für '+fd(d)+' existiert. Überschreiben?', 'Eintrag existiert bereits')) return;
+    // Harnsäure-Wert nicht versehentlich löschen: Formular leer gelassen (z.B. weil nur die
+    // Aktivität nachgetragen wird), aber der bestehende Eintrag hatte schon einen Wert →
+    // vorhandenen Wert übernehmen statt mit "leer" zu überschreiben.
+    if (e.h == null && DATA[idx].h != null) e.h = DATA[idx].h;
+    DATA[idx] = e;
+  }
+  else DATA.push(e);
+  DATA.sort((a,b)=>a.d.localeCompare(b.d));
+  const erfolgreich = saveData();
+  // Felder leeren
+  ['ph','ps','pdi','pp','pkg','pe','peH','pn'].forEach(id=>document.getElementById(id).value='');
+  ['pak2','pai','paiH','ptm','ptmH','psl','pslH'].forEach(id=>document.getElementById(id).value='');
+  setzeAktivitaetAuswahl([]);
+  document.getElementById('pkm').value = '';
+  document.getElementById('phm').value = '';
+  document.getElementById('pkm2').value = '';
+  document.getElementById('phm2').value = '';
+  toggleKmFeld();
+  renderProto();
+  if (!erfolgreich) { await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus. Bitte Sicherung exportieren, sobald möglich.', 'Fehler beim Speichern'); return; }
+  datumManuellGeaendert = false;
+  document.getElementById('pd').value = heuteLokal();
+  await modalAlert('Gespeichert ✓', 'Erfolg');
+}
+
+function editEintrag(d) {
+  const e = DATA.find(x=>x.d===d); if (!e) return;
+  document.getElementById('pd').value = e.d;
+  datumManuellGeaendert = true;
+  document.getElementById('ph').value = e.h!=null ? e.h : '';
+  document.getElementById('ps').value = e.s||'';
+  document.getElementById('pdi').value = e.di||'';
+  document.getElementById('pp').value = e.p||'';
+  document.getElementById('pkg').value = e.kg!=null ? e.kg : '';
+  setzeAktivitaetAuswahl(e.a);
+  document.getElementById('pak2').value = e.a2||'';
+  document.getElementById('pai').value = e.ai||'';
+  document.getElementById('paiH').value = e.aiH||'';
+  document.getElementById('pkm').value = e.km!=null ? e.km : '';
+  document.getElementById('phm').value = e.hm!=null ? e.hm : '';
+  document.getElementById('pkm2').value = e.km2!=null ? e.km2 : '';
+  document.getElementById('phm2').value = e.hm2!=null ? e.hm2 : '';
+  toggleKmFeld();
+  document.getElementById('ptm').value = e.tm||'';
+  document.getElementById('ptmH').value = e.tmH||'';
+  document.getElementById('psl').value = e.sl||'';
+  document.getElementById('pslH').value = e.slH||'';
+  document.getElementById('pe').value = e.e||'';
+  document.getElementById('peH').value = e.eH||'';
+  document.getElementById('pn').value = e.n||'';
+  switchVtab('proto');
+  document.getElementById('vt-proto').scrollIntoView({behavior:'smooth'});
+}
+
+async function deleteEintrag(d) {
+  if (!await modalConfirm('Eintrag vom '+fd(d)+' löschen?', 'Eintrag löschen', true)) return;
+  DATA = DATA.filter(e=>e.d!==d); saveData(); renderProto();
+}
+
+function renderProto() {
+  const list = document.getElementById('proto-list');
+  const sr = document.getElementById('stats-row');
+  if (!DATA.length) { sr.style.display='none'; list.innerHTML='<div class="empty-state">Noch keine Einträge.</div>'; return; }
+  const vals = DATA.filter(e=>e.h!=null).map(e=>e.h);
+  if (!vals.length) {
+    sr.style.display='none';
+  } else {
+    const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+    const best = Math.min(...vals).toFixed(1);
+    const ziel = vals.filter(v=>v<=6).length;
+    const zielProzent = Math.round(ziel/vals.length*100);
+    sr.style.display='grid';
+    document.getElementById('s-avg').textContent = avg;
+    document.getElementById('s-avg').className = 'sv '+haColor(parseFloat(avg));
+    document.getElementById('s-best').textContent = best+' mg/dl';
+    document.getElementById('s-ziel').textContent = ziel+'/'+vals.length;
+    document.getElementById('s-ziel').className = 'sv '+(ziel/vals.length>=0.6?'good':'warn');
+    document.getElementById('s-ziel-prozent').textContent = zielProzent+'%';
+    document.getElementById('s-ziel-prozent').className = 'sv-sub '+(ziel/vals.length>=0.6?'good':'warn');
+  }
+
+  list.innerHTML = [...DATA].reverse().map(e=>`
+    <div class="vrow">
+      <div class="vrow-top">
+        <span class="vdate">${fd(e.d)}</span>
+        ${e.h!=null ? `<span class="vha ${haColor(e.h)}">${e.h} mg/dl</span>` : `<span class="vha opacity-60">Nicht gemessen</span>`}
+      </div>
+      <div class="vrow-meta">
+        ${e.s&&e.di?`<span class="vmeta">🫀 ${esc(e.s)}/${esc(e.di)}</span>`:''}
+        ${e.p?`<span class="vmeta">💓 ${esc(e.p)} bpm</span>`:''}
+        ${e.kg!=null?`<span class="vmeta">⚖️ ${e.kg} kg</span>`:''}
+        ${alsAktivitaetsListe(e.a).length?`<span class="vmeta">🏃 ${esc(alsAktivitaetsListe(e.a).join(', '))} (heute)${e.km!=null?' ('+e.km+' km'+(e.hm!=null?' / '+e.hm+' Hm':'')+')':''}${e.aiH?' — '+esc(e.aiH):''}</span>`:''}
+        ${e.a2?`<span class="vmeta">➕ ${esc(e.a2)} (Vortag)${e.km2!=null?' ('+e.km2+' km'+(e.hm2!=null?' / '+e.hm2+' Hm':'')+')':''}${e.ai?' — '+esc(e.ai):''}</span>`:''}
+        ${e.tmH?`<span class="vmeta">💧 ${esc(e.tmH)} (heute)</span>`:''}
+        ${e.tm?`<span class="vmeta">💧 ${esc(e.tm)} (Vortag)</span>`:''}
+        ${e.slH?`<span class="vmeta">😴 ${esc(e.slH)} (heute)</span>`:''}
+        ${e.sl?`<span class="vmeta">😴 ${esc(e.sl)} (Vortag)</span>`:''}
+        ${e.eH?`<span class="vmeta">🍽 ${esc(e.eH)} (heute)</span>`:''}
+        ${e.e?`<span class="vmeta">🍽 ${esc(e.e)} (Vortag)</span>`:''}
+        ${e.n?`<span class="vmeta">📝 ${esc(e.n)}</span>`:''}
+      </div>
+      <div class="vrow-del">
+        <button class="btn-del btn-edit-blue" onclick="editEintrag('${e.d}')">✏️ Bearbeiten</button>
+        <button class="btn-del" onclick="deleteEintrag('${e.d}')">🗑 Löschen</button>
+      </div>
+    </div>`).join('');
+}
+
+function naechsterTag(d) {
+  const dt = new Date(d+'T00:00:00');
+  dt.setDate(dt.getDate()+1);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth()+1).padStart(2,'0');
+  const day = String(dt.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function vorherigerTag(d) {
+  const dt = new Date(d+'T00:00:00');
+  dt.setDate(dt.getDate()-1);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth()+1).padStart(2,'0');
+  const day = String(dt.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+// Erkennt eine tatsächlich durchgeführte Trainingseinheit (nicht den Folgetag "Trainingsnachwirkung",
+// der zwar den Teilstring "Training" enthält, aber selbst kein neuer Trainingsreiz ist).
+function istEchtesTraining(a) {
+  return a === 'Training Einheit A' || a === 'Training Einheit B';
+}
+function renderTraining() {
+  const list = document.getElementById('training-list');
+  if (!TLOG.length) { list.innerHTML='<div class="empty-state">Noch keine Trainingseinträge.</div>'; return; }
+  const sorted = [...TLOG].sort((a,b)=>b.datum.localeCompare(a.datum));
+  list.innerHTML = sorted.map((t,i)=>{
+    const folgeDatum = naechsterTag(t.datum);
+    const folgeEintrag = DATA.find(e=>e.d===folgeDatum);
+    const folgeBadge = folgeEintrag && folgeEintrag.h!=null
+      ? `<div class="tueb mt-4">📈 Harnsäure Folgetag (${fd(folgeDatum)}): <span class="vha ${haColor(folgeEintrag.h)} px-8">${folgeEintrag.h} mg/dl</span></div>`
+      : folgeEintrag
+        ? `<div class="tueb mt-4 opacity-60">📈 Harnsäure Folgetag (${fd(folgeDatum)}): nicht gemessen</div>`
+        : `<div class="tueb mt-4 opacity-60">📈 Harnsäure Folgetag: noch kein Eintrag für ${fd(folgeDatum)}</div>`;
+    const checkKlasse = (t.checkErfuellt!=null && t.checkGesamt!=null)
+      ? (t.checkErfuellt>=t.checkGesamt ? 'good' : t.checkErfuellt>0 ? 'warn' : 'opacity-60')
+      : '';
+    const checkBadge = (t.checkErfuellt!=null && t.checkGesamt!=null)
+      ? `<div class="tueb mt-4">✅ Gicht-Check: <span class="vha ${checkKlasse} px-8">${t.checkErfuellt}/${t.checkGesamt} erfüllt</span></div>`
+      : '';
+    return `
+    <div class="trow">
+      <div class="trow-top">
+        <div>
+          <div class="tunit tunit-${t.unit}">Einheit ${t.unit.toUpperCase()} — ${t.unit==='a'?'Oberkörper':'Unterkörper'}</div>
+          <div class="tdate">${fd(t.datum)} · ${t.zeit} Uhr${t.intensitaet?' · '+esc(t.intensitaet):''}</div>
+        </div>
+        ${t.hs!==null&&t.hs!==undefined?`<span class="vha ${haColor(t.hs)}">${t.hs} mg/dl</span>`:''}
+      </div>
+      <div class="tueb">${t.uebungen.map(u=>esc(u.name)+(u.gew&&u.gew!=='—'?' ('+esc(u.gew)+')':'')).join(' · ')}</div>
+      ${checkBadge}
+      ${folgeBadge}
+      <div class="vrow-del flex-gap8">
+        <button class="btn-del btn-edit-neutral" onclick="editTLog('${t.id}')">✏️ Bearbeiten</button>
+        <button class="btn-del" onclick="deleteTLog('${t.id}')">🗑 Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function editTLog(id) {
+  const t = TLOG.find(x=>x.id===id); if (!t) return;
+  const neuDatum = await modalPrompt('Trainingsdatum (JJJJ-MM-TT):', t.datum, 'Training bearbeiten');
+  if (neuDatum===null) return;
+  const neuHsInput = await modalPrompt('Harnsäure-Wert (mg/dl)?\nLeer lassen = kein Wert.', t.hs!==null&&t.hs!==undefined?String(t.hs).replace('.',','):'', 'Harnsäure-Wert');
+  if (neuHsInput===null) return;
+  let neuHs = neuHsInput.trim() ? parseFloat(neuHsInput.replace(',','.')) : null;
+  const neuesDatum = neuDatum.trim() || t.datum;
+  if (!istGueltigesDatum(neuesDatum)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT, z.B. 2026-07-09).', 'Ungültiges Datum'); return; }
+  if (neuHs!==null && !isNaN(neuHs) && (neuHs<=0 || neuHs>20)) {
+    if (!await modalConfirm('Der Harnsäure-Wert '+neuHs+' mg/dl wirkt ungewöhnlich.', 'Wert prüfen', false, 'Trotzdem übernehmen', 'Wert verwerfen')) neuHs = null;
+  }
+  t.datum = neuesDatum;
+  t.hs = (neuHs!==null && isNaN(neuHs)) ? t.hs : neuHs;
+
+  const neueIntensitaet = await modalSelect(
+    'Intensität dieser Einheit (aktuell: '+(t.intensitaet||'keine Angabe')+'):',
+    [{label:'Leicht', value:'Leicht'},{label:'Mittel', value:'Mittel'},{label:'Schwer', value:'Schwer'}],
+    'Intensität ändern', '— unverändert lassen —'
+  );
+  if (neueIntensitaet) t.intensitaet = neueIntensitaet;
+
+  // Übung aus der jeweils anderen Einheit zu diesem bereits gespeicherten Eintrag hinzufügen
+  const other = t.unit==='a' ? 'b' : 'a';
+  const auswahl = EINHEITEN[other].filter(e=>e.saetze!=='—');
+  if (auswahl.length) {
+    const gewaehlt = await modalSelect(
+      'Übung aus Einheit '+other.toUpperCase()+' zu diesem Eintrag hinzufügen (optional):',
+      auswahl.map(e=>({label: e.name+' ('+e.gew+')', value: e})),
+      'Übung hinzufügen', '— keine —'
+    );
+    if (gewaehlt) t.uebungen.push({name: gewaehlt.name, gew: gewaehlt.gew});
+  }
+
+  // Optional: eine bereits gelistete Übung aus diesem Eintrag wieder entfernen
+  if (t.uebungen.length) {
+    const zuEntfernen = await modalSelect(
+      'Übung aus diesem Eintrag entfernen (optional):',
+      t.uebungen.map((u,idx)=>({label: u.name+(u.gew&&u.gew!=='—'?' ('+u.gew+')':''), value: idx})),
+      'Übung entfernen', '— keine —'
+    );
+    if (zuEntfernen!==null) t.uebungen.splice(zuEntfernen,1);
+  }
+
+  saveTLOG(); renderTraining();
+}
+
+async function deleteTLog(id) {
+  const t = TLOG.find(x=>x.id===id);
+  if (!t) return;
+  if (!await modalConfirm('Training-Eintrag löschen?\n'+t.datum+' — Einheit '+t.unit.toUpperCase()+' ('+t.zeit+' Uhr)', 'Trainingseintrag löschen', true)) return;
+  TLOG = TLOG.filter(x=>x.id!==id); saveTLOG(); renderTraining();
+}
+
+// ══ NIERE ══
+async function saveNieren() {
+  const datum = document.getElementById('nid').value || heuteLokal();
+  const krea = parseFloat(document.getElementById('nik').value.replace(',','.'));
+  const gfr = parseFloat(document.getElementById('nig').value.replace(',','.'));
+  const notiz = document.getElementById('nin').value || '';
+  if (!istGueltigesDatum(datum)) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT).', 'Ungültiges Datum'); return; }
+  if (isNaN(krea) && isNaN(gfr)) { await modalAlert('Bitte mindestens Kreatinin oder GFR eintragen.', 'Fehlende Angaben'); return; }
+  const idx = NLOG.findIndex(x=>x.datum===datum);
+  const eintrag = {id: idx>=0?NLOG[idx].id:genId(), datum, krea: isNaN(krea)?null:krea, gfr: isNaN(gfr)?null:gfr, notiz};
+  if (idx>=0) {
+    if (!await modalConfirm('Für dieses Datum existiert bereits ein Nierenwert-Eintrag. Überschreiben?', 'Bereits vorhanden')) return;
+    NLOG[idx] = eintrag;
+  } else {
+    NLOG.push(eintrag);
+  }
+  NLOG.sort((a,b)=>a.datum.localeCompare(b.datum));
+  const erfolgreich = saveNLOG();
+  document.getElementById('nid').value = '';
+  document.getElementById('nik').value = '';
+  document.getElementById('nig').value = '';
+  document.getElementById('nin').value = '';
+  renderNieren();
+  if (!erfolgreich) { await modalAlert('Speichern fehlgeschlagen — evtl. ist der Gerätespeicher voll oder du nutzt einen privaten Browsermodus.', 'Fehler beim Speichern'); return; }
+  await modalAlert('Nierenwert gespeichert!', 'Gespeichert');
+}
+
+function renderNieren() {
+  const list = document.getElementById('niere-list');
+  if (!NLOG.length) { list.innerHTML = '<div class="empty-state">Noch keine Nierenwerte erfasst.</div>'; return; }
+  const sorted = [...NLOG].sort((a,b)=>b.datum.localeCompare(a.datum));
+  list.innerHTML = sorted.map((n,i) => {
+    const naechster = sorted[i+1]; // chronologisch vorheriger Eintrag (Liste ist neueste zuerst)
+    let trend = '';
+    if (naechster && n.gfr!=null && naechster.gfr!=null) {
+      const diff = n.gfr - naechster.gfr;
+      if (Math.abs(diff) < 1) trend = '→ stabil';
+      else trend = diff > 0 ? '↑ verbessert (+'+diff.toFixed(0)+')' : '↓ verschlechtert ('+diff.toFixed(0)+')';
+    }
+    const info = n.gfr!=null ? ckdInfo(n.gfr) : null;
+    return `
+    <div class="trow">
+      <div class="trow-top">
+        <div>
+          <div class="tdate">${fd(n.datum)}</div>
+        </div>
+        ${info ? `<span class="vha ${info.klasse}">${info.stufe}</span>` : ''}
+      </div>
+      <div class="tueb">
+        ${n.krea!=null ? 'Kreatinin: '+n.krea+' mg/dl' : ''}${n.krea!=null&&n.gfr!=null?' · ':''}${n.gfr!=null ? 'GFR: '+n.gfr+' ml/min/1,73m²' : ''}
+        ${info ? ' — '+esc(info.label) : ''}
+      </div>
+      ${trend ? `<div class="tueb mt-4 opacity-60">${trend} gegenüber vorherigem Eintrag</div>` : ''}
+      ${n.notiz ? `<div class="tueb mt-4">📝 ${esc(n.notiz)}</div>` : ''}
+      <div class="vrow-del flex-gap8">
+        <button class="btn-del btn-edit-neutral" onclick="editNieren('${n.id}')">✏️ Bearbeiten</button>
+        <button class="btn-del" onclick="deleteNieren('${n.id}')">🗑 Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function editNieren(id) {
+  const n = NLOG.find(x=>x.id===id); if (!n) return;
+  const neuDatum = await modalPrompt('Datum (JJJJ-MM-TT):', n.datum, 'Nierenwert bearbeiten');
+  if (neuDatum===null) return;
+  if (!istGueltigesDatum(neuDatum.trim())) { await modalAlert('Das Datum ist ungültig (Format JJJJ-MM-TT).', 'Ungültiges Datum'); return; }
+  const neuKreaInput = await modalPrompt('Kreatinin (mg/dl):', n.krea!=null?String(n.krea).replace('.',','):'', 'Kreatinin');
+  if (neuKreaInput===null) return;
+  const neuGfrInput = await modalPrompt('GFR (ml/min/1,73m²):', n.gfr!=null?String(n.gfr):'', 'GFR');
+  if (neuGfrInput===null) return;
+  const neuNotiz = await modalPrompt('Notiz:', n.notiz||'', 'Notiz');
+  if (neuNotiz===null) return;
+  n.datum = neuDatum.trim();
+  const neuKrea = parseFloat(neuKreaInput.replace(',','.'));
+  const neuGfr = parseFloat(neuGfrInput.replace(',','.'));
+  n.krea = isNaN(neuKrea) ? null : neuKrea;
+  n.gfr = isNaN(neuGfr) ? null : neuGfr;
+  n.notiz = neuNotiz;
+  NLOG.sort((a,b)=>a.datum.localeCompare(b.datum));
+  saveNLOG(); renderNieren();
+}
+
+async function deleteNieren(id) {
+  const n = NLOG.find(x=>x.id===id); if (!n) return;
+  if (!await modalConfirm('Nierenwert-Eintrag löschen?\n'+fd(n.datum), 'Eintrag löschen', true)) return;
+  NLOG = NLOG.filter(x=>x.id!==id); saveNLOG(); renderNieren();
+}
+
+// ══ ANALYSE ══
+function renderAnalyse() {
+  const aw = document.getElementById('aw-stats');
+  const chart = document.getElementById('aw-chart');
+  const fak = document.getElementById('aw-fak');
+  const aktEl = document.getElementById('aw-aktivitaet');
+  const muster = document.getElementById('aw-muster');
+  const erk = document.getElementById('aw-erkenntnisse');
+  const trinkEl = document.getElementById('aw-trink');
+  const schlafEl = document.getElementById('aw-schlaf');
+  const intensEl = document.getElementById('aw-intens');
+  const teEl = document.getElementById('aw-traineffekt');
+  const trendEl = document.getElementById('aw-trend');
+  const erwstatEl = document.getElementById('aw-erwstat');
+  const zielEl = document.getElementById('aw-zielbereich');
+  const hinweiseEl = document.getElementById('aw-hinweise');
+  const ausdauerEl = document.getElementById('aw-ausdauer');
+  const gewichtEl = document.getElementById('aw-gewicht');
+  const alleLeeren = () => { fak.innerHTML=''; aktEl.innerHTML=''; muster.innerHTML=''; erk.innerHTML=''; trinkEl.innerHTML=''; schlafEl.innerHTML=''; intensEl.innerHTML=''; teEl.innerHTML=''; trendEl.innerHTML=''; erwstatEl.innerHTML=''; zielEl.innerHTML=''; hinweiseEl.innerHTML=''; ausdauerEl.innerHTML=''; gewichtEl.innerHTML=''; };
+  if (!DATA.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine Daten.</div>'; alleLeeren(); return; }
+
+  renderAusdauerStatistik(); // unabhängig von gemessenen Harnsäurewerten — braucht nur km-Angaben
+  renderGewichtsTrend(); // unabhängig von gemessenen Harnsäurewerten — braucht nur kg-Angaben
+
+  const gemessene = DATA.filter(e=>e.h!=null);
+  if (!gemessene.length) { aw.style.display='none'; chart.innerHTML='<div class="empty-state">Noch keine gemessenen Werte (nur Aktivitätseinträge ohne Harnsäure vorhanden).</div>'; fak.innerHTML=''; aktEl.innerHTML=''; muster.innerHTML=''; erk.innerHTML=''; trinkEl.innerHTML=''; schlafEl.innerHTML=''; intensEl.innerHTML=''; teEl.innerHTML=''; trendEl.innerHTML=''; erwstatEl.innerHTML=''; zielEl.innerHTML=''; hinweiseEl.innerHTML=''; return; }
+
+  const vals = gemessene.map(e=>e.h);
+  const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+  const best = Math.min(...vals).toFixed(1);
+  const ziel = vals.filter(v=>v<=6).length;
+  aw.style.display='grid';
+  aw.innerHTML = `
+    <div class="sbox"><div class="sv ${haColor(parseFloat(avg))}">${avg}</div><div class="sl">Ø mg/dl</div></div>
+    <div class="sbox"><div class="sv good">${best}</div><div class="sl">Bestwert</div></div>
+    <div class="sbox"><div class="sv">${ziel}/${vals.length}</div><div class="sl">Im Ziel ≤6,0</div></div>`;
+
+  // SVG Chart — nur Einträge mit tatsächlich gemessenem Wert
+  const W=560,H=160,pad=36;
+  const mn=Math.min(...vals)-0.3, mxRoh=Math.max(...vals)+0.3;
+  const mx = (mxRoh - mn) < 0.1 ? mn + 0.1 : mxRoh; // Absicherung: verhindert Division durch (fast) Null bei identischen Werten
+  const xS=i=>(gemessene.length<2?W/2:pad+(W-2*pad)*i/(gemessene.length-1));
+  const yS=v=>H-pad-(v-mn)/(mx-mn)*(H-2*pad);
+  const pts = gemessene.map((e,i)=>xS(i)+','+yS(e.h)).join(' ');
+  chart.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="svg-chart">
+    <line x1="${pad}" y1="${yS(6)}" x2="${W-pad}" y2="${yS(6)}" stroke="var(--good)" opacity="0.25" stroke-width="1.5" stroke-dasharray="4"/>
+    <text x="${pad-2}" y="${yS(6)+4}" fill="var(--good)" font-size="9" text-anchor="end">6,0</text>
+    <polyline points="${pts}" fill="none" stroke="var(--a)" stroke-width="2.5" stroke-linejoin="round"/>
+    ${gemessene.map((e,i)=>`<circle cx="${xS(i)}" cy="${yS(e.h)}" r="5" fill="${e.h<=6?'var(--good)':e.h<=7?'var(--warn)':'var(--bad)'}"/>
+    <text x="${xS(i)}" y="${yS(e.h)-9}" text-anchor="middle" fill="var(--muted)" font-size="9">${e.h}</text>`).join('')}
+  </svg>`;
+
+  // Faktoren — nur Einträge mit gemessenem Wert; a UND a2 fließen beide ein
+  const aktFaktorStats = gruppenStatistikAktivitaet();
+  fak.innerHTML = aktFaktorStats.length ? aktFaktorStats.map(s=>{
+    return `<div class="stat-row-line">
+      <span class="fs-13">${esc(s.kategorie)}</span>
+      <span class="stat-value" style="color:var(--${haColor(s.avg)})">${s.avg.toFixed(2)} mg/dl</span>
+    </div>`;
+  }).join('') : '<div class="empty-state">Keine Aktivitätsdaten.</div>';
+
+  renderAktivitaetsanalyse(gemessene, parseFloat(avg));
+  renderTrinkmengenanalyse(gemessene, parseFloat(avg));
+  renderSchlafanalyse(gemessene, parseFloat(avg));
+  renderIntensitaetsanalyse(gemessene, parseFloat(avg));
+  renderTrainingseffekt();
+  renderTrendanalyse(gemessene);
+  renderErweiterteStatistik(gemessene);
+  renderZielbereich(gemessene);
+
+  // Muster — nur Einträge mit gemessenem Wert einbeziehen
+  if (gemessene.length < 5) {
+    muster.innerHTML='<div class="empty-state">Mind. 5 gemessene Werte nötig.</div>';
+  } else {
+    const tips = [];
+    // Nur 'a2' prüfen: 'a2' beschreibt jetzt den Vortag und gehört zum eigenen h dieses Eintrags.
+    // 'a' beschreibt den aktuellen Tag und wirkt erst auf den Folgetags-Wert — würde hier fälschlich
+    // einen "Vorher"-Wert als "Trainings-Tag"-Wert zählen (siehe berechneTrainingsereignisse).
+    const trainD = gemessene.filter(e=>(e.a2||'').includes('Training'));
+    const restD = gemessene.filter(e=>!(e.a2||'').includes('Training'));
+    if (trainD.length && restD.length) {
+      const tA=(trainD.map(e=>e.h).reduce((a,b)=>a+b,0)/trainD.length).toFixed(2);
+      const rA=(restD.map(e=>e.h).reduce((a,b)=>a+b,0)/restD.length).toFixed(2);
+      tips.push(`Training: Ø ${tA} mg/dl · Ruhe: Ø ${rA} mg/dl`);
+    }
+    const gut = gemessene.filter(e=>e.sl==='Gut').map(e=>e.h);
+    const schl = gemessene.filter(e=>e.sl==='Schlecht').map(e=>e.h);
+    if (gut.length&&schl.length) {
+      const gA=(gut.reduce((a,b)=>a+b,0)/gut.length).toFixed(2);
+      const sA=(schl.reduce((a,b)=>a+b,0)/schl.length).toFixed(2);
+      tips.push(`Guter Schlaf: Ø ${gA} mg/dl · Schlechter Schlaf: Ø ${sA} mg/dl`);
+    }
+    muster.innerHTML = tips.length ? tips.map(t=>`<div class="tip-box">💡 ${t}</div>`).join('') : '<div class="empty-state">Noch zu wenig Daten für Muster.</div>';
+  }
+
+  renderErkenntnisse(gemessene);
+  renderMedizinischeHinweise(gemessene);
+}
+
+// ══ PERSÖNLICHE ERKENNTNISSE ══
+// Nichts hier ist vorprogrammiert oder mit festen Texten hinterlegt — jede Aussage wird bei
+// jedem Aufruf frisch aus den aktuellen DATA-Einträgen berechnet. Ändern sich die Daten
+// (neue Einträge, Korrekturen, Löschungen), ändern sich automatisch auch die Aussagen.
+// Gemeinsame Basis: sammelt für jeden Messwert die Kategorien, zu denen er zählen soll
+// (kategorienFn liefert pro Eintrag ein Array von Kategorie-Strings — meist genau 1,
+// bei der Aktivität ggf. 2, wenn eine weitere Aktivität Vortag erfasst wurde).
+function sammleKategorienWerte(eintraege, paarFn) {
+  const groups = {};
+  eintraege.forEach(e => {
+    paarFn(e).forEach(({kategorie, wert}) => {
+      if (!kategorie || wert == null) return; // leere/fehlende Angaben fließen nicht ein
+      if (!groups[kategorie]) groups[kategorie] = [];
+      groups[kategorie].push(wert);
+    });
+  });
+  return Object.entries(groups)
+    .map(([kategorie, vs]) => ({
+      kategorie,
+      n: vs.length,
+      avg: vs.reduce((a,b)=>a+b,0)/vs.length,
+      min: Math.min(...vs),
+      max: Math.max(...vs)
+    }))
+    .sort((x,y)=>x.avg-y.avg); // aufsteigend: niedrigster Ø zuerst
+}
+
+function gruppenStatistik(gemessene, feld) {
+  // feld: Objektschlüssel im DATA-Eintrag, z.B. 'tm' (Trinkmenge), 'sl' (Schlaf), 'ai' (Intensität)
+  return sammleKategorienWerte(gemessene, e => [{kategorie: e[feld], wert: e.h}]);
+}
+
+// Aktivität hat zwei Felder pro Tag — aber mit UNTERSCHIEDLICHEM Zeitbezug, keine einfache Verdopplung:
+// - 'a' (Aktivität heute) ist eine LISTE (Mehrfachauswahl) und beschreibt den Tag DER Messung
+//   selbst → jede darin enthaltene Aktivität wirkt physiologisch erst auf den Harnsäurewert des
+//   FOLGETAGS, nicht auf das eigene h. Bei mehreren Aktivitäten am selben Tag (z.B. Rehasport +
+//   Gartenarbeit + Fahrradfahren) bekommt JEDE davon denselben Folgetags-Wert zugerechnet.
+// - 'a2' (weitere Aktivität Vortag) ist ein einzelner Wert und beschreibt den Tag VOR der
+//   Messung → gehört zum eigenen h dieses Eintrags.
+// Braucht deshalb Zugriff auf die komplette DATA (nicht nur 'gemessene'), um für a den
+// passenden Folgetags-Wert nachzuschlagen — auch wenn der Tag mit a selbst nicht gemessen wurde.
+function gruppenStatistikAktivitaet() {
+  const nachDatum = {};
+  DATA.forEach(e => { nachDatum[e.d] = e; });
+  return sammleKategorienWerte(DATA, e => {
+    const paare = [];
+    const heuteListe = alsAktivitaetsListe(e.a);
+    if (heuteListe.length) {
+      const folge = nachDatum[naechsterTag(e.d)];
+      if (folge && folge.h != null) {
+        heuteListe.forEach(akt => paare.push({ kategorie: akt, wert: folge.h }));
+      }
+    }
+    if (e.a2 && e.h != null) paare.push({ kategorie: e.a2, wert: e.h });
+    return paare;
+  });
+}
+
+// Intensität hat dasselbe Zeitbezug-Problem wie Aktivität, aber mit VERTAUSCHTEN Feldnamen als
+// historischer Altlast: 'ai' ("Intensität Vortag") gab es schon vor der a/a2-Umstellung und wurde
+// dabei NICHT mitgetauscht — 'ai' bedeutet also weiterhin Vortag (gehört zum eigenen h), während
+// das neue 'aiH' ("Intensität heute") den aktuellen Tag beschreibt und auf den Folgetags-h wirkt.
+// Bewusst NICHT 'ai'/'ai2' genannt, um diese Ausnahme vom sonstigen "2 = Vortag"-Muster nicht zu
+// verschleiern.
+function gruppenStatistikIntensitaet() {
+  const nachDatum = {};
+  DATA.forEach(e => { nachDatum[e.d] = e; });
+  return sammleKategorienWerte(DATA, e => {
+    const paare = [];
+    if (e.aiH) {
+      const folge = nachDatum[naechsterTag(e.d)];
+      if (folge && folge.h != null) paare.push({ kategorie: e.aiH, wert: folge.h });
+    }
+    if (e.ai && e.h != null) paare.push({ kategorie: e.ai, wert: e.h });
+    return paare;
+  });
+}
+
+// Trinkmenge hat dasselbe Zeitbezug-Problem wie Intensität, mit derselben historischen Altlast:
+// 'tm' ("Trinkmenge Vortag") gab es schon vor der a/a2-Umstellung und wurde dabei NICHT
+// mitgetauscht — 'tm' bedeutet weiterhin Vortag (gehört zum eigenen h), während das neue 'tmH'
+// ("Trinkmenge heute") den aktuellen Tag beschreibt und auf den Folgetags-h wirkt.
+function gruppenStatistikTrinkmenge() {
+  const nachDatum = {};
+  DATA.forEach(e => { nachDatum[e.d] = e; });
+  return sammleKategorienWerte(DATA, e => {
+    const paare = [];
+    if (e.tmH) {
+      const folge = nachDatum[naechsterTag(e.d)];
+      if (folge && folge.h != null) paare.push({ kategorie: e.tmH, wert: folge.h });
+    }
+    if (e.tm && e.h != null) paare.push({ kategorie: e.tm, wert: e.h });
+    return paare;
+  });
+}
+
+// Schlaf hat dasselbe Zeitbezug-Problem wie Trinkmenge/Intensität, mit derselben historischen
+// Altlast: 'sl' ("Schlaf Vortag") gab es schon vor der a/a2-Umstellung und wurde dabei NICHT
+// mitgetauscht — 'sl' bedeutet weiterhin Vortag (gehört zum eigenen h), während das neue 'slH'
+// ("Schlaf heute") den aktuellen Tag beschreibt und auf den Folgetags-h wirkt.
+function gruppenStatistikSchlaf() {
+  const nachDatum = {};
+  DATA.forEach(e => { nachDatum[e.d] = e; });
+  return sammleKategorienWerte(DATA, e => {
+    const paare = [];
+    if (e.slH) {
+      const folge = nachDatum[naechsterTag(e.d)];
+      if (folge && folge.h != null) paare.push({ kategorie: e.slH, wert: folge.h });
+    }
+    if (e.sl && e.h != null) paare.push({ kategorie: e.sl, wert: e.h });
+    return paare;
+  });
+}
+
+// ══ ERWEITERTE AKTIVITÄTSANALYSE ══
+// Vollständige Aufschlüsselung je Aktivität (u.a. Training A/B, Schwimmen, Spaziergänge,
+// Gartenarbeit, Ruhetage, Sonstiges — abhängig davon, was tatsächlich protokolliert wurde).
+// gesamtAvg wird von renderAnalyse() übergeben, damit exakt derselbe Gesamtdurchschnitt
+// verwendet wird, der auch oben in der Statistikzeile angezeigt wird (keine doppelte Berechnung).
+// baueKategorieRanglisteHTML() ist die gemeinsame Basis für Aktivität, Trinkmenge, Schlaf und
+// Trainingsintensität — eine Änderung an der Berechnung wirkt sich automatisch auf alle vier aus.
+function baueKategorieRanglisteHTML(gemessene, feld, gesamtAvg) {
+  const stats = feld === 'a' ? gruppenStatistikAktivitaet() : feld === 'ai' ? gruppenStatistikIntensitaet() : feld === 'tm' ? gruppenStatistikTrinkmenge() : feld === 'sl' ? gruppenStatistikSchlaf() : gruppenStatistik(gemessene, feld); // bereits aufsteigend nach Ø sortiert
+  if (!stats.length) return null;
+  return stats.map(s => {
+    const spannweite = s.max - s.min;
+    const abw = s.avg - gesamtAvg;
+    const abwKlasse = Math.abs(abw) < 0.05 ? 'neutral' : (abw > 0 ? 'pos' : 'neg');
+    const abwText = Math.abs(abw) < 0.05
+      ? 'entspricht dem Gesamt-Ø'
+      : (abw > 0 ? '+' : '−') + Math.abs(abw).toFixed(2) + ' mg/dl vs. Gesamt-Ø';
+    return `
+      <div class="akt-card">
+        <div class="akt-head">
+          <span class="akt-name">${esc(s.kategorie)}</span>
+          <span class="akt-avg ${haColor(s.avg)}">${s.avg.toFixed(2)} mg/dl</span>
+        </div>
+        <div class="akt-meta">
+          <span>n = ${s.n}</span>
+          <span>Min ${s.min.toFixed(1)}</span>
+          <span>Max ${s.max.toFixed(1)}</span>
+          <span>Spannweite ${spannweite.toFixed(2)}</span>
+          <span class="akt-dev ${abwKlasse}">${abwText}</span>
+        </div>
+      </div>`;
+  }).join('') + '<div class="fs-11-muted mt-4">Automatisch sortiert: niedrigster Ø-Wert zuerst. Kategorien mit wenigen Messungen (n=1–2) sind statistisch wenig belastbar.</div>';
+}
+
+function renderAktivitaetsanalyse(gemessene, gesamtAvg) {
+  const el = document.getElementById('aw-aktivitaet');
+  if (!el) return;
+  const html = baueKategorieRanglisteHTML(gemessene, 'a', gesamtAvg);
+  el.innerHTML = html || '<div class="empty-state">Keine Aktivitätsdaten.</div>';
+}
+
+// ══ AKTIVE AUSDAUER-STATISTIK ══
+// Nutzt ALLE DATA-Einträge mit km-Angabe, nicht nur 'gemessene' — eine Wanderung ist auch
+// relevant, wenn an dem Tag zufällig keine Harnsäure gemessen wurde.
+// km/hm (heute) und km2/hm2 (Vortag) beschreiben zwei UNTERSCHIEDLICHE Touren an zwei
+// unterschiedlichen Tagen (z.B. gestern UND heute gewandert) — beide zählen daher separat.
+function berechneAusdauerStatistik() {
+  const touren = [];
+  DATA.forEach(e => {
+    if (e.km != null) touren.push({ km: e.km, hm: e.hm });
+    if (e.km2 != null) touren.push({ km: e.km2, hm: e.hm2 });
+  });
+  const gesamtKm = touren.reduce((a,t)=>a+t.km, 0);
+  const anzahl = touren.length;
+  const hmTouren = touren.filter(t => t.hm != null);
+  const gesamtHm = hmTouren.reduce((a,t)=>a+t.hm, 0);
+  return { anzahl, gesamtKm, oKm: anzahl ? gesamtKm/anzahl : 0, gesamtHm, anzahlHm: hmTouren.length, oHm: hmTouren.length ? gesamtHm/hmTouren.length : 0 };
+}
+
+function renderAusdauerStatistik() {
+  const el = document.getElementById('aw-ausdauer');
+  if (!el) return;
+  const s = berechneAusdauerStatistik();
+  if (!s.anzahl) { el.innerHTML = '<div class="empty-state">Noch keine km-Angaben vorhanden (bei „Wandern" erfassbar).</div>'; return; }
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv">${s.anzahl}</div><div class="sl">Touren</div></div>
+      <div class="sbox"><div class="sv">${s.gesamtKm.toFixed(1)}</div><div class="sl">Gesamt km</div></div>
+      <div class="sbox"><div class="sv">${s.oKm.toFixed(1)}</div><div class="sl">Ø km/Tour</div></div>
+    </div>
+    ${s.anzahlHm ? `
+    <div class="stats-row mt-4">
+      <div class="sbox"><div class="sv">${s.gesamtHm}</div><div class="sl">Gesamt Höhenmeter</div></div>
+      <div class="sbox"><div class="sv">${Math.round(s.oHm)}</div><div class="sl">Ø Hm/Tour</div></div>
+      <div class="sbox"><div class="sv">${s.anzahlHm}/${s.anzahl}</div><div class="sl">Touren mit Hm-Angabe</div></div>
+    </div>` : '<div class="fs-11-muted mt-4">Noch keine Höhenmeter erfasst.</div>'}
+  `;
+}
+
+// ══ KÖRPERGEWICHT-TREND ══
+// Nutzt ALLE DATA-Einträge mit kg-Angabe, unabhängig von Harnsäure-Messung.
+function berechneGewichtsverlauf() {
+  const eintraege = DATA.filter(e => e.kg != null).sort((a,b)=>a.d.localeCompare(b.d));
+  if (!eintraege.length) return { anzahl: 0 };
+  const erstes = eintraege[0], letztes = eintraege[eintraege.length-1];
+  const tage = (new Date(letztes.d) - new Date(erstes.d)) / 86400000;
+  const veraenderung = letztes.kg - erstes.kg;
+  return {
+    anzahl: eintraege.length, aktuell: letztes.kg, aktuellDatum: letztes.d,
+    erstes: erstes.kg, erstesDatum: erstes.d, veraenderung, tage,
+    // Wochenrate erst ab 14 Tagen Spanne: kurzfristige Schwankungen (Wasser, Mahlzeiten) würden
+    // sonst als dramatische Wochenänderung hochgerechnet und wären irreführend.
+    proWoche: tage >= 14 ? veraenderung / (tage/7) : null
+  };
+}
+
+function renderGewichtsTrend() {
+  const el = document.getElementById('aw-gewicht');
+  if (!el) return;
+  const g = berechneGewichtsverlauf();
+  if (!g.anzahl) { el.innerHTML = '<div class="empty-state">Noch keine Körpergewicht-Angaben vorhanden.</div>'; return; }
+  if (g.anzahl === 1) {
+    el.innerHTML = `<div class="stats-row"><div class="sbox"><div class="sv">${g.aktuell} kg</div><div class="sl">Letzte Messung (${fd(g.aktuellDatum)})</div></div></div><div class="fs-11-muted mt-4">Noch zu wenig Messungen für einen Trend (mind. 2 nötig).</div>`;
+    return;
+  }
+  const richtung = Math.abs(g.veraenderung) < 0.1 ? 'trend-flat' : (g.veraenderung < 0 ? 'trend-down' : 'trend-up');
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv">${g.aktuell} kg</div><div class="sl">Aktuell (${fd(g.aktuellDatum)})</div></div>
+      <div class="sbox"><div class="sv">${g.erstes} kg</div><div class="sl">Start (${fd(g.erstesDatum)})</div></div>
+      <div class="sbox"><div class="sv ${richtung}">${g.veraenderung>=0?'+':''}${g.veraenderung.toFixed(1)} kg</div><div class="sl">Veränderung gesamt</div></div>
+    </div>
+    ${g.proWoche!=null ? `<div class="fs-11-muted mt-4">Ø ${g.proWoche>=0?'+':''}${g.proWoche.toFixed(2)} kg/Woche über ${Math.round(g.tage)} Tage (${g.anzahl} Messungen)</div>` : `<div class="fs-11-muted mt-4">Zeitraum (${Math.round(g.tage)} Tage) noch zu kurz für eine aussagekräftige Wochenrate — mind. 14 Tage nötig.</div>`}
+  `;
+}
+
+
+// ══ TRINKMENGENANALYSE ══
+function renderTrinkmengenanalyse(gemessene, gesamtAvg) {
+  const el = document.getElementById('aw-trink');
+  if (!el) return;
+  const html = baueKategorieRanglisteHTML(gemessene, 'tm', gesamtAvg);
+  if (!html) { el.innerHTML = '<div class="empty-state">Noch keine Daten zur Trinkmenge vorhanden.</div>'; return; }
+  const hinweis = baueTrainingHydrationHinweis();
+  el.innerHTML = html + (hinweis
+    ? `<div class="tip-box mt-4">💧 ${hinweis}</div>`
+    : '<div class="fs-11-muted mt-4">Noch zu wenig Trainingstage mit unterschiedlicher Trinkmenge dokumentiert, um zu prüfen, ob mehr Trinken den trainingsbedingten Anstieg abschwächt.</div>');
+}
+// Prüft speziell an Trainingstagen: unterscheidet sich der Spitzenwert zwischen geringer
+// (unter 1,5 L / 1,5–2 L) und hoher Trinkmenge (3–3,5 L / über 3,5 L)? Die mittlere Kategorie
+// (2–3 L) wird bewusst ausgeklammert, um die beiden Enden klar gegenüberzustellen.
+// Nutzt berechneTrainingsereignisse(), damit die Trinkmenge korrekt dem jeweiligen Trainingstag
+// zugeordnet ist — bei 'a2'-Training ist das die Trinkmenge des FOLGETAGS-Eintrags, nicht die
+// dieses Eintrags (siehe dortige Fallunterscheidung).
+function baueTrainingHydrationHinweis() {
+  const TM_ORDER = ['unter 1,5 L','1,5–2 L','2–3 L','3–3,5 L','über 3,5 L'];
+  const ereignisse = berechneTrainingsereignisse().filter(e => e.tm);
+  const niedrig = ereignisse.filter(e => TM_ORDER.indexOf(e.tm) <= 1).map(e=>e.peak);
+  const hoch = ereignisse.filter(e => TM_ORDER.indexOf(e.tm) >= 3).map(e=>e.peak);
+  if (!niedrig.length || !hoch.length) return null;
+  const avgN = niedrig.reduce((a,b)=>a+b,0)/niedrig.length;
+  const avgH = hoch.reduce((a,b)=>a+b,0)/hoch.length;
+  const diff = avgN - avgH;
+  if (Math.abs(diff) < 0.05) {
+    return `An Trainingstagen kein erkennbarer Unterschied zwischen geringerer (Ø ${avgN.toFixed(2)} mg/dl, n=${niedrig.length}) und höherer Trinkmenge (Ø ${avgH.toFixed(2)} mg/dl, n=${hoch.length}).`;
+  }
+  const richtung = diff > 0
+    ? 'Deine Werte an Trainingstagen mit höherer Trinkmenge liegen niedriger — passend zur Annahme eines abschwächenden Effekts'
+    : 'Deine Werte an Trainingstagen mit höherer Trinkmenge liegen höher — entgegen der Annahme eines abschwächenden Effekts';
+  return `${richtung}: geringe Trinkmenge Ø ${avgN.toFixed(2)} mg/dl (n=${niedrig.length}) vs. hohe Trinkmenge Ø ${avgH.toFixed(2)} mg/dl (n=${hoch.length}), Unterschied ${Math.abs(diff).toFixed(2)} mg/dl. Bei diesen kleinen Fallzahlen ein erster Hinweis, kein Beleg.`;
+}
+
+// ══ SCHLAFANALYSE ══
+function renderSchlafanalyse(gemessene, gesamtAvg) {
+  const el = document.getElementById('aw-schlaf');
+  if (!el) return;
+  const html = baueKategorieRanglisteHTML(gemessene, 'sl', gesamtAvg);
+  el.innerHTML = html || '<div class="empty-state">Noch keine Daten zum Schlaf vorhanden.</div>';
+}
+
+// ══ TRAININGSINTENSITÄT ══
+function renderIntensitaetsanalyse(gemessene, gesamtAvg) {
+  const el = document.getElementById('aw-intens');
+  if (!el) return;
+  const html = baueKategorieRanglisteHTML(gemessene, 'ai', gesamtAvg);
+  el.innerHTML = html || '<div class="empty-state">Noch keine Intensitätsdaten vorhanden.</div>';
+}
+
+
+// ══ PERSÖNLICHE ERKENNTNISSE ══
+function berechneErkenntnisse(gemessene) {
+  const MIN_N = 2; // ab dieser Anzahl Messungen gilt eine Kategorie als (etwas) belastbarer
+  const faktoren = [
+    { feld:'a',  label:'Aktivität' },
+    { feld:'tm', label:'Trinkmenge' },
+    { feld:'sl', label:'Schlafqualität' },
+    { feld:'ai', label:'Trainingsintensität' }
+  ];
+  const ergebnisse = [];
+  faktoren.forEach(f => {
+    const stats = f.feld === 'a' ? gruppenStatistikAktivitaet() : f.feld === 'ai' ? gruppenStatistikIntensitaet() : f.feld === 'tm' ? gruppenStatistikTrinkmenge() : f.feld === 'sl' ? gruppenStatistikSchlaf() : gruppenStatistik(gemessene, f.feld);
+    if (stats.length < 2) return; // ein Ranking braucht mindestens 2 unterschiedliche Kategorien mit Daten
+    const beste = stats[0];
+    const schlechteste = stats[stats.length-1];
+    const diff = schlechteste.avg - beste.avg;
+    if (diff < 0.05) return; // kein nennenswerter Unterschied — keine Aussage erzwingen, wo keine ist
+    ergebnisse.push({ label: f.label, beste, schlechteste, diff, unsicherBeste: beste.n < MIN_N, unsicherSchlechteste: schlechteste.n < MIN_N });
+  });
+  return ergebnisse;
+}
+
+function renderErkenntnisse(gemessene) {
+  const el = document.getElementById('aw-erkenntnisse');
+  if (!el) return;
+  if (gemessene.length < 5) { el.innerHTML = '<div class="empty-state">Mind. 5 gemessene Werte nötig.</div>'; return; }
+
+  const ergebnisse = berechneErkenntnisse(gemessene);
+  const bloecke = ergebnisse.map(r => {
+    const hinweisBeste = r.unsicherBeste ? ` <span class="fs-11-muted">(nur ${r.beste.n} Messung — vorläufig)</span>` : '';
+    const hinweisSchlechteste = r.unsicherSchlechteste ? ` <span class="fs-11-muted">(nur ${r.schlechteste.n} Messung — vorläufig)</span>` : '';
+    return `
+      <div class="erk-block">
+        <div class="erk-faktor">${esc(r.label)}</div>
+        <div class="erk-line erk-good">✅ Niedrigste Ø-Werte: <strong>${esc(r.beste.kategorie)}</strong> — ${r.beste.avg.toFixed(2)} mg/dl (n=${r.beste.n})${hinweisBeste}</div>
+        <div class="erk-line erk-bad">⚠️ Höchste Ø-Werte: <strong>${esc(r.schlechteste.kategorie)}</strong> — ${r.schlechteste.avg.toFixed(2)} mg/dl (n=${r.schlechteste.n})${hinweisSchlechteste}</div>
+        <div class="erk-line erk-diff">Unterschied: ${r.diff.toFixed(2)} mg/dl</div>
+      </div>`;
+  });
+
+  el.innerHTML = bloecke.length
+    ? bloecke.join('') + '<div class="erk-line fs-11-muted mt-4">Hinweis: Korrelation, keine bewiesene Kausalität. Kategorien mit wenigen Messungen sind statistisch unsicher.</div>'
+    : '<div class="empty-state">Noch zu wenig unterschiedliche Kategorien pro Faktor für einen Vergleich.</div>';
+}
+
+// ══ TRAININGSEFFEKT (Anstieg & Erholung) ══
+// Zwei Fälle, weil 'a' und 'a2' einen unterschiedlichen Zeitbezug haben:
+// Fall 1 — Training über 'a' (Aktivität heute): 'a' beschreibt den Tag DER Messung selbst.
+//   Das Training wirkt sich erst auf den FOLGETAG aus:
+//   Ausgangsniveau = h dieses Eintrags selbst, Spitzenwert = h des Folgetags-Eintrags.
+// Fall 2 — Training über 'a2' (weitere Aktivität Vortag): 'a2' beschreibt den Tag VOR der Messung.
+//   Ausgangsniveau = h des Vortags-Eintrags, Spitzenwert = h dieses Eintrags selbst.
+// In beiden Fällen ist "Ereignisdatum" der Tag mit dem Spitzenwert — konsistent vergleichbar.
+// Definition "Erholungsdauer": Anzahl Kalendertage nach dem Ereignisdatum bis zum ersten
+// gemessenen Folgewert ≤ Ausgangsniveau.
+// WICHTIG: Seit 14.07.2026 wird nicht mehr täglich gemessen (nur Trainingstag + 2 Folgetage, oder
+// bei vermutetem Anstieg). Ungemessene Tage liefern keine Information — die berechnete Erholungsdauer
+// kann sich dadurch nur auf tatsächlich gemessene Tage stützen und wird bei Datenlücken als
+// "nicht ermittelbar" ausgewiesen statt geraten.
+function sucheErholung(nachDatum, abDatum, baseline) {
+  let erholungsTage = null;
+  let cursor = abDatum;
+  for (let i=0; i<30; i++) { // Obergrenze verhindert Endlosschleife bei dauerhaften Datenlücken
+    cursor = naechsterTag(cursor);
+    const folge = nachDatum[cursor];
+    if (!folge || folge.h == null) continue; // ungemessener Tag: überspringen, zählt nicht als Erholung
+    if (folge.h <= baseline) { erholungsTage = (new Date(cursor) - new Date(abDatum)) / 86400000; break; }
+  }
+  return erholungsTage;
+}
+
+function berechneTrainingsereignisse() {
+  const sortiert = [...DATA].sort((a,b)=>a.d.localeCompare(b.d)); // eigene, unabhängige Sortierung
+  const nachDatum = {};
+  sortiert.forEach(e => { nachDatum[e.d] = e; });
+  const ereignisse = [];
+
+  sortiert.forEach(rec => {
+    // Fall 1: 'a' (Aktivität heute, Liste) beschreibt den aktuellen Tag → der FOLGETAG ist der Spitzenwert
+    const heutigesTraining = alsAktivitaetsListe(rec.a).find(istEchtesTraining);
+    if (heutigesTraining && rec.h != null) {
+      const peakRec = nachDatum[naechsterTag(rec.d)];
+      if (peakRec && peakRec.h != null) {
+        const baseline = rec.h, peak = peakRec.h;
+        // Trinkmenge am Trainingstag (rec.d): entweder direkt als "heute" auf rec selbst erfasst,
+        // oder nachträglich als "Vortag" auf dem Folgetag — je nachdem, wann eingetragen wurde.
+        ereignisse.push({
+          datum: peakRec.d, aktivitaet: heutigesTraining, quelle: 'a', tm: rec.tmH || peakRec.tm || null,
+          baseline, peak, anstieg: peak-baseline,
+          erholungsTage: sucheErholung(nachDatum, peakRec.d, baseline)
+        });
+      }
+    }
+    // Fall 2: 'a2' (weitere Aktivität Vortag) beschreibt den Vortag → dieser Eintrag selbst ist der Spitzenwert
+    if (istEchtesTraining(rec.a2) && rec.h != null) {
+      const baseRec = nachDatum[vorherigerTag(rec.d)];
+      if (baseRec && baseRec.h != null) {
+        const baseline = baseRec.h, peak = rec.h;
+        // Trinkmenge am Trainingstag (baseRec.d): entweder direkt als "Vortag" auf rec erfasst,
+        // oder schon am Trainingstag selbst als "heute" auf baseRec — je nachdem, wann eingetragen wurde.
+        ereignisse.push({
+          datum: rec.d, aktivitaet: rec.a2, quelle: 'a2', tm: rec.tm || baseRec.tmH || null,
+          baseline, peak, anstieg: peak-baseline,
+          erholungsTage: sucheErholung(nachDatum, rec.d, baseline)
+        });
+      }
+    }
+  });
+  return ereignisse.sort((x,y)=>x.datum.localeCompare(y.datum));
+}
+
+function renderTrainingseffekt() {
+  const el = document.getElementById('aw-traineffekt');
+  if (!el) return;
+  const ereignisse = berechneTrainingsereignisse();
+  if (!ereignisse.length) { el.innerHTML = '<div class="empty-state">Noch keine auswertbaren Trainingsereignisse (Trainingseintrag + gemessenes Ausgangsniveau am Vortag nötig).</div>'; return; }
+
+  const anstiege = ereignisse.map(e=>e.anstieg);
+  const avgAnstieg = anstiege.reduce((a,b)=>a+b,0)/anstiege.length;
+  const erholt = ereignisse.filter(e=>e.erholungsTage!=null);
+  const avgErholung = erholt.length ? (erholt.map(e=>e.erholungsTage).reduce((a,b)=>a+b,0)/erholt.length) : null;
+
+  const summary = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv ${avgAnstieg>0?'bad':'good'}">${avgAnstieg>=0?'+':''}${avgAnstieg.toFixed(2)}</div><div class="sl">Ø Anstieg mg/dl</div></div>
+      <div class="sbox"><div class="sv">${erholt.length}/${ereignisse.length}</div><div class="sl">Erholung ermittelbar</div></div>
+      <div class="sbox"><div class="sv">${avgErholung!=null?avgErholung.toFixed(1)+' Tg.':'—'}</div><div class="sl">Ø Erholungsdauer</div></div>
+    </div>`;
+
+  const liste = ereignisse.map(e => `
+    <div class="te-card">
+      <div class="te-top"><span>${fd(e.datum)}</span><span style="color:var(--${haColor(e.peak)})">${e.baseline.toFixed(1)} → ${e.peak.toFixed(1)} mg/dl</span></div>
+      <div class="te-vals">${esc(e.aktivitaet)} · Anstieg: <strong>${e.anstieg>=0?'+':''}${e.anstieg.toFixed(2)} mg/dl</strong></div>
+      <div class="te-vals">Erholung: <strong>${e.erholungsTage!=null ? e.erholungsTage+' Tag(e) bis ≤ Ausgangsniveau' : 'nicht ermittelbar (fehlende Folgemessung)'}</strong></div>
+    </div>`).join('');
+
+  el.innerHTML = summary + liste + '<div class="fs-11-muted mt-4">Ausgangsniveau = gemessener Wert am Morgen des Trainingstags selbst (vor dem Training). Seit Juli 2026 wird nicht mehr täglich gemessen — "nicht ermittelbar" bedeutet fehlende Folgemessung, nicht fehlende Erholung.</div>';
+}
+
+// ══ LANGFRISTIGE TRENDANALYSE ══
+// Teilt die gemessenen Werte chronologisch in zwei Hälften (nach Anzahl, nicht nach Kalenderzeit)
+// und vergleicht sie. Bei ungerader Anzahl gehört der mittlere Wert zur ersten Hälfte.
+function teileInHaelften(sortierteListe) {
+  const mitte = Math.ceil(sortierteListe.length/2);
+  return { erste: sortierteListe.slice(0, mitte), zweite: sortierteListe.slice(mitte) };
+}
+
+function renderTrendanalyse(gemessene) {
+  const el = document.getElementById('aw-trend');
+  if (!el) return;
+  if (gemessene.length < 4) { el.innerHTML = '<div class="empty-state">Mind. 4 gemessene Werte nötig.</div>'; return; }
+  const sortiert = [...gemessene].sort((a,b)=>a.d.localeCompare(b.d));
+  const { erste, zweite } = teileInHaelften(sortiert);
+  const avgE = erste.map(e=>e.h).reduce((a,b)=>a+b,0)/erste.length;
+  const avgZ = zweite.map(e=>e.h).reduce((a,b)=>a+b,0)/zweite.length;
+  const diff = avgZ - avgE;
+  const prozent = (diff/avgE)*100;
+  const richtungKlasse = Math.abs(diff)<0.05 ? 'trend-flat' : (diff<0 ? 'trend-down' : 'trend-up');
+  const richtungText = Math.abs(diff)<0.05 ? 'Kein klarer Trend erkennbar' : (diff<0 ? '📉 Verbesserung (rückläufig)' : '📈 Verschlechterung (steigend)');
+
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv">${avgE.toFixed(2)}</div><div class="sl">Ø 1. Hälfte (n=${erste.length})</div></div>
+      <div class="sbox"><div class="sv">${avgZ.toFixed(2)}</div><div class="sl">Ø 2. Hälfte (n=${zweite.length})</div></div>
+      <div class="sbox"><div class="sv ${richtungKlasse}">${diff>=0?'+':''}${diff.toFixed(2)}</div><div class="sl">Differenz mg/dl</div></div>
+    </div>
+    <div class="tip-box ${richtungKlasse}">${richtungText} · Veränderung: ${prozent>=0?'+':''}${prozent.toFixed(1)}% gegenüber der ersten Hälfte des dokumentierten Zeitraums (${fd(sortiert[0].d)} – ${fd(sortiert[sortiert.length-1].d)}).</div>
+    <div class="fs-11-muted mt-4">Zeitliche Aufteilung nach Anzahl der Messungen, nicht nach Kalenderwochen. Seit 14.07.2026 wird gezielter statt täglich gemessen — das kann den Durchschnitt der zweiten Hälfte nach oben verzerren (mehr Messungen an vermutet kritischen Tagen).</div>`;
+}
+
+// ══ ERWEITERTE STATISTIK ══
+function berechneErweiterteStatistik(gemessene) {
+  const vals = [...gemessene.map(e=>e.h)].sort((a,b)=>a-b);
+  const n = vals.length;
+  const min = vals[0], max = vals[n-1];
+  const mittel = vals.reduce((a,b)=>a+b,0)/n;
+  const median = n%2===1 ? vals[(n-1)/2] : (vals[n/2-1]+vals[n/2])/2;
+  const spannweite = max-min;
+  // Stichproben-Standardabweichung (n-1 im Nenner) — üblich, wenn die Messreihe als Stichprobe
+  // aus einer größeren, nicht vollständig erfassten Grundgesamtheit betrachtet wird.
+  const stdabw = n>1 ? Math.sqrt(vals.reduce((a,v)=>a+Math.pow(v-mittel,2),0)/(n-1)) : 0;
+  return { n, min, max, median, spannweite, stdabw, mittel };
+}
+
+function renderErweiterteStatistik(gemessene) {
+  const el = document.getElementById('aw-erwstat');
+  if (!el) return;
+  const s = berechneErweiterteStatistik(gemessene);
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv">${s.n}</div><div class="sl">Gültige Messungen</div></div>
+      <div class="sbox"><div class="sv good">${s.min.toFixed(1)}</div><div class="sl">Minimum</div></div>
+      <div class="sbox"><div class="sv bad">${s.max.toFixed(1)}</div><div class="sl">Maximum</div></div>
+      <div class="sbox"><div class="sv">${s.median.toFixed(2)}</div><div class="sl">Median</div></div>
+      <div class="sbox"><div class="sv">${s.spannweite.toFixed(2)}</div><div class="sl">Spannweite</div></div>
+      <div class="sbox"><div class="sv">${s.stdabw.toFixed(2)}</div><div class="sl">Std.-Abw. (s)</div></div>
+    </div>
+    <div class="fs-11-muted mt-4">Standardabweichung als Stichproben-Streuung (n−1) berechnet.</div>`;
+}
+
+// ══ ZIELBEREICHSANALYSE (erweitert) ══
+function renderZielbereich(gemessene) {
+  const el = document.getElementById('aw-zielbereich');
+  if (!el) return;
+  const n = gemessene.length;
+  const imZiel = gemessene.filter(e=>e.h<=6).length;
+  const prozent = (imZiel/n)*100;
+  let entwicklungHTML = '<div class="fs-11-muted mt-4">Mind. 4 Messungen nötig, um die Entwicklung über den Zeitraum darzustellen.</div>';
+  if (n >= 4) {
+    const sortiert = [...gemessene].sort((a,b)=>a.d.localeCompare(b.d));
+    const { erste, zweite } = teileInHaelften(sortiert);
+    const pE = erste.filter(e=>e.h<=6).length/erste.length*100;
+    const pZ = zweite.filter(e=>e.h<=6).length/zweite.length*100;
+    const diffP = pZ - pE;
+    const klasse = Math.abs(diffP)<1 ? 'trend-flat' : (diffP>0?'trend-down':'trend-up');
+    entwicklungHTML = `<div class="tip-box ${klasse} mt-4">1. Hälfte: ${pE.toFixed(0)}% im Ziel (n=${erste.length}) · 2. Hälfte: ${pZ.toFixed(0)}% im Ziel (n=${zweite.length}) · ${diffP>=0?'+':''}${diffP.toFixed(0)} Prozentpunkte</div>`;
+  }
+  el.innerHTML = `
+    <div class="stats-row">
+      <div class="sbox"><div class="sv">${n}</div><div class="sl">Messungen gesamt</div></div>
+      <div class="sbox"><div class="sv good">${imZiel}</div><div class="sl">Im Ziel ≤6,0</div></div>
+      <div class="sbox"><div class="sv ${prozent>=60?'good':'warn'}">${prozent.toFixed(0)}%</div><div class="sl">Anteil im Ziel</div></div>
+    </div>` + entwicklungHTML;
+}
+
+// ══ AUTOMATISCHE MEDIZINISCHE HINWEISE ══
+// Nur datenbasierte, vorsichtig formulierte Beobachtungen — keine Diagnose, keine Therapieempfehlung.
+// Jeder Hinweis wird nur angezeigt, wenn die zugrundeliegende Berechnung ausreichend Datenbasis hat.
+function berechneMedizinischeHinweise(gemessene) {
+  const hinweise = [];
+
+  // 1) Regelmäßiger Anstieg nach Krafttraining
+  const ereignisse = berechneTrainingsereignisse();
+  if (ereignisse.length >= 2) {
+    const anzahlAnstieg = ereignisse.filter(e=>e.anstieg>0).length;
+    const avgAnstieg = ereignisse.map(e=>e.anstieg).reduce((a,b)=>a+b,0)/ereignisse.length;
+    if (anzahlAnstieg === ereignisse.length) {
+      hinweise.push(`🏋️ Bei allen ${ereignisse.length} auswertbaren Trainingsereignissen stieg die Harnsäure am Folgetag an (Ø +${avgAnstieg.toFixed(2)} mg/dl). Ein konsistentes Muster, aber ${ereignisse.length} Ereignisse sind noch eine kleine Stichprobe.`);
+    } else if (anzahlAnstieg > 0) {
+      hinweise.push(`🏋️ Bei ${anzahlAnstieg} von ${ereignisse.length} auswertbaren Trainingsereignissen stieg die Harnsäure am Folgetag an (Ø ${avgAnstieg>=0?'+':''}${avgAnstieg.toFixed(2)} mg/dl) — kein durchgängiges Muster.`);
+    }
+  }
+
+  // 2) Trinkmenge an Trainingstagen
+  const hydHinweis = baueTrainingHydrationHinweis();
+  if (hydHinweis) hinweise.push('💧 ' + hydHinweis);
+
+  // 3) Zusammenhang mit Schlafqualität — nur wenn beide Extreme mit ausreichend Messungen vorliegen
+  const schlafStats = gruppenStatistikSchlaf();
+  const gut = schlafStats.find(s=>s.kategorie==='Gut');
+  const schlecht = schlafStats.find(s=>s.kategorie==='Schlecht');
+  if (gut && schlecht && gut.n>=2 && schlecht.n>=2) {
+    const diff = schlecht.avg - gut.avg;
+    if (Math.abs(diff) >= 0.1) {
+      hinweise.push(`😴 Schlechter Schlaf ist bei dir mit ${diff>0?'höheren':'niedrigeren'} Harnsäurewerten assoziiert (Gut: Ø ${gut.avg.toFixed(2)} mg/dl, n=${gut.n} · Schlecht: Ø ${schlecht.avg.toFixed(2)} mg/dl, n=${schlecht.n}).`);
+    } else {
+      hinweise.push(`😴 Kein nennenswerter Zusammenhang zwischen Schlafqualität und Harnsäure erkennbar (Gut: Ø ${gut.avg.toFixed(2)} mg/dl, n=${gut.n} · Schlecht: Ø ${schlecht.avg.toFixed(2)} mg/dl, n=${schlecht.n}).`);
+    }
+  }
+
+  // 4) Entwicklung im dokumentierten Zeitraum unter durchgehender Allopurinol-Einnahme
+  // Rein deskriptiv — keine Aussage über Dosis-Wirkung möglich, da keine Dosisänderung dokumentiert ist.
+  if (gemessene.length >= 4) {
+    const sortiert = [...gemessene].sort((a,b)=>a.d.localeCompare(b.d));
+    const { erste, zweite } = teileInHaelften(sortiert);
+    const avgE = erste.map(e=>e.h).reduce((a,b)=>a+b,0)/erste.length;
+    const avgZ = zweite.map(e=>e.h).reduce((a,b)=>a+b,0)/zweite.length;
+    const diff = avgZ-avgE;
+    if (Math.abs(diff) >= 0.1) {
+      hinweise.push(`💊 Unter durchgehender Einnahme von Allopurinol 150 mg/Tag zeigt der dokumentierte Zeitraum eine ${diff<0?'rückläufige':'steigende'} Entwicklung (Ø 1. Hälfte ${avgE.toFixed(2)} → 2. Hälfte ${avgZ.toFixed(2)} mg/dl). Da keine Dosisänderung protokolliert ist, lässt sich daraus keine Dosis-Wirkungs-Aussage ableiten — dafür wären gezielte, ärztlich begleitete Dosisanpassungen nötig.`);
+    }
+  }
+
+  return hinweise;
+}
+
+function renderMedizinischeHinweise(gemessene) {
+  const el = document.getElementById('aw-hinweise');
+  if (!el) return;
+  const hinweise = berechneMedizinischeHinweise(gemessene);
+  el.innerHTML = hinweise.length
+    ? hinweise.map(h=>`<div class="tip-box">${h}</div>`).join('')
+    : '<div class="empty-state">Noch nicht genug Daten für belegte Hinweise.</div>';
+}
+
+// ══ SICHERUNG ══
+function renderBkStats() {
+  const el = document.getElementById('bk-stats'); if(!el) return;
+  const vals = DATA.filter(e=>e.h!=null).map(e=>e.h);
+  el.innerHTML = `
+    <div class="sbox"><div class="sv">${DATA.length}</div><div class="sl">Einträge</div></div>
+    <div class="sbox"><div class="sv">${DATA.length?DATA[DATA.length-1].d.slice(5).replace('-','.'):'—'}</div><div class="sl">Letzter</div></div>
+    <div class="sbox"><div class="sv">${vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):'—'}</div><div class="sl">Ø mg/dl</div></div>`;
+}
+
+function showLog(msg, ok=true) {
+  const el = document.getElementById('bk-log');
+  el.textContent = msg; el.className = 'log-box '+(ok?'log-ok':'log-err');
+  el.style.display='block'; setTimeout(()=>el.style.display='none', 4000);
+}
+
+function renderLastImport() {
+  const el = document.getElementById('last-import-info');
+  if (!el) return;
+  const info = safeParse('sg-last-import', null);
+  if (!info) { el.textContent = '📥 Zuletzt geladene Sicherung: noch keine'; return; }
+  el.textContent = '📥 Zuletzt geladene Sicherung: '+(info.exportDatum||'unbekanntes Datum')+' — eingelesen am '+info.importiertAm;
+}
+
+async function exportJSON() {
+  const planHatDaten = localStorage.getItem('sg-weights') || localStorage.getItem('sg-order') || localStorage.getItem('sg-extra');
+  if (!DATA.length && !TLOG.length && !GWLOG.length && !NLOG.length && !planHatDaten) { showLog('Keine Daten vorhanden.', false); return; }
+  const inhalt = JSON.stringify({
+    version:4, exportDatum:new Date().toISOString(),
+    eintraege:DATA, tlog:TLOG, gwlog:GWLOG, nlog:NLOG,
+    planWeights: safeParse('sg-weights', {}),
+    planDone: safeParse('sg-done', {}),
+    planOrder: safeParse('sg-order', {}),
+    planExtra: safeParse('sg-extra', {"a":[],"b":[]}),
+    planUid: safeParse('sg-uid', {})
+  }, null, 2);
+  const name = 'sport-gicht-'+heuteLokal()+'.json';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([inhalt],{type:'application/json'}));
+  a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showLog('Gespeichert: '+name+' ('+DATA.length+' Tagesprotokolle, '+TLOG.length+' Trainingseinträge)');
+}
+
+function importJSON(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    try {
+      const raw = JSON.parse(ev.target.result);
+      const impRoh = raw.eintraege || raw;
+      if (!Array.isArray(impRoh)) throw new Error('Ungültiges Format — kein Array von Einträgen gefunden.');
+
+      // Tagesprotokolle validieren: Datum muss gültig sein; Harnsäure ist optional, aber falls angegeben muss sie eine Zahl sein
+      let uebersprungen = 0;
+      const imp = impRoh.filter(neu => {
+        const hVorhanden = neu.h!==null && neu.h!==undefined && neu.h!=='';
+        const hOk = !hVorhanden || (typeof neu.h==='number' ? isFinite(neu.h) : isFinite(parseFloat(neu.h)));
+        const gueltig = neu && typeof neu.d==='string' && istGueltigesDatum(neu.d) && hOk;
+        if (!gueltig) uebersprungen++;
+        return gueltig;
+      }).map(neu => {
+        const hVorhanden = neu.h!==null && neu.h!==undefined && neu.h!=='';
+        return {...neu, h: hVorhanden ? (typeof neu.h==='number' ? neu.h : parseFloat(neu.h)) : null};
+      });
+
+      let meldung = 'Sicherung einlesen? '+imp.length+' gültige Tagesprotokolle gefunden'+(uebersprungen?' ('+uebersprungen+' ungültige übersprungen)':'')+'.';
+      if (!await modalConfirm(meldung, 'Sicherung importieren')) return;
+
+      imp.forEach(neu => { const idx=DATA.findIndex(x=>x.d===neu.d); if(idx>=0) DATA[idx]=neu; else DATA.push(neu); });
+      DATA.sort((a,b)=>a.d.localeCompare(b.d)); saveData();
+
+      let tlogValide = 0, tlogUngueltig = 0, tlogDuplikat = 0;
+      if (Array.isArray(raw.tlog)&&raw.tlog.length) {
+        raw.tlog.forEach(neu => {
+          const gueltig = neu && typeof neu.datum==='string' && istGueltigesDatum(neu.datum) && (neu.unit==='a'||neu.unit==='b');
+          if (!gueltig) { tlogUngueltig++; return; }
+          if(!TLOG.find(x=>x.datum===neu.datum&&x.unit===neu.unit)) {
+            neu.id = genId(); // ID immer neu vergeben, unabhängig vom Dateiinhalt (Absicherung)
+            if (!Array.isArray(neu.uebungen)) neu.uebungen = [];
+            TLOG.unshift(neu);
+            tlogValide++;
+          } else {
+            tlogDuplikat++;
+          }
+        });
+        saveTLOG();
+      }
+      if (Array.isArray(raw.gwlog)&&raw.gwlog.length) {
+        raw.gwlog.forEach(n=>{
+          const gueltig = n && typeof n.datum==='string' && istGueltigesDatum(n.datum) && (n.unit==='a'||n.unit==='b') && typeof n.name==='string';
+          if (!gueltig) return;
+          if(!GWLOG.find(x=>x.datum===n.datum&&x.unit===n.unit&&x.name===n.name&&x.gew===n.gew)) GWLOG.push(n);
+        });
+        saveGWLOG();
+      }
+      let nlogValide = 0, nlogUngueltig = 0, nlogDuplikat = 0;
+      if (Array.isArray(raw.nlog)&&raw.nlog.length) {
+        raw.nlog.forEach(n=>{
+          const gueltig = n && typeof n.datum==='string' && istGueltigesDatum(n.datum) && (typeof n.krea==='number' || typeof n.gfr==='number' || n.krea===null || n.gfr===null);
+          if (!gueltig) { nlogUngueltig++; return; }
+          if (!NLOG.find(x=>x.datum===n.datum)) {
+            n.id = genId();
+            NLOG.push(n);
+            nlogValide++;
+          } else nlogDuplikat++;
+        });
+        NLOG.sort((a,b)=>a.datum.localeCompare(b.datum));
+        saveNLOG();
+      }
+      if (raw.planUid) { safeSet('sg-uid', raw.planUid); }
+      if (raw.planExtra) { safeSet('sg-extra', raw.planExtra); }
+      if (raw.planOrder) { safeSet('sg-order', raw.planOrder); }
+      if (raw.planWeights) { safeSet('sg-weights', raw.planWeights); }
+      if (raw.planDone) { safeSet('sg-done', raw.planDone); }
+      if (raw.planUid || raw.planExtra || raw.planOrder || raw.planWeights || raw.planDone) {
+        await modalAlert('Plan-Daten wurden importiert. Bitte die Seite einmal neu laden, damit Trainingsplan-Gewichte, Geräte und Reihenfolge korrekt übernommen werden.', 'Neu laden empfohlen');
+      }
+      renderProto(); renderTraining(); renderNieren(); renderBkStats();
+      safeSet('sg-last-import', {
+        exportDatum: raw.exportDatum ? raw.exportDatum.slice(0,10) : null,
+        importiertAm: new Date().toLocaleDateString('de-DE')+' '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
+      });
+      renderLastImport();
+      const tlogTeile = [tlogValide+' übernommen'];
+      if (tlogDuplikat) tlogTeile.push(tlogDuplikat+' bereits vorhanden');
+      if (tlogUngueltig) tlogTeile.push(tlogUngueltig+' ungültig');
+      showLog('Eingelesen: '+imp.length+' Tagesprotokolle. Trainingseinträge: '+tlogTeile.join(', ')+'. Nierenwerte: '+nlogValide+' übernommen'+(nlogDuplikat?', '+nlogDuplikat+' bereits vorhanden':'')+(nlogUngueltig?', '+nlogUngueltig+' ungültig':'')+'.');
+    } catch(e) { showLog('Fehler: '+e.message, false); await modalAlert('Import-Fehler: '+e.message, 'Fehler'); }
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+async function exportCSV() {
+  if (!DATA.length) { showLog('Keine Daten.', false); return; }
+  const h = 'Datum;Harnsäure;RR sys;RR dia;Puls;Körpergewicht;Aktivität (heute);km heute;Höhenmeter heute;Intensität heute;Trinkmenge heute;Schlaf heute;Ernährung heute;Weitere Aktivität (Vortag);km Vortag;Höhenmeter Vortag;Intensität Vortag;Trinkmenge Vortag;Schlaf Vortag;Ernährung Vortag;Notiz\n';
+  const dez = v => v==null ? '' : (typeof v==='number' ? String(v).replace('.',',') : v);
+  const rows = DATA.map(e=>[e.d,dez(e.h),e.s||'',e.di||'',e.p||'',dez(e.kg),alsAktivitaetsListe(e.a).join(', '),dez(e.km),dez(e.hm),e.aiH||'',e.tmH||'',e.slH||'',e.eH||'',e.a2||'',dez(e.km2),dez(e.hm2),e.ai||'',e.tm||'',e.sl||'',e.e||'',e.n||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF'+h+rows],{type:'text/csv;charset=utf-8'}));
+  a.download = 'sport-gicht-'+heuteLokal()+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showLog('CSV exportiert.');
+}
+
+// ══ EXPORT-TEXT DER ANALYSEN ══
+// Nutzt exakt dieselben Berechnungsfunktionen wie die Anzeige im Analyse-Tab, damit App und
+// Claude-Export niemals unterschiedliche Zahlen zeigen können.
+function formatKategorieListeText(gemessene, feld, titel) {
+  const stats = feld === 'a' ? gruppenStatistikAktivitaet() : feld === 'ai' ? gruppenStatistikIntensitaet() : feld === 'tm' ? gruppenStatistikTrinkmenge() : feld === 'sl' ? gruppenStatistikSchlaf() : gruppenStatistik(gemessene, feld);
+  if (!stats.length) return `### ${titel}\nKeine Daten.\n\n`;
+  let t = `### ${titel}\n`;
+  stats.forEach(s => { t += `- ${s.kategorie}: Ø ${s.avg.toFixed(2)} mg/dl (n=${s.n}, Min ${s.min.toFixed(1)}, Max ${s.max.toFixed(1)}, Spannweite ${(s.max-s.min).toFixed(2)})\n`; });
+  return t + '\n';
+}
+
+// Freitext für den Claude-Export aufbereiten: Zeilenumbrüche würden die Markdown-Tabelle zerreißen,
+// "|" ist der Spaltentrenner, und U+FFFD sind kaputte Ersatzzeichen aus der ursprünglichen Eingabe.
+function bereinigeExportText(s) {
+  return String(s == null ? '' : s)
+    .replace(/\ufffd/g, '')
+    .replace(/\s*[\r\n]+\s*/g, '; ')
+    .replace(/\|/g, '/')
+    .replace(/^[;\s]+|[;\s]+$/g, '');
+}
+
+function baueAnalyseExportText(gemessene) {
+  let t = '';
+
+  t += '## Persönliche Erkenntnisse\n';
+  const erk = berechneErkenntnisse(gemessene);
+  t += erk.length
+    ? erk.map(r => `- ${r.label}: niedrigste Werte bei "${r.beste.kategorie}" (Ø ${r.beste.avg.toFixed(2)} mg/dl, n=${r.beste.n}), höchste Werte bei "${r.schlechteste.kategorie}" (Ø ${r.schlechteste.avg.toFixed(2)} mg/dl, n=${r.schlechteste.n}), Unterschied ${r.diff.toFixed(2)} mg/dl.`).join('\n')+'\n\n'
+    : 'Noch zu wenig Daten für einen Faktor-Vergleich.\n\n';
+
+  t += formatKategorieListeText(gemessene, 'a', 'Erweiterte Aktivitätsanalyse');
+
+  t += '### Aktive Ausdauer-Statistik\n';
+  const ausd = berechneAusdauerStatistik();
+  if (ausd.anzahl) {
+    t += `Touren: ${ausd.anzahl} · Gesamt km: ${ausd.gesamtKm.toFixed(1)} · Ø km/Tour: ${ausd.oKm.toFixed(1)}`;
+    t += ausd.anzahlHm ? ` · Gesamt Höhenmeter: ${ausd.gesamtHm} (${ausd.anzahlHm}/${ausd.anzahl} Touren mit Hm-Angabe)\n\n` : ' · Noch keine Höhenmeter erfasst.\n\n';
+  } else {
+    t += 'Noch keine km-Angaben vorhanden.\n\n';
+  }
+
+  t += '### Körpergewicht-Trend\n';
+  const gw = berechneGewichtsverlauf();
+  if (gw.anzahl >= 2) {
+    t += `Aktuell: ${gw.aktuell} kg (${gw.aktuellDatum}) · Start: ${gw.erstes} kg (${gw.erstesDatum}) · Veränderung: ${gw.veraenderung>=0?'+':''}${gw.veraenderung.toFixed(1)} kg über ${Math.round(gw.tage)} Tage (${gw.anzahl} Messungen)`;
+    t += gw.proWoche!=null ? ` · Ø ${gw.proWoche>=0?'+':''}${gw.proWoche.toFixed(2)} kg/Woche\n\n` : ' · Zeitraum noch zu kurz für eine aussagekräftige Wochenrate (mind. 14 Tage).\n\n';
+  } else if (gw.anzahl === 1) {
+    t += `Erst 1 Messung vorhanden: ${gw.aktuell} kg (${gw.aktuellDatum}) — noch kein Trend berechenbar.\n\n`;
+  } else {
+    t += 'Noch keine Körpergewicht-Angaben vorhanden.\n\n';
+  }
+
+  t += formatKategorieListeText(gemessene, 'tm', 'Trinkmengenanalyse');
+  const hyd = baueTrainingHydrationHinweis();
+  t += (hyd || 'Noch zu wenig Trainingstage mit unterschiedlicher Trinkmenge dokumentiert, um einen abschwächenden Effekt zu prüfen.') + '\n\n';
+
+  t += formatKategorieListeText(gemessene, 'sl', 'Schlafanalyse');
+  t += formatKategorieListeText(gemessene, 'ai', 'Trainingsintensität');
+
+  t += '### Trainingseffekt (Anstieg & Erholung)\n';
+  const ereignisse = berechneTrainingsereignisse();
+  if (ereignisse.length) {
+    ereignisse.forEach(e => { t += `- ${e.datum} (${e.aktivitaet}): ${e.baseline.toFixed(1)} → ${e.peak.toFixed(1)} mg/dl (Anstieg ${e.anstieg>=0?'+':''}${e.anstieg.toFixed(2)} mg/dl), Erholung: ${e.erholungsTage!=null ? e.erholungsTage+' Tag(e) bis ≤ Ausgangsniveau' : 'nicht ermittelbar (fehlende Folgemessung)'}\n`; });
+    const erholt = ereignisse.filter(e=>e.erholungsTage!=null);
+    if (erholt.length) t += `Ø Erholungsdauer: ${(erholt.map(e=>e.erholungsTage).reduce((a,b)=>a+b,0)/erholt.length).toFixed(1)} Tage (${erholt.length}/${ereignisse.length} Ereignisse auswertbar)\n`;
+  } else { t += 'Noch keine auswertbaren Trainingsereignisse.\n'; }
+  t += '\n';
+
+  t += '### Langfristige Trendanalyse\n';
+  if (gemessene.length >= 4) {
+    const sortiertG = [...gemessene].sort((a,b)=>a.d.localeCompare(b.d));
+    const { erste, zweite } = teileInHaelften(sortiertG);
+    const avgE = erste.map(e=>e.h).reduce((a,b)=>a+b,0)/erste.length;
+    const avgZ = zweite.map(e=>e.h).reduce((a,b)=>a+b,0)/zweite.length;
+    const diff = avgZ - avgE, prozent = (diff/avgE)*100;
+    t += `Ø 1. Hälfte: ${avgE.toFixed(2)} mg/dl (n=${erste.length}) · Ø 2. Hälfte: ${avgZ.toFixed(2)} mg/dl (n=${zweite.length}) · Veränderung: ${diff>=0?'+':''}${diff.toFixed(2)} mg/dl (${prozent>=0?'+':''}${prozent.toFixed(1)}%)\n`;
+  } else { t += 'Mind. 4 gemessene Werte nötig.\n'; }
+  t += '\n';
+
+  t += '### Erweiterte Statistik\n';
+  const st = berechneErweiterteStatistik(gemessene);
+  t += `Gültige Messungen: ${st.n} · Min: ${st.min.toFixed(1)} · Max: ${st.max.toFixed(1)} · Median: ${st.median.toFixed(2)} · Spannweite: ${st.spannweite.toFixed(2)} · Std.-Abw. (Stichprobe, n−1): ${st.stdabw.toFixed(2)}\n\n`;
+
+  t += '### Zielbereichsanalyse\n';
+  const nZ = gemessene.length, imZielZ = gemessene.filter(e=>e.h<=6).length;
+  t += `Messungen gesamt: ${nZ} · Im Ziel ≤6,0: ${imZielZ} (${(imZielZ/nZ*100).toFixed(0)}%)\n`;
+  if (nZ >= 4) {
+    const sortiertZ = [...gemessene].sort((a,b)=>a.d.localeCompare(b.d));
+    const { erste, zweite } = teileInHaelften(sortiertZ);
+    const pE = erste.filter(e=>e.h<=6).length/erste.length*100, pZ = zweite.filter(e=>e.h<=6).length/zweite.length*100;
+    t += `Entwicklung: 1. Hälfte ${pE.toFixed(0)}% im Ziel → 2. Hälfte ${pZ.toFixed(0)}% im Ziel (${(pZ-pE)>=0?'+':''}${(pZ-pE).toFixed(0)} Prozentpunkte)\n`;
+  }
+  t += '\n';
+
+  t += '### Automatische medizinische Hinweise\n';
+  const hinweise = berechneMedizinischeHinweise(gemessene);
+  t += hinweise.length ? hinweise.map(h=>'- '+h).join('\n')+'\n' : 'Noch nicht genug Daten für belegte Hinweise.\n';
+  t += 'Hinweis: Rein datenbasierte Beobachtungen (Korrelation), kein medizinischer Rat. Medizinische Entscheidungen liegen ausschließlich beim behandelnden Arzt.\n\n';
+
+  return t;
+}
+
+// Datenquellen außerhalb der Tagesprotokolle, die für die Auswertung relevant sind: Trainingslog,
+// Entwicklung der Trainingsgewichte und Nierenwerte. Unabhängig von Harnsäure-Messwerten.
+function baueZusatzdatenExportText() {
+  let t = '';
+
+  t += '## Trainingseinheiten (Trainingslog)\n';
+  const tl = [...TLOG].sort((a,b)=>(a.datum+' '+(a.zeit||'')).localeCompare(b.datum+' '+(b.zeit||'')));
+  if (tl.length) {
+    t += 'Datum | Zeit | Einheit | Intensität | Harnsäure (bei Speicherung angegeben) | Gicht-Check erfüllt | Übungen\n------|------|---------|------------|---------------------------------------|---------------------|--------\n';
+    tl.forEach(x => {
+      t += `${x.datum} | ${x.zeit||'—'} | ${x.unit ? String(x.unit).toUpperCase() : '—'} | ${x.intensitaet||'—'} | ${x.hs!=null?x.hs:'—'} | ${x.checkGesamt ? x.checkErfuellt+'/'+x.checkGesamt : '—'} | ${(x.uebungen||[]).length}\n`;
+    });
+  } else {
+    t += 'Noch keine Trainingseinheiten gespeichert.\n';
+  }
+  t += '\n';
+
+  // Gewicht je Übung nur bei Änderung festhalten → kompakte Entwicklung statt 80 Einzelzeilen
+  t += '### Trainingsgewichte (Entwicklung je Übung)\n';
+  const verlauf = new Map();
+  [...GWLOG].sort((a,b)=>a.datum.localeCompare(b.datum)).forEach(x => {
+    const einheit = x.unit ? String(x.unit).toUpperCase() : '?';
+    const key = einheit + ' ' + x.name;
+    if (!verlauf.has(key)) verlauf.set(key, { einheit, name: x.name, schritte: [] });
+    const s = verlauf.get(key).schritte;
+    if (!s.length || s[s.length-1].gew !== x.gew) s.push({ datum: x.datum, gew: x.gew });
+  });
+  if (verlauf.size) {
+    [...verlauf.keys()].sort().forEach(k => {
+      const v = verlauf.get(k);
+      t += `- ${v.name} (Einheit ${v.einheit}): ` + v.schritte.map(s => `${s.gew} (ab ${s.datum})`).join(' → ') + '\n';
+    });
+  } else {
+    t += 'Noch keine Trainingsgewichte protokolliert.\n';
+  }
+  t += '\n';
+
+  t += '## Nierenwerte\n';
+  const nl = [...NLOG].sort((a,b)=>a.datum.localeCompare(b.datum));
+  if (nl.length) {
+    t += 'Datum | Kreatinin (mg/dl) | eGFR | Notiz\n------|-------------------|------|------\n';
+    nl.forEach(x => { t += `${x.datum} | ${x.krea!=null?x.krea:'—'} | ${x.gfr!=null?x.gfr:'—'} | ${bereinigeExportText(x.notiz)||'—'}\n`; });
+  } else {
+    t += 'Noch keine Nierenwerte erfasst.\n';
+  }
+  t += '\n';
+  return t;
+}
+
+function exportClaude() {
+  if (!DATA.length) { showLog('Keine Daten.', false); return; }
+  // Eigene, unabhängige Sortierung — verlässt sich nicht darauf, dass DATA an anderer Stelle im Code sortiert gehalten wird
+  const sortiert = [...DATA].sort((a,b)=>a.d.localeCompare(b.d));
+  const gemessene = sortiert.filter(e=>e.h!=null);
+  const vals = gemessene.map(e=>e.h);
+  const zusammenfassungZeile = vals.length
+    ? `- Ø Harnsäure: ${(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2)} mg/dl\n- Bestwert: ${Math.min(...vals).toFixed(1)} mg/dl\n- Im Ziel (≤6,0): ${vals.filter(v=>v<=6).length}/${vals.length} (${Math.round(vals.filter(v=>v<=6).length/vals.length*100)}%)\n- Gemessene Werte: ${vals.length}/${sortiert.length} Einträge\n`
+    : `- Noch keine gemessenen Harnsäure-Werte vorhanden (nur Aktivitätseinträge)\n`;
+  let txt = `# PROJEKT SPORT & GICHT — AUSWERTUNGSDATEN\nExportiert: ${new Date().toLocaleDateString('de-DE')}\n\n`;
+  txt += `## Zusammenfassung\n- Einträge: ${sortiert.length}\n- Zeitraum: ${sortiert[0].d} bis ${sortiert[sortiert.length-1].d}\n`;
+  txt += zusammenfassungZeile + `- Medikament: Allopurinol 150 mg täglich\n\n`;
+  txt += `## Tagesprotokolle\nDatum | Harnsäure | RR | Puls | Körpergewicht | Aktivität (heute) | km heute | Höhenmeter heute | Intensität heute | Trinkmenge heute | Schlaf heute | Ernährung heute | Weitere Aktivität (Vortag) | km Vortag | Höhenmeter Vortag | Intensität Vortag | Trinkmenge Vortag | Schlaf Vortag | Ernährung Vortag | Notiz\n------|-----------|-----|------|---------------|--------------------|----------|-------------------|--------------------|--------------------|--------------|------------------|-----------------------------|-----------|--------------------|---------------------|---------------------|----------------|-------------------|------\n`;
+  sortiert.forEach(e => { txt += `${e.d} | ${e.h!=null?e.h:'—'} | ${e.s&&e.di?e.s+'/'+e.di:'—'} | ${e.p||'—'} | ${e.kg!=null?e.kg:'—'} | ${alsAktivitaetsListe(e.a).join(', ')||'—'} | ${e.km!=null?e.km:'—'} | ${e.hm!=null?e.hm:'—'} | ${e.aiH||'—'} | ${e.tmH||'—'} | ${e.slH||'—'} | ${bereinigeExportText(e.eH)||'—'} | ${e.a2||'—'} | ${e.km2!=null?e.km2:'—'} | ${e.hm2!=null?e.hm2:'—'} | ${e.ai||'—'} | ${e.tm||'—'} | ${e.sl||'—'} | ${bereinigeExportText(e.e)||'—'} | ${bereinigeExportText(e.n)||'—'}\n`; });
+  txt += `\n`;
+  if (vals.length) txt += baueAnalyseExportText(gemessene);
+  txt += baueZusatzdatenExportText();
+  txt += `## Analysefragen\n1. Welche Faktoren korrelieren mit erhöhten Harnsäurewerten?\n2. Einfluss Trinkmenge auf Folgetags-Wert?\n3. Einfluss Schlafqualität auf Folgetags-Wert?\n4. Gesamttrend?\n5. Normalisierungsdauer nach Training?`;
+  const clipboardVerfuegbar = navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
+  const herunterladenAlsDatei = () => {
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));
+    a.download='auswertung-claude.txt'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    showLog('Als Textdatei gespeichert.');
+  };
+  if (clipboardVerfuegbar) {
+    navigator.clipboard.writeText(txt).then(()=>showLog('Text in Zwischenablage kopiert!')).catch(herunterladenAlsDatei);
+  } else {
+    herunterladenAlsDatei();
+  }
+}
+
+
+// ══ DATUM DEFAULT ══
+// Merkt sich, ob der Nutzer das Datumsfeld selbst bewusst geändert hat (z.B. um einen
+// vergangenen Tag nachzutragen) — nur dann NICHT automatisch überschreiben.
+let datumManuellGeaendert = false;
+document.getElementById('pd').addEventListener('change', () => { datumManuellGeaendert = true; });
+function aktualisiereHeute() {
+  document.getElementById('heute-anzeige').textContent = '📅 Heute: '+new Date().toLocaleDateString('de-DE',{weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
+  if (!datumManuellGeaendert) document.getElementById('pd').value = heuteLokal();
+}
+aktualisiereHeute();
+// pageshow feuert auch, wenn die Seite aus dem Browser-Zwischenspeicher (bfcache) wiederhergestellt wird
+// (z.B. nach App-Wechsel und Zurückkehren) — ohne das würde das Datumsfeld auf einem alten Stand hängen bleiben.
+window.addEventListener('pageshow', aktualisiereHeute);
+
+// ══ INIT ══
+renderEinheit('a');
+renderEinheit('b');
+renderProto();
+renderBkStats();
+renderCheck();
+
+// ══ NAVIGATIONSLEISTE ÜBER BROWSER-EIGENER UI POSITIONIEREN ══
+// Manche mobile Browser (z.B. Brave) zeigen eine eigene Werkzeugleiste am unteren Bildschirmrand.
+// window.innerHeight umfasst die volle Layout-Höhe (inkl. des von dieser Werkzeugleiste verdeckten
+// Bereichs), während window.visualViewport.height nur den TATSÄCHLICH sichtbaren Bereich angibt.
+// Die Differenz wird als Versatz auf die fest positionierte Navigationsleiste angewendet, damit sie
+// nicht unter der Browser-eigenen UI verschwindet.
+function justiereBottomNav() {
+  const nav = document.querySelector('.bottom-nav');
+  if (!nav || !window.visualViewport) return;
+  const verdeckt = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+  nav.style.transform = verdeckt > 0 ? `translateY(-${verdeckt}px)` : '';
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', justiereBottomNav);
+  window.visualViewport.addEventListener('scroll', justiereBottomNav);
+}
+window.addEventListener('load', justiereBottomNav);
+window.addEventListener('pageshow', justiereBottomNav);
+justiereBottomNav();
+</script>
+</body>
+</html>
